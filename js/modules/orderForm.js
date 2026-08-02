@@ -33,6 +33,9 @@ let onChange = () => {};
 /** Callback disparado ao pedir para criar produto (setado por app.js). */
 let onCreateProduct = () => {};
 
+/** Rascunho do pedido preservado ao ir criar um produto no catálogo. */
+let pendingDraft = null;
+
 /**
  * Registra o callback de notificação de mudanças.
  * @param {Function} cb - Função chamada após salvar um pedido.
@@ -136,7 +139,9 @@ function createItemRow(item = {}) {
   });
 
   // Ao editar: reconhece o produto que originou o item
-  if (item.tipoProduto) {
+  if (item.saborId && [...saborSelect.options].some((o) => o.value === item.saborId)) {
+    saborSelect.value = item.saborId;
+  } else if (item.tipoProduto) {
     const match = product.matchProduct(item);
     if (match) {
       saborSelect.value = match.id;
@@ -218,6 +223,7 @@ function updateCatalogStatus() {
  * Abre o modal para criar um novo pedido.
  */
 export function openNew() {
+  pendingDraft = null;
   form.reset();
   clearErrors();
   updateCatalogStatus();
@@ -246,6 +252,7 @@ export function openNew() {
  * @param {Object} orderToEdit - Pedido a ser editado.
  */
 export function openEdit(orderToEdit) {
+  pendingDraft = null;
   form.reset();
   clearErrors();
   updateCatalogStatus();
@@ -289,6 +296,76 @@ function openModal() {
   document.body.classList.add('modal-open');
   // Foca o primeiro campo para digitação rápida
   setTimeout(() => document.getElementById('field-cliente').focus(), 250);
+}
+
+/* ---------- Rascunho ao criar produto no catálogo ---------- */
+
+/**
+ * Salva os valores atuais do formulário (incluindo linhas de item)
+ * para restaurar o pedido após cadastrar um produto no catálogo.
+ */
+function saveDraft() {
+  const rows = [...itemsContainer.querySelectorAll('.item-row')].map((row) => ({
+    tipo: row.querySelector('.item-tipo').value,
+    saborId: row.querySelector('.item-sabor').value,
+    qtd: row.querySelector('.item-qtd').value,
+  }));
+  pendingDraft = {
+    id: document.getElementById('field-id').value,
+    numero: document.getElementById('field-numero').value,
+    data: document.getElementById('field-data').value,
+    cliente: document.getElementById('field-cliente').value,
+    contato: document.getElementById('field-contato').value,
+    status: document.getElementById('field-status').value,
+    pagamento: document.getElementById('field-pagamento').value,
+    entrega: document.getElementById('field-entrega').value,
+    observacoes: document.getElementById('field-observacoes').value,
+    rows,
+  };
+}
+
+/**
+ * Prepara a saída para o cadastro de produto: guarda o rascunho e fecha.
+ * Chamado pelo app.js quando o usuário usa o atalho do modal de pedido.
+ */
+export function prepareLeave() {
+  saveDraft();
+  closeModal();
+}
+
+/**
+ * Reabre o modal de pedido com o rascunho preservado, se houver.
+ * @returns {boolean} true se restaurou um pedido pendente.
+ */
+export function restorePending() {
+  if (!pendingDraft) return false;
+  const d = pendingDraft;
+  pendingDraft = null;
+
+  form.reset();
+  clearErrors();
+  updateCatalogStatus();
+
+  document.getElementById('field-id').value = d.id || '';
+  document.getElementById('field-numero').value = d.numero || '';
+  document.getElementById('field-data').value = d.data || '';
+  document.getElementById('field-cliente').value = d.cliente || '';
+  document.getElementById('field-contato').value = d.contato || '';
+  document.getElementById('field-status').value = d.status || 'Pendente';
+  document.getElementById('field-pagamento').value = d.pagamento || 'PIX';
+  document.getElementById('field-entrega').value = d.entrega || 'Retirada';
+  document.getElementById('field-observacoes').value = d.observacoes || '';
+
+  itemsContainer.innerHTML = '';
+  if (d.rows.length === 0) {
+    addItemRow({ tipoProduto: defaultItemType() });
+  } else {
+    d.rows.forEach((row) => addItemRow({ tipoProduto: row.tipo, saborId: row.saborId, quantidade: row.qtd }));
+  }
+
+  titleEl.textContent = d.id ? 'Editar Pedido' : 'Novo Pedido';
+  openModal();
+  return true;
 }
 
 /* ---------- Cálculo do total ---------- */

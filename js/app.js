@@ -21,7 +21,7 @@
 import * as theme from './utils/theme.js?v=12';
 import * as storage from './modules/storage.js?v=12';
 import * as auth from './modules/auth.js?v=12';
-import * as orderForm from './modules/orderForm.js?v=12';
+import * as orderForm from './modules/orderForm.js?v=13';
 import * as orderList from './modules/orderList.js?v=12';
 import * as dashboard from './modules/dashboard.js?v=12';
 import * as dateFilter from './modules/dateFilter.js?v=12';
@@ -151,9 +151,9 @@ function init() {
   });
 
   // Atalho "cadastrar produto" dentro do modal de pedido:
-  // fecha o pedido, navega para Produtos e abre o formulário
+  // preserva o pedido em andamento, navega para Produtos e abre o formulário
   orderForm.setCreateProductHandler(() => {
-    orderForm.closeModal();
+    orderForm.prepareLeave();
     navigate('produtos');
     productForm.openNew();
   });
@@ -169,6 +169,10 @@ function init() {
     productList.render();
     orderList.render();
     dashboard.render();
+    // Se o cadastro veio do modal de pedido, volta ao pedido preservado
+    if (orderForm.restorePending()) {
+      navigate('orders');
+    }
   });
 
   // Carrega os dados (Supabase na nuvem ou LocalStorage offline)
