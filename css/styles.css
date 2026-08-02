@@ -999,8 +999,8 @@ body.modal-open {
 
 .product-card {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   background-color: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -1012,8 +1012,14 @@ body.modal-open {
 }
 
 .product-info {
-  flex: 1;
   min-width: 0;
+}
+
+.product-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .product-name {

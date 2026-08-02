@@ -92,7 +92,11 @@ function createCard(p) {
     createIconBtn('🗑️', 'Excluir produto', () => remove(p), 'danger')
   );
 
-  card.append(info, price, actions);
+  const footer = document.createElement('div');
+  footer.className = 'product-footer';
+  footer.append(price, actions);
+
+  card.append(info, footer);
   return card;
 }
 
