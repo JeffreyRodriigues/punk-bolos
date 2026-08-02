@@ -1,0 +1,134 @@
+/* ============================================================
+   RESPONSIVE.CSS — Ajustes por tamanho de tela
+   ------------------------------------------------------------
+   Estratégia: mobile-first. Aqui refinamos quebras para
+   tablet (<= 768px) e celular (<= 480px).
+   ============================================================ */
+
+/* ---------- Tablet (<= 768px) ---------- */
+@media (max-width: 768px) {
+  .app-nav {
+    top: 60px;
+  }
+
+  /* Cards de estatística ficam em 3 colunas */
+  .dashboard {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  /* Cards de pedido em 2 colunas */
+  .order-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .modal-card {
+    max-width: 560px;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  .chart-wrap,
+  .chart-wrap-sm {
+    height: 220px;
+  }
+}
+
+/* ---------- Celular (<= 480px) ---------- */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 10px 14px;
+  }
+
+  .app-nav {
+    top: 56px;
+  }
+
+  .nav-tab {
+    padding: 12px 8px;
+    font-size: 0.95rem;
+  }
+
+  .view {
+    padding: 12px;
+  }
+
+  /* Dashboard: cards em 2 colunas no celular */
+  .dashboard {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Lista: 1 coluna no celular (cards largos) */
+  .order-list {
+    grid-template-columns: 1fr;
+  }
+
+  /* Formulário do modal: campos empilhados */
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-card {
+    max-width: 100%;
+    max-height: 94dvh;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .filter {
+    width: 100%;
+  }
+
+  /* FAB menor no celular */
+  .fab {
+    right: 14px;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
+    font-size: 1.6rem;
+  }
+
+  /* Gráficos empilhados no celular */
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .chart-wrap,
+  .chart-wrap-sm {
+    height: 200px;
+  }
+
+  .toast-container {
+    bottom: 80px;
+  }
+}
+
+/* ---------- Telas muito pequenas (<= 360px) ---------- */
+@media (max-width: 360px) {
+  .stat-value {
+    font-size: 1.05rem;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+  }
+
+  .brand {
+    font-size: 1.05rem;
+  }
+}

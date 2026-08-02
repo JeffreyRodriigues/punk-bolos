@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Punk Bolos — Gestão de Pedidos</title>
+
+  <!-- Guarda de sessão: sem sessão do Supabase, redireciona para o login -->
+  <script>
+    if (!localStorage.getItem('punkbolos.session')) {
+      location.replace('login.html');
+    }
+  </script>
+
+  <!-- Ordem: temas primeiro (define as variáveis), depois estilos, depois responsividade -->
+  <!-- ?v=11 força o navegador a baixar os arquivos mais recentes (cache-busting) -->
+  <link rel="stylesheet" href="css/themes.css?v=11">
+  <link rel="stylesheet" href="css/styles.css?v=11">
+  <link rel="stylesheet" href="css/responsive.css?v=11">
+</head>
+
+<body data-view="dashboard">
+
+  <!-- ============================================================
+       HEADER — logo + alternador de tema (dark/light)
+       ============================================================ -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="logo" aria-hidden="true">🍰</span>
+      <span class="brand">Punk Bolos</span>
+    </div>
+    <div class="header-right">
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Alternar tema claro/escuro">
+        <span class="theme-toggle-icon">🌙</span>
+      </button>
+      <button id="refreshBtn" class="header-btn" type="button" title="Atualizar dados da nuvem" aria-label="Atualizar dados da nuvem">⟳</button>
+      <button id="logoutBtn" class="logout-btn" type="button" title="Sair do sistema" aria-label="Sair do sistema">Sair</button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       NAVEGAÇÃO — abas principais (SPA: Início / Pedidos)
+       ============================================================ -->
+  <nav class="app-nav" aria-label="Navegação principal">
+    <button class="nav-tab active" type="button" data-view-target="dashboard">Início</button>
+    <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
+    <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
+  </nav>
+
+  <!-- ============================================================
+       FILTRO POR PERÍODO — compartilhado entre Início e Pedidos
+       Controlado por js/modules/dateFilter.js
+       ============================================================ -->
+  <section class="date-filter" aria-label="Filtrar por período">
+    <div class="date-filter-presets" role="group" aria-label="Períodos rápidos">
+      <button type="button" data-preset="hoje">Hoje</button>
+      <button type="button" data-preset="ontem">Ontem</button>
+      <button type="button" data-preset="7dias">7 dias</button>
+      <button type="button" data-preset="30dias">30 dias</button>
+      <button type="button" data-preset="mes">Este mês</button>
+      <button type="button" data-preset="mespassado">Mês passado</button>
+      <button type="button" data-preset="personalizado">Personalizado</button>
+      <button type="button" data-preset="tudo">Todos</button>
+    </div>
+    <div class="date-filter-range">
+      <label for="filter-inicio">De</label>
+      <input type="date" id="filter-inicio">
+      <label for="filter-fim">Até</label>
+      <input type="date" id="filter-fim">
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TELA 1 — DASHBOARD (cards de resumo)
+       Valores "--" serão preenchidos pelo módulo dashboard.js (Etapa 5)
+       ============================================================ -->
+  <main id="view-dashboard" class="view active">
+    <div class="page-title">
+      <h1>Resumo de Vendas</h1>
+    </div>
+
+    <section class="dashboard" aria-label="Resumo de vendas">
+      <div class="stat-card stat-money" id="stat-receita">
+        <span class="stat-icon">💰</span>
+        <span class="stat-label">Receita (período)</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card" id="stat-pedidos">
+        <span class="stat-icon">🧾</span>
+        <span class="stat-label">Quantidade de Pedidos</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card stat-warn" id="stat-pendentes">
+        <span class="stat-icon">⏳</span>
+        <span class="stat-label">Pedidos Pendentes</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card stat-info" id="stat-embalados">
+        <span class="stat-icon">📦</span>
+        <span class="stat-label">Pedidos Embalados</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card stat-ok" id="stat-concluidos">
+        <span class="stat-icon">✅</span>
+        <span class="stat-label">Pedidos Concluídos</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card" id="stat-fatias">
+        <span class="stat-icon">🍰</span>
+        <span class="stat-label">Quantidade de Fatias</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card" id="stat-bolos">
+        <span class="stat-icon">🎂</span>
+        <span class="stat-label">Quantidade de Bolos</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card" id="stat-punkitos">
+        <span class="stat-icon">🧁</span>
+        <span class="stat-label">Quantidade de Punkitos</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card" id="stat-quantidade">
+        <span class="stat-icon">🛍️</span>
+        <span class="stat-label">Quantidade Vendida</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card stat-money" id="stat-lucro">
+        <span class="stat-icon">💵</span>
+        <span class="stat-label">Lucro Bruto*</span>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card stat-money" id="stat-ticket">
+        <span class="stat-icon">📈</span>
+        <span class="stat-label">Ticket Médio</span>
+        <span class="stat-value">--</span>
+      </div>
+    </section>
+
+    <p class="dashboard-note">
+      * Lucro bruto = receita − custos. Como os custos ainda não são cadastrados, hoje o valor exibido é igual à receita.
+    </p>
+
+    <!-- ============================================================
+         GRÁFICOS E RANKINGS (Chart.js) — renderizados por dashboard.js
+         ============================================================ -->
+    <section class="dashboard-charts" aria-label="Gráficos e rankings">
+      <div class="chart-card chart-full">
+        <h2>Faturamento Diário</h2>
+        <p id="charts-empty" class="charts-empty" hidden>Nenhum dado no período selecionado.</p>
+        <div class="chart-wrap"><canvas id="chart-faturamento"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Vendas por Produto</h2>
+        <div class="chart-wrap chart-wrap-sm"><canvas id="chart-produtos"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Quantidade por Status</h2>
+        <div class="chart-wrap chart-wrap-sm"><canvas id="chart-status"></canvas></div>
+      </div>
+
+      <div class="chart-card chart-full">
+        <h2>Vendas por Produto</h2>
+        <div class="chart-wrap"><canvas id="chart-sabores"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Ranking de Produtos</h2>
+        <div id="ranking-sabores" class="ranking"></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Ranking de Produtos</h2>
+        <div id="ranking-produtos" class="ranking"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================
+       TELA 2 — LISTA DE PEDIDOS (busca, filtros e cards)
+       Conteúdo dos cards será gerado por orderList.js (Etapa 4)
+       ============================================================ -->
+  <main id="view-orders" class="view">
+    <div class="page-title">
+      <h1>Pedidos</h1>
+      <span id="orderCount" class="count-badge">0</span>
+    </div>
+
+    <!-- Pesquisa instantânea -->
+    <div class="search-bar">
+      <span class="search-icon" aria-hidden="true">🔎</span>
+      <input id="orderSearch" type="search" placeholder="Pesquisar pedido..." autocomplete="off">
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters" aria-label="Filtros">
+      <select id="filter-cliente" class="filter" aria-label="Filtrar por cliente">
+        <option value="">Cliente: Todos</option>
+      </select>
+      <select id="filter-produto" class="filter" aria-label="Filtrar por produto">
+        <option value="">Produto: Todos</option>
+        <option value="Fatia">Fatia</option>
+        <option value="Punkitos">Punkitos</option>
+        <option value="Bolo Inteiro">Bolo Inteiro</option>
+      </select>
+      <select id="filter-status" class="filter" aria-label="Filtrar por status">
+        <option value="">Status: Todos</option>
+        <option value="Pendente">Pendente</option>
+        <option value="Em Produção">Em Produção</option>
+        <option value="Embalado">Embalado</option>
+        <option value="Concluído">Concluído</option>
+        <option value="Cancelado">Cancelado</option>
+      </select>
+    </div>
+
+    <div id="orderList" class="order-list" aria-live="polite">
+      <!-- Cards de pedidos serão renderizados aqui -->
+    </div>
+
+    <div id="emptyState" class="empty-state" hidden>
+      <span class="empty-icon" aria-hidden="true">🍩</span>
+      <p>Nenhum pedido encontrado.</p>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       VIEW — Produtos (catálogo com preço)
+       Controlada por js/modules/productList.js e productForm.js
+       ============================================================ -->
+  <main id="view-produtos" class="view">
+    <div class="page-title">
+      <h1>Produtos</h1>
+      <span id="productCount" class="count-badge">0</span>
+      <button id="btnAddProduct" class="btn btn-primary page-action" type="button">＋ Novo produto</button>
+    </div>
+
+    <p class="view-subtitle">Cadastre os produtos com preço para agilizar a criação de pedidos — o valor é preenchido automaticamente.</p>
+
+    <div id="productList" class="product-grid" aria-live="polite">
+      <!-- Cards de produtos serão renderizados aqui -->
+    </div>
+
+    <div id="productEmpty" class="empty-state" hidden>
+      <span class="empty-icon" aria-hidden="true">🧁</span>
+      <p>Nenhum produto cadastrado ainda.</p>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       BOTÃO FLUTUANTE — novo pedido (FAB)
+       ============================================================ -->
+  <button id="fabNewOrder" class="fab" type="button" aria-label="Novo pedido">＋</button>
+
+  <!-- ============================================================
+       MODAL — cadastro/edição de pedido
+       Abertura, validação e salvamento serão feitos por orderForm.js (Etapa 3)
+       ============================================================ -->
+  <div id="orderModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="orderModalTitle">Novo Pedido</h2>
+        <button class="modal-close" type="button" data-close-modal aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="orderForm" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="field-id">
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="field-data">Data</label>
+              <input type="date" id="field-data" required>
+              <span class="error-hint"></span>
+            </div>
+
+            <div class="form-field">
+              <label for="field-numero">Número do Pedido</label>
+              <input type="number" id="field-numero" min="1001" step="1" readonly>
+            </div>
+
+            <div class="form-field form-field-full">
+              <label for="field-cliente">Nome do Cliente</label>
+              <input type="text" id="field-cliente" placeholder="Ex.: Maria Silva" required>
+              <span class="error-hint"></span>
+            </div>
+
+            <div class="form-field form-field-full">
+              <label for="field-contato">Contato</label>
+              <input type="tel" id="field-contato" placeholder="(00) 00000-0000">
+            </div>
+
+            <div class="form-field form-field-full">
+              <label>Itens do pedido</label>
+              <div id="itemsContainer" class="items-container"></div>
+
+              <p id="itemsNoProducts" class="items-warning" hidden>
+                Nenhum produto cadastrado ainda. Cadastre antes de registrar o pedido.
+              </p>
+
+              <div class="items-total">
+                <span>Valor Total</span>
+                <strong id="field-valor-total">R$ 0,00</strong>
+              </div>
+
+              <button type="button" id="addItemBtn" class="btn-add-item">＋ Adicionar item</button>
+              <div class="items-help">
+                <button type="button" id="btnCreateProduct" class="btn-link">Não achou o produto? Cadastrar na página de Produtos</button>
+              </div>
+              <span class="error-hint" id="items-error-hint"></span>
+            </div>
+
+            <!-- Lista de sugestões de sabores compartilhada pelas linhas de item -->
+            <datalist id="lista-sabores">
+              <option value="Chocolate"></option>
+              <option value="Churros"></option>
+              <option value="Brigadeiro"></option>
+              <option value="Red Velvet"></option>
+              <option value="Baunilha"></option>
+              <option value="Cenoura"></option>
+              <option value="Morango"></option>
+            </datalist>
+
+            <div class="form-field">
+              <label for="field-status">Status</label>
+              <select id="field-status" required>
+                <option value="Pendente">Pendente</option>
+                <option value="Em Produção">Em Produção</option>
+                <option value="Embalado">Embalado</option>
+                <option value="Concluído">Concluído</option>
+                <option value="Cancelado">Cancelado</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="field-pagamento">Forma de Pagamento</label>
+              <select id="field-pagamento" required>
+                <option value="PIX">PIX</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Crédito">Crédito</option>
+                <option value="Débito">Débito</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="field-entrega">Entrega</label>
+              <select id="field-entrega" required>
+                <option value="Retirada">Retirada</option>
+                <option value="Entrega Própria">Entrega Própria</option>
+                <option value="Uber Cliente">Uber Cliente</option>
+              </select>
+            </div>
+
+            <div class="form-field form-field-full">
+              <label for="field-observacoes">Observações</label>
+              <textarea id="field-observacoes" rows="3" placeholder="Ex.: Escrever parabéns no bolo"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — cadastro/edição de produto
+       Controlado por js/modules/productForm.js
+       ============================================================ -->
+  <div id="productModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="productModalTitle">Novo produto</h2>
+        <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="productForm" novalidate>
+        <div class="modal-body">
+          <div class="form-field">
+            <label for="field-titulo">Título do produto</label>
+            <input id="field-titulo" type="text" placeholder="Ex.: Fatia de bolo de chocolate" autocomplete="off">
+            <span class="error-hint" id="error-titulo"></span>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="field-tipo-produto">Tipo de produto</label>
+              <select id="field-tipo-produto">
+                <option value="Fatia">Fatia</option>
+                <option value="Punkitos">Punkitos</option>
+                <option value="Bolo Inteiro">Bolo Inteiro</option>
+              </select>
+              <span class="error-hint" id="error-tipo-produto"></span>
+            </div>
+
+            <div class="form-field">
+              <label for="field-valor">Valor (R$)</label>
+              <input id="field-valor" type="number" min="0" step="0.01" placeholder="0,00" inputmode="decimal">
+              <span class="error-hint" id="error-valor"></span>
+            </div>
+
+            <div class="form-field" id="field-tamanho-wrap" hidden>
+              <label for="field-tamanho-produto">Tamanho</label>
+              <select id="field-tamanho-produto">
+                <option value="PP">PP</option>
+                <option value="P">P</option>
+                <option value="M">M</option>
+                <option value="G">G</option>
+                <option value="GG">GG</option>
+              </select>
+              <span class="error-hint" id="error-tamanho-produto"></span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="field-detalhes">Detalhes do produto <small>(opcional)</small></label>
+            <textarea id="field-detalhes" rows="3" placeholder="Ex.: Fatia média com recheio de brigadeiro e morango"></textarea>
+            <span class="error-hint" id="error-detalhes"></span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Container de notificações (toasts) -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Chart.js (gráficos do dashboard) — carregado localmente (offline) -->
+  <script src="js/vendor/chart.umd.min.js?v=11" defer></script>
+
+  <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
+  <script type="module" src="js/app.js?v=11"></script>
+</body>
+</html>

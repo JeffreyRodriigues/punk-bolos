@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Punk Bolos — Acesso</title>
+
+  <!-- Ordem: temas primeiro (define as variáveis), depois o estilo do login -->
+  <link rel="stylesheet" href="css/themes.css?v=11">
+  <link rel="stylesheet" href="css/login.css?v=11">
+</head>
+
+<body class="login-body">
+
+  <div class="login-shell">
+    <div class="login-brand">
+      <span class="login-logo" aria-hidden="true">🍰</span>
+      <span class="login-brand-name">Punk Bolos</span>
+    </div>
+
+    <main class="login-card" role="main">
+      <div id="loginSection" class="login-section">
+        <h1 class="login-title">Entrar</h1>
+        <p class="login-subtitle">Acesse o sistema com o e-mail de administrador.</p>
+
+        <form id="loginForm" novalidate>
+          <div class="login-field">
+            <label for="login-email">E-mail</label>
+            <input id="login-email" type="email" placeholder="admin@exemplo.com" autocomplete="username">
+          </div>
+          <div class="login-field">
+            <label for="login-senha">Senha</label>
+            <input id="login-senha" type="password" placeholder="Sua senha" autocomplete="current-password">
+          </div>
+          <p id="login-error" class="login-error" role="alert"></p>
+          <button type="submit" class="login-btn">Entrar</button>
+        </form>
+      </div>
+
+      <p class="login-note">Os dados ficam salvos na nuvem e são compartilhados entre os administradores.</p>
+    </main>
+  </div>
+
+  <!-- Módulos ES6. login.js controla o formulário de acesso. -->
+  <script type="module" src="js/modules/login.js?v=11"></script>
+</body>
+</html>

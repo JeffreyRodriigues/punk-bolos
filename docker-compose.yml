@@ -1,0 +1,10 @@
+# Sobe o Punk Bolos em um container local (para testar antes do deploy)
+# Uso:  docker compose up --build
+# Acesse: http://localhost:3000
+services:
+  punk-bolos:
+    build: .
+    container_name: punk-bolos
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
