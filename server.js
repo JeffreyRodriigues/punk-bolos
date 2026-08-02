@@ -39,14 +39,18 @@ const MIME = {
 /**
  * Cache inteligente para performance:
  * - HTML: sem cache (sempre a versão mais recente).
- * - Demais arquivos: cache imutável por 1 ano — o cache-busting
- *   (?v=NN) garante que mudanças reais sempre sejam baixadas.
+ * - Arquivos com ?v=NN (script/link no HTML): cache imutável por
+ *   1 ano — o cache-busting garante que mudanças reais sejam baixadas.
+ * - Arquivos SEM ?v=NN (módulos ES6 importados por outro .js): sempre
+ *   revalidam via ETag (304 quando não mudaram) — assim o navegador
+ *   nunca fica preso a uma versão antiga após uma atualização.
  * Isso faz o navegador servir CSS/JS das visitas anteriores sem
  * rebaixar tudo de novo (essencial no plano Free do Render, que
  * "dorme" após 15 min sem acesso).
  */
 const CACHE_HTML = 'no-store';
-const CACHE_ASSET = 'public, max-age=31536000, immutable';
+const CACHE_VERSIONED = 'public, max-age=31536000, immutable';
+const CACHE_MODULE = 'no-cache';
 
 /** Extensões de texto (candidatas a compressão). */
 const TEXT_TYPES = new Set([
@@ -62,11 +66,14 @@ function pickEncoding(req) {
 }
 
 const server = http.createServer((req, res) => {
+  const rawUrl = req.url || '';
+  const hasVersionQuery = /[?&]v=/.test(rawUrl);
+
   let urlPath;
   try {
-    urlPath = decodeURIComponent(req.url.split('?')[0]);
+    urlPath = decodeURIComponent(rawUrl.split('?')[0]);
   } catch {
-    urlPath = req.url;
+    urlPath = rawUrl;
   }
   if (urlPath === '/') {
     urlPath = '/index.html';
@@ -86,10 +93,22 @@ const server = http.createServer((req, res) => {
     }
 
     const ext = path.extname(filePath).toLowerCase();
+    const isHtml = ext === '.html';
+    let cacheControl = isHtml ? CACHE_HTML : (hasVersionQuery ? CACHE_VERSIONED : CACHE_MODULE);
     const headers = {
       'Content-Type': MIME[ext] || 'application/octet-stream',
-      'Cache-Control': ext === '.html' ? CACHE_HTML : CACHE_ASSET,
+      'Cache-Control': cacheControl,
     };
+
+    // ETag permite revalidar módulos sem ?v (retorno 304, sem rebaixar)
+    if (!isHtml && !hasVersionQuery) {
+      const etag = `"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+      headers['ETag'] = etag;
+      if (req.headers['if-none-match'] === etag) {
+        res.writeHead(304, headers);
+        return res.end();
+      }
+    }
 
     // Compressão gzip/brotli para arquivos de texto
     const encoding = TEXT_TYPES.has(ext) ? pickEncoding(req) : null;

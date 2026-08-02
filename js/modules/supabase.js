@@ -169,6 +169,93 @@ export async function signOut() {
   }
 }
 
+/* ---------- Recuperação de senha (esqueci minha senha) ---------- */
+
+/** Chave do code_verifier do fluxo PKCE no LocalStorage. */
+const RECOVERY_VERIFIER_KEY = 'punkbolos.recovery.verifier';
+
+/** Codifica bytes em Base64URL (seguro para PKCE). */
+function base64url(bytes) {
+  let bin = '';
+  bytes.forEach((b) => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** Gera um code_verifier aleatório (padrão PKCE). */
+function createCodeVerifier() {
+  const bytes = new Uint8Array(64);
+  crypto.getRandomValues(bytes);
+  return base64url(bytes);
+}
+
+/** Gera o code_challenge (S256) a partir do code_verifier. */
+async function createCodeChallenge(verifier) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return base64url(new Uint8Array(digest));
+}
+
+/**
+ * Envia o e-mail de recuperação de senha (Supabase Auth).
+ * O link do e-mail leva a reset-password.html com um token/código.
+ * @param {string} email - E-mail do administrador.
+ * @param {string} redirectTo - URL da página de troca de senha.
+ */
+export async function sendRecoveryEmail(email, redirectTo) {
+  let challenge;
+  let verifier = null;
+  try {
+    verifier = createCodeVerifier();
+    challenge = await createCodeChallenge(verifier);
+  } catch {
+    challenge = null; // contexto sem WebCrypto: cai no fluxo implícito
+  }
+
+  if (challenge) {
+    localStorage.setItem(RECOVERY_VERIFIER_KEY, verifier);
+  } else {
+    localStorage.removeItem(RECOVERY_VERIFIER_KEY);
+  }
+
+  const body = {
+    email,
+    options: { redirect_to: redirectTo },
+  };
+  if (challenge) {
+    body.code_challenge = challenge;
+    body.code_challenge_method = 's256';
+  }
+
+  return request('/auth/v1/recover', { method: 'POST', body });
+}
+
+/**
+ * Troca o código de recuperação (fluxo PKCE) por uma sessão válida.
+ * @param {string} code - Código que veio na URL do e-mail.
+ * @returns {Promise<Object>} Sessão ({ access_token, ... }).
+ */
+export async function exchangeRecoveryCode(code) {
+  const verifier = localStorage.getItem(RECOVERY_VERIFIER_KEY);
+  const data = await request('/auth/v1/token?grant_type=pkce', {
+    method: 'POST',
+    body: { auth_code: code, code_verifier: verifier || '' },
+  });
+  localStorage.removeItem(RECOVERY_VERIFIER_KEY);
+  return data;
+}
+
+/**
+ * Define uma nova senha usando um token de recuperação válido.
+ * @param {string} accessToken - Token de acesso (da URL do e-mail).
+ * @param {string} newPassword - Nova senha.
+ */
+export async function updatePassword(accessToken, newPassword) {
+  return request('/auth/v1/user', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: { password: newPassword },
+  });
+}
+
 /* ---------- Pedidos (orders) ---------- */
 
 /** Lista todos os pedidos (linhas cruas do banco). */

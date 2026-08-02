@@ -7,8 +7,8 @@
   <title>Punk Bolos — Acesso</title>
 
   <!-- Ordem: temas primeiro (define as variáveis), depois o estilo do login -->
-  <link rel="stylesheet" href="css/themes.css?v=11">
-  <link rel="stylesheet" href="css/login.css?v=11">
+  <link rel="stylesheet" href="css/themes.css?v=12">
+  <link rel="stylesheet" href="css/login.css?v=12">
 </head>
 
 <body class="login-body">
@@ -36,6 +36,27 @@
           <p id="login-error" class="login-error" role="alert"></p>
           <button type="submit" class="login-btn">Entrar</button>
         </form>
+        <p class="login-footer">
+          <button type="button" id="forgotLink" class="login-link">Esqueci minha senha</button>
+        </p>
+      </div>
+
+      <div id="recoverSection" class="login-section" hidden>
+        <h1 class="login-title">Recuperar senha</h1>
+        <p class="login-subtitle">Informe seu e-mail de acesso. Enviaremos um link para você definir uma nova senha.</p>
+
+        <form id="recoverForm" novalidate>
+          <div class="login-field">
+            <label for="recover-email">E-mail</label>
+            <input id="recover-email" type="email" placeholder="admin@exemplo.com" autocomplete="email">
+          </div>
+          <p id="recover-error" class="login-error" role="alert"></p>
+          <p id="recover-success" class="login-success" role="status"></p>
+          <button type="submit" class="login-btn">Enviar link</button>
+        </form>
+        <p class="login-footer">
+          <button type="button" id="backLink" class="login-link">Voltar para o login</button>
+        </p>
       </div>
 
       <p class="login-note">Os dados ficam salvos na nuvem e são compartilhados entre os administradores.</p>
@@ -43,6 +64,6 @@
   </div>
 
   <!-- Módulos ES6. login.js controla o formulário de acesso. -->
-  <script type="module" src="js/modules/login.js?v=11"></script>
+  <script type="module" src="js/modules/login.js?v=12"></script>
 </body>
 </html>
