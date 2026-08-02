@@ -26,7 +26,7 @@ import * as storage from './storage.js?v=12';
 export const PRODUCT_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro'];
 
 /** Tamanhos válidos apenas para "Bolo Inteiro". */
-export const CAKE_SIZES = ['PP', 'P', 'M', 'G', 'GG'];
+export const CAKE_SIZES = ['PP', 'P', 'M', 'G', 'GG', 'Bento Cake', 'Coração'];
 
 /** Status válidos (fluxo de produção). */
 export const STATUSES = [

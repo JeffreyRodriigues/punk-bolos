@@ -8,7 +8,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=12';
-import { PRODUCT_TYPES, CAKE_SIZES } from './order.js?v=12';
+import { PRODUCT_TYPES, CAKE_SIZES } from './order.js?v=13';
 
 /**
  * Gera um id único para o produto.

@@ -12,7 +12,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=12';
-import * as order from './order.js?v=12';
+import * as order from './order.js?v=13';
 import * as product from './product.js?v=13';
 import { formatCurrency } from '../utils/money.js?v=12';
 
