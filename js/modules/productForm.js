@@ -8,7 +8,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=12';
-import * as product from './product.js?v=12';
+import * as product from './product.js?v=13';
 import { showToast } from './toast.js?v=12';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
@@ -150,6 +150,16 @@ function handleSubmit(event) {
 
   if (!validation.valid) {
     showErrors(validation.errors);
+    return false;
+  }
+
+  // Bloqueia duplicidade: mesmo tipo + mesmo título (ignora o próprio ao editar)
+  const duplicate = product.findDuplicate(data, data.id);
+  if (duplicate) {
+    showErrors({
+      titulo: `Já existe "${duplicate.titulo}" no tipo ${duplicate.tipoProduto}.`,
+    });
+    showToast(`Produto "${duplicate.titulo}" já existe no catálogo.`, 'error');
     return false;
   }
 

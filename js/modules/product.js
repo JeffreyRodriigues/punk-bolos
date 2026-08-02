@@ -71,6 +71,25 @@ export function getProducts() {
 }
 
 /**
+ * Procura um produto duplicado: mesmo tipo e mesmo título, ignorando
+ * caixa e espaços. Evita cadastros repetidos no catálogo.
+ * @param {Object} data - Dados do produto (tipoProduto e titulo).
+ * @param {string} [excludeId] - Id a ignorar (o próprio produto em edição).
+ * @returns {Object|undefined} Produto existente que duplica, ou undefined.
+ */
+export function findDuplicate(data = {}, excludeId = '') {
+  const titulo = String(data.titulo || '').trim().toLowerCase();
+  const tipo = String(data.tipoProduto || '').trim().toLowerCase();
+  if (!titulo || !tipo) return undefined;
+  return getProducts().find(
+    (p) =>
+      p.id !== excludeId &&
+      String(p.tipoProduto || '').trim().toLowerCase() === tipo &&
+      String(p.titulo || '').trim().toLowerCase() === titulo
+  );
+}
+
+/**
  * Busca o produto que corresponde a um item de pedido, para
  * auto-preenchimento ao editar. Casa pelo tipo + tamanho + valor unitário.
  * @param {Object} item - Item de pedido.
