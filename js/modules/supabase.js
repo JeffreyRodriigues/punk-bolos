@@ -75,10 +75,10 @@ function accessToken() {
  * Executa uma requisição para a API REST do Supabase.
  * Lança erro com a mensagem da API em caso de falha.
  * @param {string} path - Caminho (ex.: "/rest/v1/orders?select=*").
- * @param {Object} [opts] - { method, body, auth }.
+ * @param {Object} [opts] - { method, body, auth, headers }.
  * @returns {Promise<Object|null>} JSON da resposta (ou null se 204).
  */
-async function request(path, { method = 'GET', body, auth = false } = {}) {
+async function request(path, { method = 'GET', body, auth = false, headers: extraHeaders = {} } = {}) {
   const headers = { apikey: CONFIG.supabaseAnonKey };
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
@@ -89,6 +89,7 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
       headers['Authorization'] = `Bearer ${token}`;
     }
   }
+  Object.assign(headers, extraHeaders);
 
   const res = await fetch(`${baseUrl()}${path}`, {
     method,

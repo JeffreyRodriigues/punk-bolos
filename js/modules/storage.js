@@ -27,8 +27,35 @@ const CONFIG_KEY = 'punkbolos.config';
 let ordersCache = null;
 let productsCache = null;
 
+/**
+ * Snapshots do ÚLTIMO estado sincronizado com a nuvem.
+ * A UI muta o cache ANTES de chamar save(), então a comparação
+ * para saber o que inserir/atualizar/excluir é feita contra esses
+ * snapshots (nunca contra o próprio cache, que já foi alterado).
+ */
+let ordersSynced = [];
+let productsSynced = [];
+
 /** true quando conectado ao Supabase (escritas vão para a nuvem). */
 let online = false;
+
+/** Callback de erros de sincronização (setado por app.js para exibir toast). */
+let onError = null;
+
+/**
+ * Registra um callback para erros de sincronização com a nuvem.
+ * @param {Function} cb - Função chamada com a mensagem de erro.
+ */
+export function setErrorHandler(cb) {
+  onError = cb;
+}
+
+/** Reporta um erro de sincronização (não lança). */
+function reportError(context, message) {
+  if (typeof onError === 'function') {
+    onError(`${context}: ${message}`);
+  }
+}
 
 /* ---------- Configurações (tema, por dispositivo) ---------- */
 
@@ -288,12 +315,15 @@ export async function init() {
       ordersCache = remoteOrders.map(fromOrderRow);
       productsCache = remoteProducts.map(fromProductRow);
     }
+    ordersSynced = JSON.parse(JSON.stringify(ordersCache));
+    productsSynced = JSON.parse(JSON.stringify(productsCache));
     online = true;
   } catch (error) {
     if (error && error.message === 'Sessão expirada') {
       throw error; // o cliente já redirecionou para o login
     }
-    // Falha de rede: segue com os dados locais
+    // Falha de rede/API: segue com os dados locais
+    reportError('Não foi possível carregar da nuvem', error && error.message ? error.message : 'sem conexão');
     getAll();
     getAllProducts();
     online = false;
@@ -308,14 +338,14 @@ export async function init() {
  * @param {Array<Object>} orders - Nova lista de pedidos.
  */
 export function save(orders) {
-  const previous = ordersCache === null ? readLocalOrders() : ordersCache;
   ordersCache = orders;
 
   if (!online) {
     localStorage.setItem(PEDIDOS_KEY, JSON.stringify(orders));
     return;
   }
-  diffOrders(previous, orders);
+  diffOrders(ordersSynced, orders);
+  ordersSynced = JSON.parse(JSON.stringify(orders));
 }
 
 /**
@@ -323,14 +353,14 @@ export function save(orders) {
  * @param {Array<Object>} products - Nova lista de produtos.
  */
 export function saveProducts(products) {
-  const previous = productsCache === null ? readLocalProducts() : productsCache;
   productsCache = products;
 
   if (!online) {
     localStorage.setItem(PRODUTOS_KEY, JSON.stringify(products));
     return;
   }
-  diffProducts(previous, products);
+  diffProducts(productsSynced, products);
+  productsSynced = JSON.parse(JSON.stringify(products));
 }
 
 /** Envia ao banco os pedidos criados/alterados/removidos. */
@@ -340,14 +370,14 @@ function diffOrders(previous, next) {
   next.forEach((order) => {
     const old = byId.get(order.id);
     if (!old) {
-      supabase.insertOrder(toOrderRow(order)).catch(() => {});
+      supabase.insertOrder(toOrderRow(order)).catch((e) => reportError('Falha ao criar pedido', e.message));
     } else if (JSON.stringify(old) !== JSON.stringify(order)) {
-      supabase.updateOrder(order.id, toOrderRow(order)).catch(() => {});
+      supabase.updateOrder(order.id, toOrderRow(order)).catch((e) => reportError('Falha ao atualizar pedido', e.message));
     }
     byId.delete(order.id);
   });
 
-  byId.forEach((_, id) => supabase.deleteOrder(id).catch(() => {}));
+  byId.forEach((_, id) => supabase.deleteOrder(id).catch((e) => reportError('Falha ao excluir pedido', e.message)));
 }
 
 /** Envia ao banco os produtos criados/alterados/removidos. */
@@ -357,14 +387,14 @@ function diffProducts(previous, next) {
   next.forEach((product) => {
     const old = byId.get(product.id);
     if (!old) {
-      supabase.insertProduct(toProductRow(product)).catch(() => {});
+      supabase.insertProduct(toProductRow(product)).catch((e) => reportError('Falha ao criar produto', e.message));
     } else if (JSON.stringify(old) !== JSON.stringify(product)) {
-      supabase.updateProduct(product.id, toProductRow(product)).catch(() => {});
+      supabase.updateProduct(product.id, toProductRow(product)).catch((e) => reportError('Falha ao atualizar produto', e.message));
     }
     byId.delete(product.id);
   });
 
-  byId.forEach((_, id) => supabase.deleteProduct(id).catch(() => {}));
+  byId.forEach((_, id) => supabase.deleteProduct(id).catch((e) => reportError('Falha ao excluir produto', e.message)));
 }
 
 /* ---------- Manutenção ---------- */
@@ -376,6 +406,8 @@ function diffProducts(previous, next) {
 export function clearAll() {
   ordersCache = null;
   productsCache = null;
+  ordersSynced = [];
+  productsSynced = [];
   online = false;
   localStorage.removeItem(PEDIDOS_KEY);
   localStorage.removeItem(PRODUTOS_KEY);
@@ -390,5 +422,7 @@ export function clearAll() {
 export function reset() {
   ordersCache = null;
   productsCache = null;
+  ordersSynced = [];
+  productsSynced = [];
   online = false;
 }

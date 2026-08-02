@@ -80,6 +80,9 @@ function init() {
   // Tema salvo/preferido do sistema
   theme.initTheme();
 
+  // Erros de sincronização com a nuvem ficam visíveis ao usuário
+  storage.setErrorHandler((message) => showToast(message, 'error'));
+
   // Filtro por período (Início + Pedidos)
   dateFilter.init();
   dateFilter.subscribe(() => {
