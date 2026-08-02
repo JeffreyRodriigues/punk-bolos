@@ -8,7 +8,7 @@
    - qualquer mudança notifica os assinantes (dashboard/lista)
    ============================================================ */
 
-import * as storage from './storage.js';
+import * as storage from './storage.js?v=12';
 
 /* ---------- Elementos do DOM ---------- */
 const inicioEl = document.getElementById('filter-inicio');

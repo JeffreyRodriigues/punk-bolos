@@ -13,10 +13,10 @@
    chamado novamente.
    ============================================================ */
 
-import * as order from './order.js';
-import * as dateFilter from './dateFilter.js';
-import * as service from './dashboardService.js';
-import { formatCurrency, formatDate } from '../utils/money.js';
+import * as order from './order.js?v=12';
+import * as dateFilter from './dateFilter.js?v=12';
+import * as service from './dashboardService.js?v=12';
+import { formatCurrency, formatDate } from '../utils/money.js?v=12';
 
 /** Paleta da identidade Punk Bolos (rosa + complementos). */
 const PALETTE = [

@@ -9,11 +9,11 @@
    - estado vazio quando não há resultados
    ============================================================ */
 
-import * as storage from './storage.js';
-import * as order from './order.js';
-import * as dateFilter from './dateFilter.js';
-import { showToast } from './toast.js';
-import { formatCurrency, formatDate } from '../utils/money.js';
+import * as storage from './storage.js?v=12';
+import * as order from './order.js?v=12';
+import * as dateFilter from './dateFilter.js?v=12';
+import { showToast } from './toast.js?v=12';
+import { formatCurrency, formatDate } from '../utils/money.js?v=12';
 
 /* ---------- Elementos do DOM ---------- */
 const listEl = document.getElementById('orderList');

@@ -16,7 +16,7 @@
    são enviados automaticamente (migração única).
    ============================================================ */
 
-import * as supabase from './supabase.js';
+import * as supabase from './supabase.js?v=12';
 
 /** Chaves do LocalStorage (usadas offline e para a configuração). */
 const PEDIDOS_KEY = 'punkbolos.pedidos';
@@ -293,28 +293,34 @@ export async function init() {
     const localOrders = readLocalOrders();
     const localProducts = readLocalProducts();
 
-    // Migração única: banco vazio + dados locais → envia para a nuvem
-    if (
-      remoteOrders.length === 0 &&
-      remoteProducts.length === 0 &&
-      (localOrders.length > 0 || localProducts.length > 0)
-    ) {
-      for (const order of localOrders) {
+    // Reconciliação: envia para a nuvem o que existe apenas no
+    // dispositivo (criado offline ou com escrita que falhou). Isso
+    // garante que nenhum pedido/produto se perca ao voltar online.
+    const remoteOrderIds = new Set(remoteOrders.map((o) => o.id));
+    const remoteProductIds = new Set(remoteProducts.map((p) => p.id));
+
+    for (const order of localOrders.filter((o) => !remoteOrderIds.has(o.id))) {
+      try {
         await supabase.insertOrder(toOrderRow(order));
+      } catch (e) {
+        reportError('Falha ao reenviar pedido', e && e.message ? e.message : 'sem conexão');
       }
-      for (const product of localProducts) {
-        await supabase.insertProduct(toProductRow(product));
-      }
-      const [o2, p2] = await Promise.all([
-        supabase.listOrders(),
-        supabase.listProducts(),
-      ]);
-      ordersCache = o2.map(fromOrderRow);
-      productsCache = p2.map(fromProductRow);
-    } else {
-      ordersCache = remoteOrders.map(fromOrderRow);
-      productsCache = remoteProducts.map(fromProductRow);
     }
+    for (const product of localProducts.filter((p) => !remoteProductIds.has(p.id))) {
+      try {
+        await supabase.insertProduct(toProductRow(product));
+      } catch (e) {
+        reportError('Falha ao reenviar produto', e && e.message ? e.message : 'sem conexão');
+      }
+    }
+
+    // Fonte de verdade = nuvem (após o merge), atualizada via refetch
+    const [o2, p2] = await Promise.all([
+      supabase.listOrders(),
+      supabase.listProducts(),
+    ]);
+    ordersCache = o2.map(fromOrderRow);
+    productsCache = p2.map(fromProductRow);
     ordersSynced = JSON.parse(JSON.stringify(ordersCache));
     productsSynced = JSON.parse(JSON.stringify(productsCache));
     online = true;
@@ -340,8 +346,12 @@ export async function init() {
 export function save(orders) {
   ordersCache = orders;
 
+  // Backup local SEMPRE: se a escrita na nuvem falhar (sessão expirada,
+  // sem internet), os dados sobrevivem no dispositivo e são reconciliados
+  // com a nuvem no próximo init() — evita perder pedidos/produtos.
+  localStorage.setItem(PEDIDOS_KEY, JSON.stringify(orders));
+
   if (!online) {
-    localStorage.setItem(PEDIDOS_KEY, JSON.stringify(orders));
     return;
   }
   diffOrders(ordersSynced, orders);
@@ -355,8 +365,10 @@ export function save(orders) {
 export function saveProducts(products) {
   productsCache = products;
 
+  // Backup local SEMPRE (mesma garantia de save acima).
+  localStorage.setItem(PRODUTOS_KEY, JSON.stringify(products));
+
   if (!online) {
-    localStorage.setItem(PRODUTOS_KEY, JSON.stringify(products));
     return;
   }
   diffProducts(productsSynced, products);

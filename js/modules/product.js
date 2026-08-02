@@ -7,8 +7,8 @@
    sem digitar nada — o valor vem do cadastro.
    ============================================================ */
 
-import * as storage from './storage.js';
-import { PRODUCT_TYPES, CAKE_SIZES } from './order.js';
+import * as storage from './storage.js?v=12';
+import { PRODUCT_TYPES, CAKE_SIZES } from './order.js?v=12';
 
 /**
  * Gera um id único para o produto.

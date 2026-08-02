@@ -11,10 +11,10 @@
    - oferecer atalho para cadastrar produtos que não existem
    ============================================================ */
 
-import * as storage from './storage.js';
-import * as order from './order.js';
-import * as product from './product.js';
-import { formatCurrency } from '../utils/money.js';
+import * as storage from './storage.js?v=12';
+import * as order from './order.js?v=12';
+import * as product from './product.js?v=12';
+import { formatCurrency } from '../utils/money.js?v=12';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
 const modal = document.getElementById('orderModal');
@@ -90,7 +90,7 @@ function createItemRow(item = {}) {
     if (products.length === 0) {
       const opt = document.createElement('option');
       opt.value = '';
-      opt.textContent = '— sem produtos deste tipo —';
+      opt.textContent = `— nenhum produto de "${tipo}" no catálogo —`;
       saborSelect.appendChild(opt);
       return;
     }
@@ -153,6 +153,17 @@ function createItemRow(item = {}) {
 
   row.append(tipoSelect, saborSelect, qtdInput, removeBtn);
   return row;
+}
+
+/**
+ * Tipo padrão para uma nova linha de item: o primeiro tipo do catálogo
+ * que possuir produtos. Evita abrir a linha em "Fatia" quando só existem
+ * bolos, por exemplo, deixando o seletor de sabor vazio.
+ * @returns {string} Tipo de produto.
+ */
+function defaultItemType() {
+  const available = new Set(product.getProducts().map((p) => p.tipoProduto));
+  return order.PRODUCT_TYPES.find((t) => available.has(t)) || 'Fatia';
 }
 
 /**
@@ -221,9 +232,9 @@ export function openNew() {
   document.getElementById('field-pagamento').value = 'PIX';
   document.getElementById('field-entrega').value = 'Retirada';
 
-  // Reinicia com uma linha de item vazia
+  // Reinicia com uma linha de item vazia (no tipo que tem produtos)
   itemsContainer.innerHTML = '';
-  addItemRow();
+  addItemRow({ tipoProduto: defaultItemType() });
   totalEl.textContent = formatCurrency(0);
 
   titleEl.textContent = 'Novo Pedido';
@@ -382,7 +393,7 @@ function handleSubmit(event) {
 /* ---------- Eventos ---------- */
 
 // Botão "Adicionar item"
-addItemBtn.addEventListener('click', () => addItemRow());
+addItemBtn.addEventListener('click', () => addItemRow({ tipoProduto: defaultItemType() }));
 
 // Atalho para cadastrar produto que não está no catálogo
 // (wrapper: captura o callback atual, não o valor no momento do bind)

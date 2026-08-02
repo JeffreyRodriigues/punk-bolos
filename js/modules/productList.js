@@ -6,9 +6,9 @@
    exclusão ao próprio módulo (com confirmação).
    ============================================================ */
 
-import * as storage from './storage.js';
-import { formatCurrency } from '../utils/money.js';
-import { showToast } from './toast.js';
+import * as storage from './storage.js?v=12';
+import { formatCurrency } from '../utils/money.js?v=12';
+import { showToast } from './toast.js?v=12';
 
 const listEl = document.getElementById('productList');
 const emptyEl = document.getElementById('productEmpty');

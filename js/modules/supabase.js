@@ -12,7 +12,7 @@
    usuários autenticados leem/escrevem.
    ============================================================ */
 
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../config.js?v=12';
 
 /** Chave da sessão no LocalStorage. */
 const SESSION_KEY = 'punkbolos.session';
