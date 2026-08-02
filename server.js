@@ -40,16 +40,21 @@ const MIME = {
  * Cache inteligente para performance:
  * - HTML: sem cache (sempre a versão mais recente).
  * - Arquivos com ?v=NN (script/link no HTML): cache imutável por
- *   1 ano — o cache-busting garante que mudanças reais sejam baixadas.
+ *   1 ano em PRODUÇÃO — o cache-busting garante que mudanças reais
+ *   sejam baixadas. Em AMBIENTE LOCAL, não usa cache (toda edição
+ *   aparece ao recarregar, sem depender de número de versão).
  * - Arquivos SEM ?v=NN (módulos ES6 importados por outro .js): sempre
  *   revalidam via ETag (304 quando não mudaram) — assim o navegador
  *   nunca fica preso a uma versão antiga após uma atualização.
- * Isso faz o navegador servir CSS/JS das visitas anteriores sem
- * rebaixar tudo de novo (essencial no plano Free do Render, que
- * "dorme" após 15 min sem acesso).
+ * O cache imutável é essencial no plano Free do Render, que "dorme"
+ * após 15 min sem acesso.
  */
+
+// Produção = Render (define a variável de ambiente RENDER) ou NODE_ENV.
+const IS_PROD = Boolean(process.env.RENDER) || process.env.NODE_ENV === 'production';
+
 const CACHE_HTML = 'no-store';
-const CACHE_VERSIONED = 'public, max-age=31536000, immutable';
+const CACHE_VERSIONED = IS_PROD ? 'public, max-age=31536000, immutable' : 'no-cache';
 const CACHE_MODULE = 'no-cache';
 
 /** Extensões de texto (candidatas a compressão). */
