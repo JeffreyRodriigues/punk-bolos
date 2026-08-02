@@ -14,9 +14,9 @@
   </script>
 
   <!-- Ordem: temas primeiro (define as variáveis), depois estilos, depois responsividade -->
-  <!-- ?v=12 força o navegador a baixar os arquivos mais recentes (cache-busting) -->
+  <!-- ?v=NN força o navegador a baixar os arquivos mais recentes (cache-busting) -->
   <link rel="stylesheet" href="css/themes.css?v=12">
-  <link rel="stylesheet" href="css/styles.css?v=12">
+  <link rel="stylesheet" href="css/styles.css?v=13">
   <link rel="stylesheet" href="css/responsive.css?v=12">
 
   <!-- Acelera as chamadas à API do Supabase (deve bater com js/config.js) -->
@@ -422,6 +422,7 @@
             <div class="form-field" id="field-tamanho-wrap" hidden>
               <label for="field-tamanho-produto">Tamanho</label>
               <select id="field-tamanho-produto">
+                <option value="Bento">Bento</option>
                 <option value="PP">PP</option>
                 <option value="P">P</option>
                 <option value="M">M</option>
