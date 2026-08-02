@@ -16,7 +16,7 @@
   <!-- Ordem: temas primeiro (define as variáveis), depois estilos, depois responsividade -->
   <!-- ?v=NN força o navegador a baixar os arquivos mais recentes (cache-busting) -->
   <link rel="stylesheet" href="css/themes.css?v=12">
-  <link rel="stylesheet" href="css/styles.css?v=14">
+  <link rel="stylesheet" href="css/styles.css?v=15">
   <link rel="stylesheet" href="css/responsive.css?v=12">
 
   <!-- Acelera as chamadas à API do Supabase (deve bater com js/config.js) -->
@@ -251,6 +251,13 @@
     </div>
 
     <p class="view-subtitle">Cadastre os produtos com preço para agilizar a criação de pedidos — o valor é preenchido automaticamente.</p>
+
+    <div class="product-filter-bar">
+      <label class="filter-label" for="productTypeFilter">Filtrar por tipo:</label>
+      <select id="productTypeFilter" class="filter-select" aria-label="Filtrar por tipo de produto">
+        <option value="">Todos os tipos</option>
+      </select>
+    </div>
 
     <div id="productList" class="product-grid" aria-live="polite">
       <!-- Cards de produtos serão renderizados aqui -->

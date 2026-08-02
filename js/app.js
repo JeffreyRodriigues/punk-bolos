@@ -26,7 +26,7 @@ import * as orderList from './modules/orderList.js?v=12';
 import * as dashboard from './modules/dashboard.js?v=12';
 import * as dateFilter from './modules/dateFilter.js?v=12';
 import * as productForm from './modules/productForm.js?v=12';
-import * as productList from './modules/productList.js?v=13';
+import * as productList from './modules/productList.js?v=14';
 import { showToast } from './modules/toast.js?v=12';
 
 /* ---------- Navegação entre telas ---------- */

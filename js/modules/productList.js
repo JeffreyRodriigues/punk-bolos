@@ -13,6 +13,9 @@ import { showToast } from './toast.js?v=12';
 const listEl = document.getElementById('productList');
 const emptyEl = document.getElementById('productEmpty');
 const countEl = document.getElementById('productCount');
+const filterEl = document.getElementById('productTypeFilter');
+
+filterEl?.addEventListener('change', render);
 
 /** Handlers definidos por app.js (edição abre o form). */
 let onEdit = () => {};
@@ -37,16 +40,38 @@ export function setChangeListener(cb) {
 }
 
 /**
- * Renderiza a lista de produtos na view.
+ * Renderiza a lista de produtos na view (com filtro por tipo).
  */
 export function render() {
-  const products = storage.getAllProducts();
+  const all = storage.getAllProducts();
+  const types = [...new Set(all.map((p) => String(p.tipoProduto || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+
+  if (filterEl) {
+    const current = filterEl.value;
+    filterEl.innerHTML = `<option value="">Todos os tipos</option>` +
+      types.map((t) => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+    if (current && types.includes(current)) {
+      filterEl.value = current;
+    }
+  }
+
+  const selected = filterEl ? filterEl.value : '';
+  const products = selected
+    ? all.filter((p) => String(p.tipoProduto || '').trim() === selected)
+    : all;
 
   if (countEl) {
     countEl.textContent = products.length;
   }
   if (emptyEl) {
     emptyEl.hidden = products.length > 0;
+    const msgEl = emptyEl.querySelector('p');
+    if (msgEl) {
+      msgEl.textContent = all.length === 0
+        ? 'Nenhum produto cadastrado ainda.'
+        : 'Nenhum produto deste tipo.';
+    }
   }
   if (!listEl) {
     return;
@@ -63,12 +88,15 @@ export function render() {
  * @param {Object} p - Produto.
  * @returns {HTMLElement} Card.
  */
-function createCard(p) {
-  const card = document.createElement('article');
+function createCard(p) {  const card = document.createElement('article');
   card.className = 'product-card';
 
   const info = document.createElement('div');
   info.className = 'product-info';
+
+  const type = document.createElement('span');
+  type.className = 'product-type';
+  type.textContent = p.tipoProduto || 'Sem tipo';
 
   const name = document.createElement('div');
   name.className = 'product-name';
@@ -76,10 +104,13 @@ function createCard(p) {
 
   const desc = document.createElement('div');
   desc.className = 'product-desc';
-  const size = p.tipoProduto === 'Bolo Inteiro' && p.tamanho ? ` ${p.tamanho}` : '';
-  desc.textContent = `${p.tipoProduto}${size}${p.detalhes ? ` · ${p.detalhes}` : ''}`;
+  const size = p.tipoProduto === 'Bolo Inteiro' && p.tamanho ? p.tamanho : '';
+  const parts = [size, p.detalhes].filter(Boolean);
+  if (parts.length > 0) {
+    desc.textContent = parts.join(' · ');
+  }
 
-  info.append(name, desc);
+  info.append(type, name, desc);
 
   const price = document.createElement('div');
   price.className = 'product-price';
@@ -132,4 +163,18 @@ function remove(p) {
   showToast('Produto excluído!');
   render();
   onChange();
+}
+
+/**
+ * Escapa texto para uso seguro em HTML (títulos/tipos digitados pelo usuário).
+ * @param {string} value - Texto a escapar.
+ * @returns {string} Texto seguro.
+ */
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
