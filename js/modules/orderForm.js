@@ -13,7 +13,7 @@
 
 import * as storage from './storage.js?v=12';
 import * as order from './order.js?v=13';
-import * as product from './product.js?v=13';
+import * as product from './product.js?v=14';
 import { formatCurrency } from '../utils/money.js?v=12';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
@@ -138,7 +138,6 @@ function createItemRow(item = {}) {
     const chosen = product.getProducts().find((p) => p.id === saborSelect.value);
     priceEl.textContent = chosen ? formatCurrency(chosen.valor) : '';
   }
-  updatePrice();
 
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
@@ -160,6 +159,9 @@ function createItemRow(item = {}) {
       saborSelect.value = match.id;
     }
   }
+
+  // Exibe o preço após restaurar a seleção (senão some ao reabrir o pedido)
+  updatePrice();
 
   // Recalculo ao editar a linha
   tipoSelect.addEventListener('change', () => {

@@ -8,7 +8,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=12';
-import * as product from './product.js?v=13';
+import * as product from './product.js?v=14';
 import { showToast } from './toast.js?v=12';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
@@ -153,13 +153,16 @@ function handleSubmit(event) {
     return false;
   }
 
-  // Bloqueia duplicidade: mesmo tipo + mesmo título (ignora o próprio ao editar)
+  // Bloqueia duplicidade: mesmo tipo + mesmo título (e tamanho em Bolo Inteiro)
   const duplicate = product.findDuplicate(data, data.id);
   if (duplicate) {
+    const ref = duplicate.tipoProduto === 'Bolo Inteiro' && duplicate.tamanho
+      ? `"${duplicate.titulo}" (${duplicate.tamanho})`
+      : `"${duplicate.titulo}"`;
     showErrors({
-      titulo: `Já existe "${duplicate.titulo}" no tipo ${duplicate.tipoProduto}.`,
+      titulo: `Já existe ${ref} no tipo ${duplicate.tipoProduto}.`,
     });
-    showToast(`Produto "${duplicate.titulo}" já existe no catálogo.`, 'error');
+    showToast(`Produto ${ref} já existe no catálogo.`, 'error');
     return false;
   }
 

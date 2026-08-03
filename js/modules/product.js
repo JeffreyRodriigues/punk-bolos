@@ -72,8 +72,9 @@ export function getProducts() {
 
 /**
  * Procura um produto duplicado: mesmo tipo e mesmo título, ignorando
- * caixa e espaços. Evita cadastros repetidos no catálogo.
- * @param {Object} data - Dados do produto (tipoProduto e titulo).
+ * caixa e espaços. Para "Bolo Inteiro" o tamanho também conta — permite
+ * cadastrar o mesmo sabor em tamanhos diferentes.
+ * @param {Object} data - Dados do produto (tipoProduto, titulo e tamanho).
  * @param {string} [excludeId] - Id a ignorar (o próprio produto em edição).
  * @returns {Object|undefined} Produto existente que duplica, ou undefined.
  */
@@ -81,12 +82,17 @@ export function findDuplicate(data = {}, excludeId = '') {
   const titulo = String(data.titulo || '').trim().toLowerCase();
   const tipo = String(data.tipoProduto || '').trim().toLowerCase();
   if (!titulo || !tipo) return undefined;
-  return getProducts().find(
-    (p) =>
-      p.id !== excludeId &&
-      String(p.tipoProduto || '').trim().toLowerCase() === tipo &&
-      String(p.titulo || '').trim().toLowerCase() === titulo
-  );
+
+  const isCake = data.tipoProduto === 'Bolo Inteiro';
+  const tamanho = isCake ? String(data.tamanho || '').trim().toLowerCase() : '';
+
+  return getProducts().find((p) => {
+    if (p.id === excludeId) return false;
+    if (String(p.tipoProduto || '').trim().toLowerCase() !== tipo) return false;
+    if (String(p.titulo || '').trim().toLowerCase() !== titulo) return false;
+    if (isCake && String(p.tamanho || '').trim().toLowerCase() !== tamanho) return false;
+    return true;
+  });
 }
 
 /**
