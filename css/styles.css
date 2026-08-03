@@ -728,6 +728,15 @@ body.modal-open {
   width: 78px;
 }
 
+.item-row .item-price {
+  white-space: nowrap;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  min-width: 64px;
+  text-align: right;
+}
+
 .items-warning {
   margin: 8px 0 0;
   font-size: 0.85rem;

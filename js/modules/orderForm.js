@@ -127,6 +127,19 @@ function createItemRow(item = {}) {
   qtdInput.title = 'Quantidade';
   qtdInput.value = item.quantidade != null ? item.quantidade : 1;
 
+  const priceEl = document.createElement('span');
+  priceEl.className = 'item-price';
+  priceEl.setAttribute('aria-label', 'Preço unitário');
+
+  /**
+   * Mostra o preço unitário do produto selecionado ao lado da quantidade.
+   */
+  function updatePrice() {
+    const chosen = product.getProducts().find((p) => p.id === saborSelect.value);
+    priceEl.textContent = chosen ? formatCurrency(chosen.valor) : '';
+  }
+  updatePrice();
+
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'item-remove';
@@ -151,12 +164,16 @@ function createItemRow(item = {}) {
   // Recalculo ao editar a linha
   tipoSelect.addEventListener('change', () => {
     buildSaborOptions();
+    updatePrice();
     recalcTotal();
   });
-  saborSelect.addEventListener('change', recalcTotal);
+  saborSelect.addEventListener('change', () => {
+    updatePrice();
+    recalcTotal();
+  });
   qtdInput.addEventListener('input', recalcTotal);
 
-  row.append(tipoSelect, saborSelect, qtdInput, removeBtn);
+  row.append(tipoSelect, saborSelect, qtdInput, priceEl, removeBtn);
   return row;
 }
 
