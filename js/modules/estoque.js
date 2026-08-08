@@ -170,6 +170,23 @@ export function validateItens(itens, options = {}) {
 }
 
 /**
+ * Filtra os produtos que podem ser vendidos no momento (disponível > 0).
+ * Como a venda exige produção, produtos sem estoque disponível não
+ * aparecem no seletor de itens de um novo pedido. Ao editar, pode-se
+ * informar um id "obrigatório" (item já presente no pedido).
+ * @param {Array<Object>} produtos - Lista de produtos do catálogo.
+ * @param {{ excludeOrderId?: string, requiredId?: string }} [options]
+ *   - excludeOrderId: pedido em edição (não contar a própria reserva).
+ *   - requiredId: produto que sempre aparece (item já no pedido).
+ * @returns {Array<Object>} Produtos vendáveis.
+ */
+export function produtosDisponiveis(produtos = [], options = {}) {
+  const excludeOrderId = options.excludeOrderId || '';
+  const requiredId = options.requiredId || '';
+  return (produtos || []).filter((p) => p.id === requiredId || disponivel(p, excludeOrderId) > 0);
+}
+
+/**
  * Descreve o motivo de um erro de estoque de forma legível para o usuário.
  * Diferencia "nunca produzido" de "produção insuficiente" e menciona o
  * estoque retido por pedidos em andamento quando for o caso.

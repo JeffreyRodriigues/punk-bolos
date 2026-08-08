@@ -271,3 +271,31 @@ test('describeErro: produto indefinido não quebra', () => {
   const erro = { produto: undefined, produzido: 0, disponivel: 0, faltante: 1 };
   assert.match(estoque.describeErro(erro), /sem produção registrada/i);
 });
+
+// --- produtosDisponiveis ---
+test('produtosDisponiveis: filtra produtos sem estoque para venda', async () => {
+  const produ = [{ produtoId: 'f1', quantidade: 10 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(3)], productions: produ }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  // f1: 10 prod - 3 reserv - 2 vend = 5 (disponível); b1 e i1 sem produção
+  const ok = esp.produtosDisponiveis([P_FATIA, P_BOLO, P_ILIMITADO]);
+  assert.deepEqual(ok.map((p) => p.id), ['f1']);
+});
+
+test('produtosDisponiveis: requiredId sempre aparece (item de pedido em edição)', async () => {
+  await setDb(seed());
+  const esp = await import('../js/modules/estoque.js?v=17');
+  const ok = esp.produtosDisponiveis([P_FATIA, P_BOLO], { requiredId: 'b1' });
+  assert.deepEqual(ok.map((p) => p.id), ['b1']);
+});
+
+test('produtosDisponiveis: excludeOrderId ignora a própria reserva em edição', async () => {
+  const produ = [{ produtoId: 'f1', quantidade: 5 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(4)], productions: produ }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  // Sem excluir o pedido pendente que reserva 4: f1 fica com 5-4-2=-1
+  assert.deepEqual(esp.produtosDisponiveis([P_FATIA]).map((p) => p.id), []);
+  // Excluindo o próprio pedido: 5-0-2=3 disponível
+  const ok = esp.produtosDisponiveis([P_FATIA], { excludeOrderId: 'o-pendente' });
+  assert.deepEqual(ok.map((p) => p.id), ['f1']);
+});

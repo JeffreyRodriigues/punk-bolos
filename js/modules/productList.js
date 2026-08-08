@@ -7,7 +7,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as estoque from './estoque.js?v=3';
+import * as estoque from './estoque.js?v=4';
 import { formatCurrency } from '../utils/money.js?v=12';
 import { showToast } from './toast.js?v=12';
 

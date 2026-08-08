@@ -14,7 +14,7 @@
 import * as storage from './storage.js?v=13';
 import * as order from './order.js?v=15';
 import * as product from './product.js?v=16';
-import * as estoque from './estoque.js?v=3';
+import * as estoque from './estoque.js?v=4';
 import { formatCurrency } from '../utils/money.js?v=12';
 import { defaultItemType } from '../utils/describe.js?v=1';
 
@@ -57,6 +57,25 @@ export function setCreateProductHandler(cb) {
 /* ---------- Linhas de item (produto do catálogo) ---------- */
 
 /**
+ * Descobre o produto do catálogo que originou um item (em edição).
+ * Prioriza saborId (formato novo); senão casa por tipo+tamanho+valor.
+ * @param {Object} item - Item do pedido.
+ * @returns {string} Id do produto (ou "" quando não resolve).
+ */
+function resolveItemProductId(item) {
+  if (!item || typeof item !== 'object') return '';
+  if (item.saborId) {
+    const byId = product.getProducts().find((p) => p.id === item.saborId);
+    if (byId) return byId.id;
+  }
+  if (item.tipoProduto) {
+    const match = product.matchProduct(item);
+    if (match) return match.id;
+  }
+  return '';
+}
+
+/**
  * Cria uma linha de item com seleção em cascata:
  * Tipo de produto → Sabor (produtos do catálogo daquele tipo) → Quantidade.
  * Nada é digitado — título e valor vêm do catálogo.
@@ -82,20 +101,34 @@ function createItemRow(item = {}) {
   saborSelect.className = 'item-sabor';
   saborSelect.setAttribute('aria-label', 'Sabor / produto');
 
+  // Produto que originou o item em edição (sempre exibido, mesmo sem estoque).
+  const edittingProductId = resolveItemProductId(item);
+
   /**
    * Popula o seletor de sabor com os produtos do catálogo do tipo
    * escolhido, preservando a seleção atual quando ainda válida.
+   * Só mostra produtos com DISPONIBILIDADE para venda (disponível > 0),
+   * já que não é possível vender sem produção. Ao editar um pedido, o
+   * produto do item atual é sempre incluído (mesmo sem o item segue
+   * fazendo parte do pedido).
    */
   function buildSaborOptions() {
     const tipo = tipoSelect.value;
     const previous = saborSelect.value;
-    const products = product.getProducts().filter((p) => p.tipoProduto === tipo);
+    const editingId = document.getElementById('field-id').value;
+    const catalogByType = product.getProducts().filter((p) => p.tipoProduto === tipo);
+    const products = estoque.produtosDisponiveis(catalogByType, {
+      excludeOrderId: editingId,
+      requiredId: edittingProductId || '',
+    });
 
     saborSelect.innerHTML = '';
     if (products.length === 0) {
       const opt = document.createElement('option');
       opt.value = '';
-      opt.textContent = `— nenhum produto de "${tipo}" no catálogo —`;
+      opt.textContent = catalogByType.length > 0
+        ? `— nenhum produto de "${tipo}" disponível agora —`
+        : `— nenhum produto de "${tipo}" no catálogo —`;
       saborSelect.appendChild(opt);
       return;
     }
@@ -281,9 +314,11 @@ export function openNew() {
   document.getElementById('field-pagamento').value = 'PIX';
   document.getElementById('field-entrega').value = 'Retirada';
 
-  // Reinicia com uma linha de item vazia (no tipo que tem produtos)
+  // Reinicia com uma linha de item vazia (no primeiro tipo que tiver
+  // produtos com disponibilidade para venda)
   itemsContainer.innerHTML = '';
-  addItemRow({ tipoProduto: defaultItemType(product.getProducts(), order.PRODUCT_TYPES) });
+  const disponiveis = estoque.produtosDisponiveis(product.getProducts());
+  addItemRow({ tipoProduto: defaultItemType(disponiveis.length > 0 ? disponiveis : product.getProducts(), order.PRODUCT_TYPES) });
   totalEl.textContent = formatCurrency(0);
 
   titleEl.textContent = 'Novo Pedido';

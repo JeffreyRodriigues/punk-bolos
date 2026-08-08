@@ -10,7 +10,7 @@
 import * as storage from './storage.js?v=13';
 import * as product from './product.js?v=16';
 import * as order from './order.js?v=15';
-import * as estoque from './estoque.js?v=3';
+import * as estoque from './estoque.js?v=4';
 import { showToast } from './toast.js?v=12';
 import { formatDate } from '../utils/money.js?v=12';
 import { sortKey } from '../utils/describe.js?v=1';
