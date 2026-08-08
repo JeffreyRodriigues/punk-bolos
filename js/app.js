@@ -11,7 +11,7 @@
 
    Responsabilidades:
    - carregar os dados da nuvem (storage.init) antes do 1º render
-   - navegação entre telas (abas Início / Pedidos / Produtos)
+   - navegação entre telas (abas Dashboard / Produtos / Produção / Pedidos)
    - botão flutuante (FAB) abre o modal "Novo Pedido"
    - ações de status (Concluir / Cancelar) com atualização automática
    - botão "Atualizar" recarrega os dados compartilhados
@@ -35,8 +35,9 @@ import { showToast } from './modules/toast.js?v=12';
 /* ---------- Navegação entre telas ---------- */
 
 /**
- * Alterna a tela visível (Início / Pedidos / Produtos) e atualiza a aba ativa.
- * @param {string} target - Id da view ("dashboard" | "orders" | "produtos").
+ * Alterna a tela visível (Dashboard / Produtos / Produção / Pedidos) e
+ * atualiza a aba ativa.
+ * @param {string} target - Id da view ("dashboard" | "orders" | "produtos" | "estoque").
  */
 function navigate(target) {
   document.querySelectorAll('.view').forEach((view) => {
@@ -46,7 +47,7 @@ function navigate(target) {
     tab.classList.toggle('active', tab.dataset.viewTarget === target);
   });
 
-  // Filtro de período e botão flutuante só fazem sentido em Início/Pedidos
+  // Filtro de período e botão flutuante só fazem sentido em Dashboard/Pedidos
   const hasPeriodFilter = target === 'dashboard' || target === 'orders';
   document.querySelector('.date-filter').hidden = !hasPeriodFilter;
   document.getElementById('fabNewOrder').hidden = target !== 'orders';
@@ -109,7 +110,7 @@ function init() {
   // Erros de sincronização com a nuvem ficam visíveis ao usuário
   storage.setErrorHandler((message) => showToast(message, 'error'));
 
-  // Filtro por período (Início + Pedidos)
+  // Filtro por período (Dashboard + Pedidos)
   dateFilter.init();
   dateFilter.subscribe(() => {
     dashboard.render();
