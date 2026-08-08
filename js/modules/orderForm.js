@@ -12,7 +12,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as order from './order.js?v=15';
+import * as order from './order.js?v=16';
 import * as product from './product.js?v=16';
 import * as estoque from './estoque.js?v=4';
 import { formatCurrency } from '../utils/money.js?v=12';
@@ -450,9 +450,11 @@ export function restorePending() {
 
 /**
  * Recalcula e exibe o Valor Total somando todas as linhas de item.
+ * Pedidos com pagamento CORTESIA ficam com valor R$ 0,00.
  */
 function recalcTotal() {
-  totalEl.textContent = formatCurrency(order.totalValue(readItems()));
+  const pagamento = document.getElementById('field-pagamento').value;
+  totalEl.textContent = formatCurrency(order.orderTotalValue(readItems(), pagamento));
 }
 
 /* ---------- Validação ---------- */
@@ -569,6 +571,11 @@ function handleSubmit(event) {
 
 // Botão "Adicionar item"
 addItemBtn.addEventListener('click', () => addItemRow({ tipoProduto: defaultItemType(product.getProducts(), order.PRODUCT_TYPES) }));
+
+// Forma de pagamento: CORTESIA zera o valor total do pedido
+document.getElementById('field-pagamento').addEventListener('change', () => {
+  recalcTotal();
+});
 
 // Atalho para cadastrar produto que não está no catálogo
 // (wrapper: captura o callback atual, não o valor no momento do bind)

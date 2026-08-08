@@ -111,6 +111,46 @@ test('createOrder: consomeEstoque false preservado', () => {
   assert.equal(p.consomeEstoque, false);
 });
 
+test('createOrder: pagamento Cortesia zera o valor total', () => {
+  const pedido = order.createOrder(
+    {
+      data: '2026-08-08',
+      cliente: 'Maria',
+      itens: [{ tipoProduto: 'Fatia', sabor: 'chocolate', quantidade: 4, valorUnitario: 10 }],
+      pagamento: 'Cortesia',
+    },
+    1007
+  );
+  assert.equal(pedido.valorTotal, 0);
+  assert.equal(pedido.pagamento, 'Cortesia');
+});
+
+test('createOrder: demais formas mantêm o valor dos itens', () => {
+  const pedido = order.createOrder(
+    {
+      cliente: 'Maria',
+      itens: [{ tipoProduto: 'Fatia', quantidade: 3, valorUnitario: 10 }],
+      pagamento: 'Crédito',
+    },
+    1008
+  );
+  assert.equal(pedido.valorTotal, 30);
+});
+
+test('isCortesia: reconhece a forma de pagamento', () => {
+  assert.equal(order.isCortesia('Cortesia'), true);
+  assert.equal(order.isCortesia('PIX'), false);
+  assert.equal(order.isCortesia(undefined), false);
+  assert.equal(order.isCortesia(''), false);
+});
+
+test('orderTotalValue: zera em cortesia e mantém nos demais', () => {
+  const itens = [{ quantidade: 2, valorUnitario: 10 }];
+  assert.equal(order.orderTotalValue(itens, 'Cortesia'), 0);
+  assert.equal(order.orderTotalValue(itens, 'Dinheiro'), 20);
+  assert.equal(order.orderTotalValue(itens, undefined), 20);
+});
+
 test('duplicateOrder: reseta status para Pendente e gera novos id/número', () => {
   const original = {
     data: '2026-08-08',

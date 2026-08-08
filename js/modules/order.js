@@ -38,7 +38,16 @@ export const STATUSES = [
 ];
 
 /** Formas de pagamento disponíveis. */
-export const PAYMENT_METHODS = ['PIX', 'Dinheiro', 'Crédito', 'Débito'];
+export const PAYMENT_METHODS = ['PIX', 'Dinheiro', 'Crédito', 'Débito', 'Cortesia'];
+
+/**
+ * Indica se a forma de pagamento é Cortesia (pedido grátis, R$ 0,00).
+ * @param {string} pagamento - Forma de pagamento.
+ * @returns {boolean} true quando é Cortesia.
+ */
+export function isCortesia(pagamento) {
+  return String(pagamento || '') === 'Cortesia';
+}
 
 /** Formas de entrega disponíveis. */
 export const DELIVERY_METHODS = ['Retirada', 'Entrega Própria', 'Uber Cliente'];
@@ -143,6 +152,17 @@ export function quantityByType(items) {
 }
 
 /**
+ * Valor total do pedido: soma dos itens; 0 quando a forma de pagamento
+ * é Cortesia (pedido grátis).
+ * @param {Array<Object>} items - Itens do pedido.
+ * @param {string} pagamento - Forma de pagamento.
+ * @returns {number} Valor total arredondado para 2 casas (0 em cortesia).
+ */
+export function orderTotalValue(items, pagamento) {
+  return isCortesia(pagamento) ? 0 : totalValue(items);
+}
+
+/**
  * Cria um novo pedido com valores padronizados.
  * @param {Object} data - Dados do pedido (inclui itens).
  * @param {number} numero - Número do pedido (calculado antes).
@@ -160,7 +180,7 @@ export function createOrder(data, numero) {
     itens: items,
     // Agregados calculados (para o dashboard e listas)
     quantidade: totalQuantity(items),
-    valorTotal: totalValue(items),
+    valorTotal: orderTotalValue(items, data.pagamento),
     status: data.status || 'Pendente',
     pagamento: data.pagamento || 'PIX',
     entrega: data.entrega || 'Retirada',
