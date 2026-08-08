@@ -8,5 +8,10 @@ Thumbs.db
 # Npm / Node
 node_modules/
 
+# Segredos locais (não versionar)
+.env
+.env.local
+.env.*.local
+
 # Arquivos temporários de teste
 test-harness*.html

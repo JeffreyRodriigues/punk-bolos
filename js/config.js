@@ -1,16 +1,23 @@
 /* ============================================================
    CONFIG.JS — Configuração do Supabase (banco de dados na nuvem)
    ------------------------------------------------------------
-   Preencha os dois valores abaixo com os dados do SEU projeto
-   Supabase (Dashboard do Supabase → Configurações do Projeto →
-   API → "Project URL" e "anon public").
-   ------------------------------------------------------------
-   Exemplo:
-     supabaseUrl: 'https://abcd1234.supabase.co',
-     supabaseAnonKey: 'eyJhbGciOi...longa...'
+   Segurança: este arquivo NÃO contém a chave de acesso. Os valores
+   reais são injetados pelo servidor (server.js) a partir de
+   variáveis de ambiente:
+
+   - Local: crie um arquivo `.env` na raiz do projeto com:
+       SUPABASE_URL=https://seu-projeto.supabase.co
+       SUPABASE_ANON_KEY=sua_anon_key
+     (o arquivo .env é ignorado pelo git)
+   - Produção (Render): painel do Render → seu serviço →
+     Environment → New variable: SUPABASE_URL e SUPABASE_ANON_KEY.
+
+   Sem as variáveis, a chave fica vazia e o app exibe "configuração
+   ausente". A anon key do Supabase é pública por design (a proteção
+   real vem do RLS do banco), mas assim ela não fica versionada.
    ============================================================ */
 
 export const CONFIG = {
   supabaseUrl: 'https://xzkcbygjxvcevoqblneo.supabase.co',
-  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6a2NieWdqeHZjZXZvcWJsbmVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODk4NzcsImV4cCI6MjEwMTI2NTg3N30.Bn6xo9eJTsV4IeCu0JXOPae7EsJ5dMwJ1E5_-SVY8Ro',
+  supabaseAnonKey: '',
 };

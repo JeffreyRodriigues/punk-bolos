@@ -17,6 +17,65 @@ const zlib = require('zlib');
 const ROOT = __dirname;
 const PORT = process.env.PORT || 3000;
 
+/* ============================================================
+   Variáveis de ambiente (segurança)
+   ------------------------------------------------------------
+   O arquivo js/config.js fica SEM chave (placeholder). Os valores
+   reais vêm de variáveis de ambiente:
+   - Local: arquivo .env (na raiz, ignorado pelo git) ou o próprio
+     terminal.
+   - Produção (Render): painel → seu serviço → Environment → New
+     variable (SUPABASE_URL e SUPABASE_ANON_KEY).
+
+   O server.js injeta esses valores ao servir /js/config.js para o
+   navegador. A anon key do Supabase é "pública" por design (proteção
+   feita pelo RLS do banco), mas não fica mais no código versionado.
+   ============================================================ */
+
+/** Carrega o arquivo .env da raiz (sem depender de bibliotecas). */
+function loadEnv() {
+  try {
+    const txt = fs.readFileSync(path.join(ROOT, '.env'), 'utf8');
+    for (const line of txt.split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m && !(m[1] in process.env)) {
+        process.env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
+      }
+    }
+  } catch {
+    // sem .env = usa apenas variáveis do ambiente (ex.: Render)
+  }
+}
+loadEnv();
+
+/**
+ * Lê um valor do arquivo js/config.js (fallback quando não há env var).
+ * @param {string} raw - Conteúdo do arquivo.
+ * @param {string} key - Nome do campo (ex.: "supabaseUrl").
+ * @returns {string} Valor encontrado (ou "").
+ */
+function extractConfig(raw, key) {
+  const m = raw.match(new RegExp(`${key}\\s*:\\s*['"]([^'"]*)['"]`));
+  return m ? m[1] : '';
+}
+
+/**
+ * Monta o módulo CONFIG que será entregue ao navegador.
+ * Usa variáveis de ambiente; sem elas, cai no valor do config.js.
+ * @returns {string} Código do módulo config.js.
+ */
+function buildConfigModule() {
+  let raw = '';
+  try {
+    raw = fs.readFileSync(path.join(ROOT, 'js', 'config.js'), 'utf8');
+  } catch {
+    // arquivo ausente: valores vêm só de env
+  }
+  const url = (process.env.SUPABASE_URL || extractConfig(raw, 'supabaseUrl')).replace(/'/g, "\\'");
+  const anon = (process.env.SUPABASE_ANON_KEY || extractConfig(raw, 'supabaseAnonKey')).replace(/'/g, "\\'");
+  return `/* Gerado pelo servidor a partir de variáveis de ambiente. */\nexport const CONFIG = { supabaseUrl: '${url}', supabaseAnonKey: '${anon}' };\n`;
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -82,6 +141,27 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === '/') {
     urlPath = '/index.html';
+  }
+
+  // /js/config.js é gerado dinamicamente a partir das variáveis de ambiente
+  if (urlPath === '/js/config.js') {
+    const body = buildConfigModule();
+    const headers = {
+      'Content-Type': 'text/javascript; charset=utf-8',
+      // Sempre revalida: reflete mudanças de variável sem depender de ?v=
+      'Cache-Control': 'no-cache',
+    };
+    if (req.headers['if-none-match'] === undefined && body.length > 0) {
+      // (sem ETag fixo; o navegador sempre baixa — arquivo minúsculo)
+    }
+    const etag = `"${Buffer.byteLength(body).toString(16)}"`;
+    headers['ETag'] = etag;
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, headers);
+      return res.end();
+    }
+    res.writeHead(200, headers);
+    return res.end(body);
   }
 
   // Evita sair da pasta do projeto (path traversal)

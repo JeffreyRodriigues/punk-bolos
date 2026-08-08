@@ -27,7 +27,7 @@ const recoverSuccess = document.getElementById('recover-success');
 function render() {
   if (!supabase.isConfigured()) {
     loginError.textContent =
-      'Acesso ainda não configurado. Preencha o Supabase em js/config.js.';
+      'Acesso ainda não configurado. Defina SUPABASE_URL e SUPABASE_ANON_KEY no arquivo .env (local) ou nas variáveis de ambiente (Render).';
     loginForm.hidden = true;
     document.getElementById('forgotLink').hidden = true;
   } else {
