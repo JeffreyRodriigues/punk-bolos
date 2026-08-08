@@ -21,13 +21,13 @@
 import * as theme from './utils/theme.js?v=12';
 import * as storage from './modules/storage.js?v=12';
 import * as auth from './modules/auth.js?v=12';
-import * as orderForm from './modules/orderForm.js?v=15';
-import * as orderList from './modules/orderList.js?v=12';
-import * as dashboard from './modules/dashboard.js?v=12';
+import * as orderForm from './modules/orderForm.js?v=16';
+import * as orderList from './modules/orderList.js?v=13';
+import * as dashboard from './modules/dashboard.js?v=13';
 import * as dateFilter from './modules/dateFilter.js?v=12';
-import * as productForm from './modules/productForm.js?v=14';
+import * as productForm from './modules/productForm.js?v=15';
 import * as productList from './modules/productList.js?v=14';
-import * as importExport from './modules/importExport.js?v=12';
+import * as importExport from './modules/importExport.js?v=14';
 import { showToast } from './modules/toast.js?v=12';
 
 /* ---------- Navegação entre telas ---------- */
@@ -195,7 +195,10 @@ function init() {
         orderList.render();
         dashboard.render();
         const aviso = result.erros.length > 0 ? ` (${result.erros.length} linha(s) ignorada(s))` : '';
-        showToast(`Importados ${result.pedidos} pedido(s), ${result.itens} item(ns) e ${result.produtosCriados} produto(s) novo(s).${aviso}`);
+        showToast(`Importados ${result.pedidos} pedido(s) e ${result.itens} item(ns).${aviso}`);
+        if (result.produtosCriados > 0) {
+          showToast(`Produtos criados no catálogo: ${result.produtos.join('; ')}`);
+        }
         if (result.erros.length > 0) {
           showToast(result.erros[0], 'error');
         }

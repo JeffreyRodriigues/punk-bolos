@@ -15,8 +15,8 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=12';
-import * as order from './order.js?v=13';
-import * as product from './product.js?v=14';
+import * as order from './order.js?v=14';
+import * as product from './product.js?v=15';
 
 const HEADER = [
   'numero', 'data', 'cliente', 'contato', 'status', 'pagamento',
@@ -103,10 +103,10 @@ const COLUMN_ALIASES = {
   numero: ['numero', 'pedido', 'numpedido', 'n'],
   data: ['data', 'dt', 'datavenda', 'datapedido'],
   cliente: ['cliente', 'cliente(nome)', 'nomecliente', 'nome'],
-  contato: ['contato', 'telefone', 'whatsapp', 'celular'],
+  contato: ['contato', 'telefone', 'whatsapp', 'celular', 'contatodocliente'],
   status: ['status', 'situacao', 'estado'],
   pagamento: ['pagamento', 'pag', 'formapagamento', 'formadepagamento'],
-  entrega: ['entrega', 'tipoentrega', 'formaentrega'],
+  entrega: ['entrega', 'tipoentrega', 'tipodeentrega', 'formaentrega'],
   observacoes: ['observacoes', 'obs', 'observacao', 'nota'],
   tipo: ['tipo', 'tipodeproduto', 'tipoproduto', 'categoria'],
   tamanho: ['tamanho', 'tamanho(bolo)', 'tam'],
@@ -211,12 +211,65 @@ function parseDate(value) {
   return '';
 }
 
-/** Casa um valor com um enum (ignorando caixa/acentos); senão devolve padrão. */
-function pickEnum(value, allowed, fallback) {
+/** Normaliza um rótulo para comparação (minúsculas, sem acentos/símbolos). */
+function normalizeKey(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+/** Traduções dos rótulos das planilhas para os valores usados pelo sistema. */
+const ENUM_ALIASES = {
+  tipo: {
+    'fatia': 'Fatia',
+    'bolo': 'Bolo Inteiro',
+    'bolointeiro': 'Bolo Inteiro',
+    'punkitos': 'Punkitos',
+    'kit': 'Punkitos',
+  },
+  tamanho: {
+    'mini': 'Mini',
+    'pp': 'PP', 'p': 'P', 'm': 'M', 'g': 'G', 'gg': 'GG',
+    'bento': 'Bento Cake', 'bentocake': 'Bento Cake',
+    'coracao': 'Coração',
+    'unico': '', 'unicas': '', 'unica': '',
+  },
+  pagamento: {
+    'pix': 'PIX', 'dinheiro': 'Dinheiro', 'credito': 'Crédito', 'debito': 'Débito',
+  },
+  status: {
+    'pendente': 'Pendente', 'emproducao': 'Em Produção', 'embalado': 'Embalado',
+    'concluido': 'Concluído', 'cancelado': 'Cancelado',
+  },
+  entrega: {
+    'retirada': 'Retirada',
+    'entregapropria': 'Entrega Própria',
+    'pessoalmente': 'Entrega Própria',
+    'uberpelocliente': 'Uber Cliente',
+    'ubercliente': 'Uber Cliente',
+  },
+};
+
+/** Quantidade mínima de colunas reconhecidas para ser a linha de cabeçalho. */
+const HEADER_MIN_COLS = 5;
+
+/**
+ * Resolve um valor de planilha para o enum do sistema (via ENUM_ALIASES).
+ * Se não reconhecer, devolve o padrão.
+ * @param {string} value - Valor cru da célula.
+ * @param {string} column - Coluna canônica (tipo/tamanho/pagamento/status/entrega).
+ * @param {string} fallback - Valor padrão.
+ * @returns {string} Valor do sistema.
+ */
+function resolveEnum(value, column, fallback) {
   const v = String(value || '').trim();
   if (!v) return fallback;
-  const hit = allowed.find((option) => String(option).toLowerCase() === v.toLowerCase());
-  return hit || fallback;
+  const nk = normalizeKey(v);
+  const alias = ENUM_ALIASES[column] || {};
+  if (Object.prototype.hasOwnProperty.call(alias, nk)) return alias[nk];
+  return fallback;
 }
 
 /**
@@ -239,22 +292,44 @@ function findInCatalog(list, data) {
 }
 
 /**
- * Importa pedidos a partir de um CSV (arquivo-modelo ou exportado).
- * Casa produtos com o catálogo (cria os que faltam) e persiste tudo.
+ * Importa pedidos a partir de um CSV (arquivo-modelo, exportado ou a planilha
+ * "Controle de Fluxo de Vendas"). Casa produtos com o catálogo (cria os que
+ * faltam) e persiste tudo, salvo em modo dryRun.
+ *
+ * Linhas de resumo acima do cabeçalho são ignoradas (detecção automática da
+ * linha de cabeçalho). Rótulos de planilha são traduzidos (ex.: "Bolo" →
+ * "Bolo Inteiro", "Bento" → "Bento Cake", "Uber pelo cliente" → "Uber Cliente").
+ * Cliente vazio vira "(Sem nome)". Os pedidos recebem numeração nova do
+ * sistema (o número da planilha é usado apenas para agrupar itens).
+ *
  * @param {string} text - Conteúdo do arquivo CSV.
+ * @param {{ dryRun?: boolean }} [options] - Em dryRun não grava nada.
  * @returns {{ ok: boolean, message?: string, pedidos?: number, itens?: number,
- *            produtosCriados?: number, erros?: Array<string> }} Resumo.
+ *            produtosCriados?: number, produtos?: Array<string>,
+ *            dryRun?: boolean, erros?: Array<string> }} Resumo.
  */
-export function importCsv(text) {
+export function importCsv(text, options = {}) {
+  const dryRun = Boolean(options && options.dryRun);
   const erros = [];
   const delimiter = detectDelimiter(text);
   const rows = parseCsv(text, delimiter);
 
   if (rows.length < 2) {
-    return { ok: false, message: 'Arquivo vazio ou sem cabeçalho.' };
+    return { ok: false, message: 'Arquivo vazio ou sem conteúdo.' };
   }
 
-  const col = buildColumnMap(rows[0]);
+  // Localiza a linha de cabeçalho (pode haver títulos/resumos acima dela)
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (Object.keys(buildColumnMap(rows[i])).length >= HEADER_MIN_COLS) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx === -1) {
+    return { ok: false, message: 'Cabeçalho não encontrado. Use o arquivo-modelo (⬇ Modelo) ou exporte antes.' };
+  }
+  const col = buildColumnMap(rows[headerIdx]);
   if (col.cliente == null && col.sabor == null) {
     return { ok: false, message: 'Colunas não reconhecidas. Use o arquivo-modelo (⬇ Modelo).' };
   }
@@ -268,35 +343,35 @@ export function importCsv(text) {
     return idx == null ? '' : String(r[idx] || '').trim();
   };
 
-  // Agrupa as linhas por "numero" (mesmo número = mesmo pedido)
+  // Agrupa as linhas pelo número de pedido da planilha (mesmo número = mesmo pedido)
   const groups = new Map();
-  rows.slice(1).forEach((r, index) => {
+  rows.slice(headerIdx + 1).forEach((r, index) => {
+    const fileLine = headerIdx + index + 2;
+    const tipo = resolveEnum(readCell(r, 'tipo'), 'tipo', 'Fatia');
+    const tamanho = tipo === 'Bolo Inteiro' ? resolveEnum(readCell(r, 'tamanho'), 'tamanho', '') : '';
+
     const row = {
       numero: readCell(r, 'numero'),
       data: parseDate(readCell(r, 'data')),
-      cliente: readCell(r, 'cliente'),
+      cliente: readCell(r, 'cliente') || '(Sem nome)',
       contato: readCell(r, 'contato'),
-      status: pickEnum(readCell(r, 'status'), order.STATUSES, 'Concluído'),
-      pagamento: pickEnum(readCell(r, 'pagamento'), order.PAYMENT_METHODS, 'PIX'),
-      entrega: pickEnum(readCell(r, 'entrega'), order.DELIVERY_METHODS, 'Retirada'),
+      status: resolveEnum(readCell(r, 'status'), 'status', 'Concluído'),
+      pagamento: resolveEnum(readCell(r, 'pagamento'), 'pagamento', 'PIX'),
+      entrega: resolveEnum(readCell(r, 'entrega'), 'entrega', 'Retirada'),
       observacoes: readCell(r, 'observacoes'),
-      tipo: pickEnum(readCell(r, 'tipo'), order.PRODUCT_TYPES, 'Fatia'),
-      tamanho: readCell(r, 'tamanho'),
+      tipo,
+      tamanho,
       sabor: readCell(r, 'sabor'),
       quantidade: Math.max(1, Math.round(parseNumber(readCell(r, 'quantidade')) || 1)),
       valorUnitario: parseNumber(readCell(r, 'valor_unitario')),
     };
 
     if (!row.data) {
-      erros.push(`Linha ${index + 2}: data inválida ou vazia — linha ignorada.`);
-      return;
-    }
-    if (!row.cliente) {
-      erros.push(`Linha ${index + 2}: cliente vazio — linha ignorada.`);
+      erros.push(`Linha ${fileLine}: data inválida ou vazia — linha ignorada.`);
       return;
     }
     if (!row.sabor) {
-      erros.push(`Linha ${index + 2}: sabor/produto vazio — linha ignorada.`);
+      erros.push(`Linha ${fileLine}: sabor/produto vazio — linha ignorada.`);
       return;
     }
 
@@ -356,9 +431,11 @@ export function importCsv(text) {
     return { ok: false, message: 'Nenhum pedido válido para importar.', erros };
   }
 
-  storage.save(existingOrders.concat(newOrders));
-  if (productsToAdd.length > 0) {
-    storage.saveProducts(existingProducts.concat(productsToAdd));
+  if (!dryRun) {
+    storage.save(existingOrders.concat(newOrders));
+    if (productsToAdd.length > 0) {
+      storage.saveProducts(existingProducts.concat(productsToAdd));
+    }
   }
 
   return {
@@ -366,6 +443,12 @@ export function importCsv(text) {
     pedidos: newOrders.length,
     itens: itensCount,
     produtosCriados: productsToAdd.length,
+    produtos: productsToAdd.map((p) =>
+      p.tipoProduto === 'Bolo Inteiro'
+        ? `${p.titulo} (${p.tipoProduto} ${p.tamanho})`
+        : `${p.titulo} (${p.tipoProduto})`
+    ),
+    dryRun,
     erros,
   };
 }

@@ -8,7 +8,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=12';
-import * as product from './product.js?v=14';
+import * as product from './product.js?v=15';
 import { showToast } from './toast.js?v=12';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
