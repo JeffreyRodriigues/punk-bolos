@@ -13,7 +13,7 @@ const seed = () => ({
 
 before(async () => {
   await setDb(seed());
-  product = await import('../js/modules/product.js?v=16');
+  product = await import('../js/modules/product.js?v=17');
 });
 resetStorageBetweenTests();
 
@@ -99,4 +99,19 @@ test('matchProduct: casa por tipo+tamanho+valor', () => {
 
 test('matchProduct: sem casamento devolve undefined', () => {
   assert.equal(product.matchProduct({ tipoProduto: 'Fatia', tamanho: '', valorUnitario: 999 }), undefined);
+});
+
+test('matchProduct: desempata pelo título quando há produtos de mesmo valor', async () => {
+  await setDb({
+    products: [
+      { id: 'pA', titulo: 'Fatia A', tipoProduto: 'Fatia', tamanho: '', valor: 10 },
+      { id: 'pB', titulo: 'Fatia B', tipoProduto: 'Fatia', tamanho: '', valor: 10 },
+    ],
+  });
+  // SEM o título (sabor) mantém compatibilidade: cai no primeiro com o valor.
+  const semTitulo = product.matchProduct({ tipoProduto: 'Fatia', tamanho: '', valorUnitario: 10 });
+  assert.ok(['pA', 'pB'].includes(semTitulo?.id));
+  // Com o título desanco o produto certo, mesmo com o mesmo preço.
+  const comTitulo = product.matchProduct({ tipoProduto: 'Fatia', tamanho: '', sabor: 'Fatia B', valorUnitario: 10 });
+  assert.equal(comTitulo?.id, 'pB');
 });

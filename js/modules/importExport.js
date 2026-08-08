@@ -15,8 +15,8 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as order from './order.js?v=15';
-import * as product from './product.js?v=16';
+import * as order from './order.js?v=16';
+import * as product from './product.js?v=17';
 
 const HEADER = [
   'numero', 'data', 'cliente', 'contato', 'status', 'pagamento',
@@ -238,6 +238,7 @@ const ENUM_ALIASES = {
   },
   pagamento: {
     'pix': 'PIX', 'dinheiro': 'Dinheiro', 'credito': 'Crédito', 'debito': 'Débito',
+    'cortesia': 'Cortesia', 'gratis': 'Cortesia', 'gratuito': 'Cortesia',
   },
   status: {
     'pendente': 'Pendente', 'emproducao': 'Em Produção', 'embalado': 'Embalado',

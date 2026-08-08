@@ -26,6 +26,17 @@ const seed = ({ orders = [], productions = [] } = {}) => {
   return { orders: merged, products, productions };
 };
 
+const PEDIDO_PENDENTE = (quantidade = 3, id = 'o-pendente') => ({
+  id,
+  numero: 1002,
+  cliente: 'B',
+  num: 0,
+  itens: [{ produtoId: 'f1', tipoProduto: 'Fatia', tamanho: '', sabor: 'x', quantidade, valorUnitario: 5 }],
+  quantidade,
+  status: 'Pendente',
+  consomeEstoque: true,
+});
+
 before(() => {
   return setDb(seed()).then(() => import('../js/modules/estoque.js?v=17')).then((m) => { estoque = m; });
 });
@@ -85,16 +96,91 @@ test('disponivel: sem produções fica negativo quando vendido', async () => {
   assert.equal(esp.disponivel(P_FATIA), -2);
 });
 
-test('disponivel: Infinity para produto sem controle', async () => {
+test('disponivel: Infinity nunca mais — produto sem produção fica com disponível negativo quando vendido', async () => {
   await setDb(seed());
   const esp = await import('../js/modules/estoque.js?v=17');
-  assert.equal(esp.disponivel(P_ILIMITADO), Infinity);
+  assert.equal(esp.disponivel(P_ILIMITADO), 0);
+  assert.equal(esp.disponivel(P_FATIA), -2);
 });
 
 test('disponivel: undefined', async () => {
   await setDb(seed());
   const esp = await import('../js/modules/estoque.js?v=17');
-  assert.equal(esp.disponivel(undefined), Infinity);
+  assert.equal(esp.disponivel(undefined), 0);
+});
+
+// --- totalReservado / reserva ---
+test('totalReservado: conta pedidos pendentes que consomem estoque', async () => {
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(3)] }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  assert.equal(esp.totalReservado('f1'), 3);
+});
+
+test('totalReservado: desconsidera cancelados, importados s/ consumo e desconta vendidos', async () => {
+  await setDb(seed({
+    orders: [
+      PEDIDO_PENDENTE(2, 'o-pen'),
+      { ...PEDIDO_PENDENTE(5, 'o-canc'), status: 'Cancelado' },
+      { ...PEDIDO_PENDENTE(7, 'o-imp'), consomeEstoque: false },
+      { ...PEDIDO_PENDENTE(11, 'o-emprod'), status: 'Em Produção' },
+      { ...PEDIDO_PENDENTE(13, 'o-emb'), status: 'Embalado' },
+    ],
+  }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  // PEDIDO_PENDENTE(2) + Em Produção(11) + Embalado(13) — o-concluido não
+  // é reserva (é venda), cancelado e importado não contam.
+  assert.equal(esp.totalReservado('f1'), 26);
+});
+
+test('disponivel: produzido - reservado - vendido', async () => {
+  const produ = [{ produtoId: 'f1', quantidade: 10 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(3)], productions: produ }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  // 10 produzido - 3 reservado - 2 vendido (o-concluido) = 5
+  assert.equal(esp.disponivel(P_FATIA), 5);
+});
+
+test('disponivel: com reserva igual a produção, bloqueia novos pedidos', async () => {
+  const produ = [{ produtoId: 'f1', quantidade: 5 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(3)], productions: produ }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  const itens = [{ produtoId: 'f1', tipoProduto: 'Fatia', quantidade: 4 }];
+  const erros = esp.validateItens(itens);
+  assert.equal(erros.length, 1);
+  assert.equal(erros[0].reservado, 3);
+});
+
+test('disponivel: excludeOrderId ignora o próprio pedido em andamento', async () => {
+  const produ = [{ produtoId: 'f1', quantidade: 5 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(3)], productions: produ }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  // Com o próprio pedido contando: 5 prod - 3 reserv - 2 vend = 0
+  assert.equal(esp.disponivel(P_FATIA), 0);
+  // Excluindo o próprio pedido: 5 prod - 0 reserv - 2 vend = 3
+  assert.equal(esp.disponivel(P_FATIA, 'o-pendente'), 3);
+});
+
+test('validateItens: só bloqueia quando reservado + vendido excede produção', async () => {
+  const produ = [{ produtoId: 'f1', quantidade: 10 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(3)], productions: produ }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  // 10 - 3 reservado - 2 vendido = 5 disponíveis; vender 5 passa
+  assert.deepEqual(esp.validateItens([{ produtoId: 'f1', tipoProduto: 'Fatia', quantidade: 5 }]), []);
+  // vender 6 não passa
+  const erros = esp.validateItens([{ produtoId: 'f1', tipoProduto: 'Fatia', quantidade: 6 }]);
+  assert.equal(erros.length, 1);
+  assert.equal(erros[0].reservado, 3);
+  assert.equal(erros[0].faltante, 1);
+});
+
+test('describeErro: menciona a quantidade reservada', async () => {
+  const produzido1 = [{ produtoId: 'f1', quantidade: 8 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(5)], productions: produzido1 }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  const erros = esp.validateItens([{ produtoId: 'f1', tipoProduto: 'Fatia', quantidade: 4 }]);
+  const msg = esp.describeErro(erros[0]);
+  assert.match(msg, /reservado/i);
+  assert.match(msg, /faltam/);
 });
 
 // --- validateItens ---
@@ -114,13 +200,27 @@ test('validateItens: erro quando excede o disponível', async () => {
   const erros = esp.validateItens(itens);
   assert.equal(erros.length, 1);
   assert.equal(erros[0].disponivel, -1);
+  assert.equal(erros[0].produzido, 1);
+  assert.equal(erros[0].faltante, 6);
 });
 
-test('validateItens: ignora produto sem controle de estoque', async () => {
+test('validateItens: erro quando produto nunca foi produzido', async () => {
+  await setDb(seed());
+  const esp = await import('../js/modules/estoque.js?v=17');
+  const itens = [{ produtoId: 'f1', tipoProduto: 'Fatia', quantidade: 1 }];
+  const erros = esp.validateItens(itens);
+  assert.equal(erros.length, 1);
+  assert.equal(erros[0].produzido, 0);
+  assert.equal(erros[0].disponivel, -2);
+});
+
+test('validateItens: valida produto mesmo sem controle de estoque', async () => {
   await setDb(seed());
   const esp = await import('../js/modules/estoque.js?v=17');
   const itens = [{ produtoId: 'i1', tipoProduto: 'Punkitos', quantidade: 999 }];
-  assert.deepEqual(esp.validateItens(itens), []);
+  const erros = esp.validateItens(itens);
+  assert.equal(erros.length, 1);
+  assert.equal(erros[0].produzido, 0);
 });
 
 test('validateItens: excludeOrderId evita contar o próprio pedido', async () => {
@@ -150,4 +250,52 @@ test('stockStatus: classicacao por nível', () => {
   assert.equal(estoque.stockStatus(3), 'low');
   assert.equal(estoque.stockStatus(5), 'low');
   assert.equal(estoque.stockStatus(6), 'ok');
+});
+
+// --- describeErro ---
+test('describeErro: sem produção registrada', () => {
+  const erro = { produto: P_FATIA, produzido: 0, disponivel: -2, faltante: 3 };
+  const msg = estoque.describeErro(erro);
+  assert.match(msg, /sem produção registrada/i);
+  assert.match(msg, /Chocolate/);
+});
+
+test('describeErro: produção insuficiente', () => {
+  const erro = { produto: P_FATIA, produzido: 2, disponivel: 0, faltante: 3 };
+  const msg = estoque.describeErro(erro);
+  assert.match(msg, /disponível: 0/);
+  assert.match(msg, /faltam 3/);
+});
+
+test('describeErro: produto indefinido não quebra', () => {
+  const erro = { produto: undefined, produzido: 0, disponivel: 0, faltante: 1 };
+  assert.match(estoque.describeErro(erro), /sem produção registrada/i);
+});
+
+// --- produtosDisponiveis ---
+test('produtosDisponiveis: filtra produtos sem estoque para venda', async () => {
+  const produ = [{ produtoId: 'f1', quantidade: 10 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(3)], productions: produ }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  // f1: 10 prod - 3 reserv - 2 vend = 5 (disponível); b1 e i1 sem produção
+  const ok = esp.produtosDisponiveis([P_FATIA, P_BOLO, P_ILIMITADO]);
+  assert.deepEqual(ok.map((p) => p.id), ['f1']);
+});
+
+test('produtosDisponiveis: requiredId sempre aparece (item de pedido em edição)', async () => {
+  await setDb(seed());
+  const esp = await import('../js/modules/estoque.js?v=17');
+  const ok = esp.produtosDisponiveis([P_FATIA, P_BOLO], { requiredId: 'b1' });
+  assert.deepEqual(ok.map((p) => p.id), ['b1']);
+});
+
+test('produtosDisponiveis: excludeOrderId ignora a própria reserva em edição', async () => {
+  const produ = [{ produtoId: 'f1', quantidade: 5 }];
+  await setDb(seed({ orders: [PEDIDO_PENDENTE(4)], productions: produ }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+  // Sem excluir o pedido pendente que reserva 4: f1 fica com 5-4-2=-1
+  assert.deepEqual(esp.produtosDisponiveis([P_FATIA]).map((p) => p.id), []);
+  // Excluindo o próprio pedido: 5-0-2=3 disponível
+  const ok = esp.produtosDisponiveis([P_FATIA], { excludeOrderId: 'o-pendente' });
+  assert.deepEqual(ok.map((p) => p.id), ['f1']);
 });

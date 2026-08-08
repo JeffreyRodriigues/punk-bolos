@@ -13,11 +13,1595 @@
     }
   </script>
 
-  <!-- Ordem: temas primeiro (define as variáveis), depois estilos, depois responsividade -->
-  <!-- ?v=NN força o navegador a baixar os arquivos mais recentes (cache-busting) -->
-  <link rel="stylesheet" href="css/themes.css?v=13">
-  <link rel="stylesheet" href="css/styles.css?v=21">
-  <link rel="stylesheet" href="css/responsive.css?v=12">
+<!-- CSS INLINE (build: node tools/build-css.js) — evita requests de CSS bloqueantes no LCP.
+     Enquanto o build não roda, os <link> são o fallback. -->
+
+<!-- CSS_INLINE:START -->
+
+<style>
+/* css/themes.css */
+/* ============================================================
+   THEMES.CSS — Sistema de temas (Dark / Light)
+   ------------------------------------------------------------
+   Todo o app usa apenas variáveis CSS. O tema é trocado
+   adicionando a classe "dark" no elemento <html> via theme.js.
+
+   Estrutura:
+   :root        -> valores do tema CLARO (padrão)
+   html.dark    -> sobrescreve as variáveis para o tema ESCURO
+
+   NOTA: a fonte Quicksand é carregada por <link> no HTML (preconnect
+   + stylesheet com carga assíncrona), NÃO via @import: @import serializa
+   os downloads e bloqueia a renderização, penalizando o LCP.
+   ============================================================ */
+
+:root {
+  /* Paleta de cores — tema claro */
+  --color-bg: #f4f5f9;
+  --color-surface: #ffffff;
+  --color-surface-alt: #eef0f6;
+  --color-text: #1c2030;
+  --color-text-muted: #6b7280;
+  --color-border: #e3e6ee;
+
+  /* Cor de destaque (marca) */
+  --color-primary: #e91e63;
+  --color-primary-hover: #c2185b;
+  --color-primary-soft: #fde3ec;
+  --color-on-primary: #ffffff;
+
+  /* Cores semânticas (status e destaque) */
+  --color-ok: #16a34a;
+  --color-ok-soft: #dcfce7;
+  --color-warn: #f59e0b;
+  --color-warn-soft: #fef3c7;
+  --color-info: #2563eb;
+  --color-info-soft: #dbeafe;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+
+  /* Sombras */
+  --shadow-card: 0 2px 10px rgba(28, 32, 48, 0.08);
+  --shadow-modal: 0 12px 40px rgba(28, 32, 48, 0.25);
+  --shadow-fab: 0 6px 20px rgba(233, 30, 99, 0.45);
+
+  /* Bordas arredondadas */
+  --radius: 16px;
+  --radius-sm: 10px;
+
+  /* Fonte */
+  --font-family: "Quicksand", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+/* ============================================================
+   Tema ESCURO — sobrescreve apenas o necessário
+   ============================================================ */
+html.dark {
+  --color-bg: #14151d;
+  --color-surface: #1e2030;
+  --color-surface-alt: #252838;
+  --color-text: #e8eaf2;
+  --color-text-muted: #9aa0b4;
+  --color-border: #32364a;
+
+  --color-primary: #ff2d78;
+  --color-primary-hover: #ff5c95;
+  --color-primary-soft: #3a1526;
+  --color-on-primary: #1c2030;
+
+  --color-ok: #4ade80;
+  --color-ok-soft: #0f2a1a;
+  --color-warn: #fbbf24;
+  --color-warn-soft: #2b2210;
+  --color-info: #60a5fa;
+  --color-info-soft: #10243f;
+  --color-danger: #f87171;
+  --color-danger-soft: #3a1316;
+
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-fab: 0 6px 20px rgba(255, 45, 120, 0.45);
+}
+
+</style>
+
+<style>
+/* css/styles.css */
+/* ============================================================
+   STYLES.CSS — Layout e componentes principais
+   ------------------------------------------------------------
+   Responsável por: reset, header, navegação, views, dashboard,
+   lista de pedidos, modal, botões, fab e toasts.
+   Cores sempre via variáveis de themes.css.
+   Responsividade fica em responsive.css.
+   ============================================================ */
+
+/* ---------- Reset / base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-family);
+  font-size: 1rem;
+  color: inherit;
+}
+
+/* Remove spinners nativos de inputs numéricos (visual de app) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ---------- Header ---------- */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background-color: var(--color-primary);
+  color: #fff;
+  box-shadow: var(--shadow-card);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  height: 38px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.brand {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.theme-toggle {
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #fff;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.theme-toggle:active {
+  transform: scale(0.92);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.header-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  width: 34px;
+  height: 34px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.header-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.header-btn:active {
+  transform: rotate(180deg);
+}
+
+/* ---------- Navegação por abas ---------- */
+.app-nav {
+  position: sticky;
+  top: 64px;
+  z-index: 10;
+  display: flex;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.nav-tab {
+  flex: 1;
+  padding: 14px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* ---------- Views (troca de tela via JS) ---------- */
+.view {
+  display: none;
+  flex: 1;
+  padding: 18px;
+  animation: fade-in 0.25s ease;
+}
+
+.view.active {
+  display: block;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Filtro por período (Início + Pedidos) ---------- */
+.date-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 18px;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.date-filter-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.date-filter-presets button {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.date-filter-presets button:hover {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.date-filter-presets button.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.date-filter-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.date-filter-range input[type="date"] {
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: 6px 8px;
+  font-size: 0.85rem;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.page-title h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.count-badge {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+/* Importar / exportar planilha */
+.csv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.csv-actions .btn {
+  padding: 7px 12px;
+  font-size: 0.85rem;
+}
+
+/* ---------- Dashboard (cards de estatística) ---------- */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 1.4rem;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  line-height: 1.2;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+/* Variações de destaque dos cards */
+.stat-money .stat-value { color: var(--color-primary); }
+.stat-ok .stat-value    { color: var(--color-ok); }
+.stat-warn .stat-value  { color: var(--color-warn); }
+.stat-info .stat-value  { color: var(--color-info); }
+
+/* ---------- Pesquisa ---------- */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.search-icon {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+}
+
+/* ---------- Filtros ---------- */
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.filter {
+  flex: 1;
+  min-width: 120px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------- Lista de pedidos (cards) ---------- */
+.order-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.order-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.order-number {
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.order-date {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.order-customer {
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
+.order-detail {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.order-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+/* Selo de status (cores por estado) */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge.Pendente      { background: var(--color-warn-soft);  color: var(--color-warn); }
+.badge.Em-Produção   { background: var(--color-info-soft);  color: var(--color-info); }
+.badge.Embalado      { background: var(--color-primary-soft); color: var(--color-primary); }
+.badge.Concluído     { background: var(--color-ok-soft);   color: var(--color-ok); }
+.badge.Cancelado     { background: var(--color-danger-soft); color: var(--color-danger); }
+
+/* Ações do card (ícones) */
+.order-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.icon-btn {
+  flex: 1;
+  min-width: 42px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.icon-btn:hover { background: var(--color-primary-soft); }
+.icon-btn:active { transform: scale(0.94); }
+
+.icon-btn.danger:hover { background: var(--color-danger-soft); }
+.icon-btn.ok:hover { background: var(--color-ok-soft); }
+
+/* ---------- Estado vazio ---------- */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+/* ---------- Botão flutuante (FAB) ---------- */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  width: 58px;
+  height: 58px;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: #fff;
+  font-size: 1.8rem;
+  line-height: 1;
+  box-shadow: var(--shadow-fab);
+  cursor: pointer;
+  z-index: 30;
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.fab:hover {
+  background-color: var(--color-primary-hover);
+  transform: scale(1.06);
+}
+
+.fab:active {
+  transform: scale(0.94);
+}
+
+/* Oculta o filtro de período e o FAB nas telas que não os usam */
+.date-filter[hidden],
+.fab[hidden] {
+  display: none !important;
+}
+
+/* ---------- Botões ---------- */
+.btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 22px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.btn-ghost:hover {
+  background: var(--color-surface-alt);
+}
+
+/* ---------- Modal ---------- */
+/* Trava o scroll da página enquanto o modal está aberto */
+body.modal-open {
+  overflow: hidden;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0.2s;
+}
+
+.modal.open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.modal.open .modal-backdrop {
+  opacity: 1;
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  background-color: var(--color-surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow-modal);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal.open .modal-card {
+  transform: translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background-color: var(--color-surface);
+  z-index: 2;
+}
+
+.modal-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.modal-close:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--color-border);
+  position: sticky;
+  bottom: 0;
+  background-color: var(--color-surface);
+}
+
+/* ---------- Formulário ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: var(--color-primary);
+}
+
+.form-field input:read-only {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+/* ---------- Itens de produto (múltiplos por pedido) ---------- */
+.items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Garante que o atributo hidden realmente esconda (flex sobrescreve) */
+[hidden] {
+  display: none !important;
+}
+
+.item-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+
+.item-row input,
+.item-row select {
+  min-width: 0;
+}
+
+.item-row .item-tipo {
+  flex: 1 1 130px;
+}
+
+.item-row .item-sabor {
+  flex: 1 1 240px;
+}
+
+.item-row .item-qtd {
+  width: 78px;
+}
+
+.item-row .item-price {
+  white-space: nowrap;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  min-width: 64px;
+  text-align: right;
+}
+
+.items-warning {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.items-help {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.btn-link {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 4px;
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  color: var(--color-primary-hover);
+}
+
+.item-remove {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.item-remove:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.items-container.invalid .item-row {
+  border-color: var(--color-danger);
+}
+
+.items-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-top: 10px;
+  color: var(--color-primary);
+}
+
+.items-total strong {
+  font-size: 1.15rem;
+}
+
+.btn-add-item {
+  margin-top: 10px;
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-add-item:hover {
+  background: var(--color-primary-soft);
+}
+
+.form-field .error-hint {
+  font-size: 0.78rem;
+  color: var(--color-danger);
+  min-height: 0;
+  display: none;
+}
+
+.form-field.invalid input,
+.form-field.invalid select {
+  border-color: var(--color-danger);
+}
+
+.form-field.invalid .error-hint {
+  display: block;
+}
+
+/* ---------- Toasts ---------- */
+.toast-container {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  background-color: var(--color-text);
+  color: var(--color-bg);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-modal);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.success { background-color: var(--color-ok); color: #fff; }
+.toast.error   { background-color: var(--color-danger); color: #fff; }
+
+/* ---------- Dashboard v1.1: gráficos e rankings ---------- */
+.dashboard-note {
+  margin: 12px 2px 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.chart-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.chart-card h2 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.chart-full {
+  grid-column: 1 / -1;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 260px;
+}
+
+.chart-wrap-sm {
+  height: 220px;
+}
+
+.charts-empty {
+  margin: -6px 0 10px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Rankings */
+.ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rank-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rank-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rank-pos {
+  flex: 0 0 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.rank-name {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rank-qty {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.rank-bar {
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--color-surface-alt);
+  overflow: hidden;
+}
+
+.rank-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+  transition: width 0.5s ease;
+}
+
+.rank-empty {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* ============================================================
+   VIEW — Produtos (catálogo)
+   ============================================================ */
+
+.page-action {
+  margin-left: auto;
+}
+
+.view-subtitle {
+  margin: 0 0 18px;
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+}
+
+.product-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.filter-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.filter-select {
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.filter-select:focus {
+  border-color: var(--color-primary);
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+
+.product-card:hover {
+  border-color: var(--color-primary);
+}
+
+.product-info {
+  min-width: 0;
+}
+
+.product-type {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  padding: 2px 9px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.product-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.product-name {
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.product-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.product-price {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.product-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* ============================================================
+   CONTROLE DE ESTOQUE
+   ============================================================ */
+
+/* Selo de estoque (badge colorido por nível) */
+.stock-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 6px;
+}
+
+.stock-ok    { background: var(--color-ok-soft);    color: var(--color-ok); }
+.stock-low   { background: var(--color-warn-soft);  color: var(--color-warn); }
+.stock-empty { background: var(--color-danger-soft); color: var(--color-danger); }
+
+/* Disponibilidade por item no formulário de pedido */
+.item-stock {
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
+.item-stock.stock-warning {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 1px;
+}
+
+/* Painéis da tela de Estoque */
+.estoque-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.estoque-panel h2 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.estoque-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.estoque-form select,
+.estoque-form input {
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  outline: none;
+  flex: 1 1 160px;
+  transition: border-color 0.15s ease;
+}
+
+.estoque-form input:focus,
+.estoque-form select:focus {
+  border-color: var(--color-primary);
+}
+
+.estoque-form input[type="number"] {
+  flex: 0 1 120px;
+}
+
+.estoque-form input[type="date"] {
+  flex: 0 1 150px;
+}
+
+.estoque-form .btn {
+  flex: 0 0 auto;
+}
+
+.estoque-aviso {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.estoque-aviso-ok {
+  color: var(--color-ok);
+  background: var(--color-ok-soft);
+}
+
+/* Tabela de estoque atual */
+.estoque-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.estoque-table th,
+.estoque-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.estoque-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.estoque-table .estoque-name {
+  width: 100%;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.estoque-table td:last-child {
+  text-align: right;
+}
+
+.estoque-table .estoque-reservado {
+  font-weight: 600;
+  color: var(--color-warn);
+}
+
+.estoque-table .estoque-produzir {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
+/* Histórico de produções */
+.estoque-history {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.estoque-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.estoque-history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.estoque-history-info strong {
+  font-size: 0.92rem;
+  color: var(--color-ok);
+}
+
+.estoque-history-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.estoque-history-item .icon-btn {
+  flex: 0 0 40px;
+}
+
+.estoque-history-empty {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  padding: 6px 0;
+}
+
+/* Checkbox do formulário de produto */
+.check-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.check-field:hover {
+  border-color: var(--color-primary);
+}
+
+.check-field input[type="checkbox"] {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  flex: 0 0 auto;
+}
+
+.check-field span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.check-field strong {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.check-field small {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+</style>
+
+<style>
+/* css/responsive.css */
+/* ============================================================
+   RESPONSIVE.CSS — Ajustes por tamanho de tela
+   ------------------------------------------------------------
+   Estratégia: mobile-first. Aqui refinamos quebras para
+   tablet (<= 768px) e celular (<= 480px).
+   ============================================================ */
+
+/* ---------- Tablet (<= 768px) ---------- */
+@media (max-width: 768px) {
+  .app-nav {
+    top: 60px;
+  }
+
+  /* Cards de estatística ficam em 3 colunas */
+  .dashboard {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  /* Cards de pedido em 2 colunas */
+  .order-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .modal-card {
+    max-width: 560px;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  .chart-wrap,
+  .chart-wrap-sm {
+    height: 220px;
+  }
+}
+
+/* ---------- Celular (<= 480px) ---------- */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 10px 14px;
+  }
+
+  .app-nav {
+    top: 56px;
+  }
+
+  .nav-tab {
+    padding: 12px 8px;
+    font-size: 0.95rem;
+  }
+
+  .view {
+    padding: 12px;
+  }
+
+  /* Dashboard: cards em 2 colunas no celular */
+  .dashboard {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Lista: 1 coluna no celular (cards largos) */
+  .order-list {
+    grid-template-columns: 1fr;
+  }
+
+  /* Formulário do modal: campos empilhados */
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-card {
+    max-width: 100%;
+    max-height: 94dvh;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .filter {
+    width: 100%;
+  }
+
+  /* FAB menor no celular */
+  .fab {
+    right: 14px;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
+    font-size: 1.6rem;
+  }
+
+  /* Gráficos empilhados no celular */
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .chart-wrap,
+  .chart-wrap-sm {
+    height: 200px;
+  }
+
+  .toast-container {
+    bottom: 80px;
+  }
+}
+
+/* ---------- Telas muito pequenas (<= 360px) ---------- */
+@media (max-width: 360px) {
+  .stat-value {
+    font-size: 1.05rem;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+  }
+
+  .brand {
+    font-size: 1.05rem;
+  }
+}
+
+</style>
+<!-- CSS_INLINE:END -->
+
+
+  <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=optional">
 
   <!-- Acelera as chamadas à API do Supabase (deve bater com js/config.js) -->
   <link rel="preconnect" href="https://xzkcbygjxvcevoqblneo.supabase.co" crossorigin>
@@ -30,7 +1614,10 @@
        ============================================================ -->
   <header class="app-header">
     <div class="header-left">
-      <img class="logo" src="logo.png?v=2" alt="Logo Punk Bolos" aria-hidden="true">
+      <picture>
+        <source type="image/webp" srcset="logo.webp?v=2">
+        <img class="logo" src="logo.png?v=2" alt="Logo Punk Bolos" aria-hidden="true" width="180" height="160" fetchpriority="high">
+      </picture>
       <span class="brand">Punk Bolos</span>
     </div>
     <div class="header-right">
@@ -43,17 +1630,17 @@
   </header>
 
   <!-- ============================================================
-       NAVEGAÇÃO — abas principais (SPA: Início / Pedidos)
+       NAVEGAÇÃO — abas principais (SPA: Dashboard / Produtos / Produção / Pedidos)
        ============================================================ -->
   <nav class="app-nav" aria-label="Navegação principal">
-    <button class="nav-tab active" type="button" data-view-target="dashboard">Início</button>
-    <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
+    <button class="nav-tab active" type="button" data-view-target="dashboard">Dashboard</button>
     <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
-    <button class="nav-tab" type="button" data-view-target="estoque">Estoque</button>
+    <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
+    <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
   </nav>
 
   <!-- ============================================================
-       FILTRO POR PERÍODO — compartilhado entre Início e Pedidos
+       FILTRO POR PERÍODO — compartilhado entre Dashboard e Pedidos
        Controlado por js/modules/dateFilter.js
        ============================================================ -->
   <section class="date-filter" aria-label="Filtrar por período">
@@ -279,18 +1866,19 @@
   </main>
 
   <!-- ============================================================
-       VIEW — Estoque (produção + saldo por produto)
+       VIEW — Produção (produção + saldo por produto)
        Controlada por js/modules/estoqueView.js
        ============================================================ -->
   <main id="view-estoque" class="view">
     <div class="page-title">
-      <h1>Estoque</h1>
+      <h1>Produção</h1>
       <span id="estoqueCount" class="count-badge">0</span>
     </div>
 
     <p class="view-subtitle">
-      Registre aqui a quantidade produzida de cada produto. Ao CONCLUIR pedidos,
-      o estoque é abatido automaticamente. Produtos sem "controlar estoque" ficam ilimitados.
+      Registre aqui a quantidade produzida de cada produto. A produção é
+      OBRIGATÓRIA para vender: pedidos com produtos sem produção não podem
+      ser salvos nem concluídos. Ao CONCLUIR pedidos, o estoque é abatido.
     </p>
 
     <section class="estoque-panel">
@@ -313,13 +1901,14 @@
     </section>
 
     <section class="estoque-panel">
-      <h2>Estoque atual</h2>
+      <h2>Saldo por produto</h2>
       <div id="estoqueTableWrap">
-        <table class="estoque-table" aria-label="Estoque atual por produto">
+        <table class="estoque-table" aria-label="Saldo por produto">
           <thead>
             <tr>
               <th>Produto</th>
               <th>Produzido</th>
+              <th>Reservado</th>
               <th>Vendido</th>
               <th>Disponível</th>
               <th></th>
@@ -330,8 +1919,8 @@
       </div>
       <div id="estoqueEmpty" class="empty-state" hidden>
         <span class="empty-icon" aria-hidden="true">📦</span>
-        <p>Nenhum produto com controle de estoque.<br>
-          Ative em <strong>Produtos</strong> → Editar → <em>Controlar estoque deste produto</em>.</p>
+        <p>Nenhum produto cadastrado ainda.<br>
+          Cadastre em <strong>Produtos</strong> para começar a registrar produção.</p>
       </div>
     </section>
 
@@ -434,6 +2023,7 @@
                 <option value="Dinheiro">Dinheiro</option>
                 <option value="Crédito">Crédito</option>
                 <option value="Débito">Débito</option>
+                <option value="Cortesia">Cortesia</option>
               </select>
             </div>
 
@@ -518,14 +2108,6 @@
             <textarea id="field-detalhes" rows="3" placeholder="Ex.: Fatia média com recheio de brigadeiro e morango"></textarea>
             <span class="error-hint" id="error-detalhes"></span>
           </div>
-
-          <label class="check-field">
-            <input type="checkbox" id="field-controla-estoque">
-            <span>
-              <strong>Controlar estoque deste produto</strong>
-              <small>Registre a produção na aba Estoque; o saldo é abatido ao concluir pedidos. Desligado = produto ilimitado.</small>
-            </span>
-          </label>
         </div>
 
         <div class="modal-footer">
@@ -543,6 +2125,6 @@
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=23"></script>
+  <script type="module" src="js/app.js?v=24"></script>
 </body>
 </html>

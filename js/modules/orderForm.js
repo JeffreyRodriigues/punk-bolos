@@ -12,9 +12,9 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as order from './order.js?v=15';
-import * as product from './product.js?v=16';
-import * as estoque from './estoque.js?v=1';
+import * as order from './order.js?v=16';
+import * as product from './product.js?v=17';
+import * as estoque from './estoque.js?v=4';
 import { formatCurrency } from '../utils/money.js?v=12';
 import { defaultItemType } from '../utils/describe.js?v=1';
 
@@ -57,6 +57,30 @@ export function setCreateProductHandler(cb) {
 /* ---------- Linhas de item (produto do catálogo) ---------- */
 
 /**
+ * Descobre o produto do catálogo que originou um item (em edição).
+ * Prioriza produtoId (novo formato); senão saborId (transição);
+ * por último casa por tipo+tamanho+valor (pedidos legados/importados).
+ * @param {Object} item - Item do pedido.
+ * @returns {string} Id do produto (ou "" quando não resolve).
+ */
+function resolveItemProductId(item) {
+  if (!item || typeof item !== 'object') return '';
+  if (item.produtoId) {
+    const byId = product.getProducts().find((p) => p.id === item.produtoId);
+    if (byId) return byId.id;
+  }
+  if (item.saborId) {
+    const byId = product.getProducts().find((p) => p.id === item.saborId);
+    if (byId) return byId.id;
+  }
+  if (item.tipoProduto) {
+    const match = product.matchProduct(item);
+    if (match) return match.id;
+  }
+  return '';
+}
+
+/**
  * Cria uma linha de item com seleção em cascata:
  * Tipo de produto → Sabor (produtos do catálogo daquele tipo) → Quantidade.
  * Nada é digitado — título e valor vêm do catálogo.
@@ -82,20 +106,34 @@ function createItemRow(item = {}) {
   saborSelect.className = 'item-sabor';
   saborSelect.setAttribute('aria-label', 'Sabor / produto');
 
+  // Produto que originou o item em edição (sempre exibido, mesmo sem estoque).
+  const edittingProductId = resolveItemProductId(item);
+
   /**
    * Popula o seletor de sabor com os produtos do catálogo do tipo
    * escolhido, preservando a seleção atual quando ainda válida.
+   * Só mostra produtos com DISPONIBILIDADE para venda (disponível > 0),
+   * já que não é possível vender sem produção. Ao editar um pedido, o
+   * produto do item atual é sempre incluído (mesmo sem o item segue
+   * fazendo parte do pedido).
    */
   function buildSaborOptions() {
     const tipo = tipoSelect.value;
     const previous = saborSelect.value;
-    const products = product.getProducts().filter((p) => p.tipoProduto === tipo);
+    const editingId = document.getElementById('field-id').value;
+    const catalogByType = product.getProducts().filter((p) => p.tipoProduto === tipo);
+    const products = estoque.produtosDisponiveis(catalogByType, {
+      excludeOrderId: editingId,
+      requiredId: edittingProductId || '',
+    });
 
     saborSelect.innerHTML = '';
     if (products.length === 0) {
       const opt = document.createElement('option');
       opt.value = '';
-      opt.textContent = `— nenhum produto de "${tipo}" no catálogo —`;
+      opt.textContent = catalogByType.length > 0
+        ? `— nenhum produto de "${tipo}" disponível agora —`
+        : `— nenhum produto de "${tipo}" no catálogo —`;
       saborSelect.appendChild(opt);
       return;
     }
@@ -138,18 +176,26 @@ function createItemRow(item = {}) {
   stockEl.hidden = true;
 
   /**
-   * Mostra o preço unitário do produto selecionado e, quando o produto
-   * tem controle de estoque, o saldo disponível (avisa se a quantidade
-   * digitada excede o estoque).
+   * Mostra o preço unitário do produto selecionado e o saldo disponível
+   * (avisa se a quantidade digitada excede o estoque). Como a produção
+   * é obrigatória, o estoque é exibido para qualquer produto.
    */
   function updateItemInfo() {
     const chosen = product.getProducts().find((p) => p.id === saborSelect.value);
     priceEl.textContent = chosen ? formatCurrency(chosen.valor) : '';
 
-    if (chosen && chosen.controlaEstoque) {
+    if (chosen) {
       const disp = estoque.disponivel(chosen);
+      const produzido = estoque.totalProduzido(chosen.id);
+      const reservado = estoque.totalReservado(chosen.id);
       stockEl.hidden = false;
-      stockEl.textContent = `Estoque: ${disp}`;
+      if (produzido <= 0) {
+        stockEl.textContent = 'Sem produção registrada';
+      } else if (reservado > 0) {
+        stockEl.textContent = `Disponível: ${disp} (${reservado} reservado)`;
+      } else {
+        stockEl.textContent = `Estoque: ${disp}`;
+      }
       stockEl.className = `item-stock stock-${estoque.stockStatus(disp)}`;
       const qtd = Number(qtdInput.value) || 0;
       if (qtd > disp) {
@@ -174,13 +220,9 @@ function createItemRow(item = {}) {
   });
 
   // Ao editar: reconhece o produto que originou o item
-  if (item.saborId && [...saborSelect.options].some((o) => o.value === item.saborId)) {
-    saborSelect.value = item.saborId;
-  } else if (item.tipoProduto) {
-    const match = product.matchProduct(item);
-    if (match) {
-      saborSelect.value = match.id;
-    }
+  const resolvedId = resolveItemProductId(item);
+  if (resolvedId && [...saborSelect.options].some((o) => o.value === resolvedId)) {
+    saborSelect.value = resolvedId;
   }
 
   // Exibe o preço após restaurar a seleção (senão some ao reabrir o pedido)
@@ -273,9 +315,11 @@ export function openNew() {
   document.getElementById('field-pagamento').value = 'PIX';
   document.getElementById('field-entrega').value = 'Retirada';
 
-  // Reinicia com uma linha de item vazia (no tipo que tem produtos)
+  // Reinicia com uma linha de item vazia (no primeiro tipo que tiver
+  // produtos com disponibilidade para venda)
   itemsContainer.innerHTML = '';
-  addItemRow({ tipoProduto: defaultItemType(product.getProducts(), order.PRODUCT_TYPES) });
+  const disponiveis = estoque.produtosDisponiveis(product.getProducts());
+  addItemRow({ tipoProduto: defaultItemType(disponiveis.length > 0 ? disponiveis : product.getProducts(), order.PRODUCT_TYPES) });
   totalEl.textContent = formatCurrency(0);
 
   titleEl.textContent = 'Novo Pedido';
@@ -407,9 +451,11 @@ export function restorePending() {
 
 /**
  * Recalcula e exibe o Valor Total somando todas as linhas de item.
+ * Pedidos com pagamento CORTESIA ficam com valor R$ 0,00.
  */
 function recalcTotal() {
-  totalEl.textContent = formatCurrency(order.totalValue(readItems()));
+  const pagamento = document.getElementById('field-pagamento').value;
+  totalEl.textContent = formatCurrency(order.orderTotalValue(readItems(), pagamento));
 }
 
 /* ---------- Validação ---------- */
@@ -481,17 +527,16 @@ function handleSubmit(event) {
     return false;
   }
 
-  // Estoque: bloqueia na criação/salvamento (exceto pedidos cancelados).
+  // Produção obrigatória: bloqueia na criação/salvamento (exceto pedidos
+  // cancelados) com mensagem explícita quando falta produção.
   // O abate em si ocorre ao CONCLUIR o pedido.
   if (data.status !== 'Cancelado') {
     const id = document.getElementById('field-id').value;
     const stockErrors = estoque.validateItens(data.itens, { excludeOrderId: id });
     if (stockErrors.length > 0) {
-      const detail = stockErrors
-        .map((e) => `"${estoque.nomeProduto(e.produto)}" — disponível: ${e.disponivel}`)
-        .join('; ');
-      showErrors({ itens: `Não há estoque suficiente para a venda: ${detail}.` });
-      showToast('Não há mais produto disponível para a venda.', 'error');
+      const detail = stockErrors.map((e) => estoque.describeErro(e)).join('; ');
+      showErrors({ itens: `Produto sem produção para a venda: ${detail}` });
+      showToast('Para vender, o produto precisa ter sido produzido.', 'error');
       return false;
     }
   }
@@ -527,6 +572,11 @@ function handleSubmit(event) {
 
 // Botão "Adicionar item"
 addItemBtn.addEventListener('click', () => addItemRow({ tipoProduto: defaultItemType(product.getProducts(), order.PRODUCT_TYPES) }));
+
+// Forma de pagamento: CORTESIA zera o valor total do pedido
+document.getElementById('field-pagamento').addEventListener('change', () => {
+  recalcTotal();
+});
 
 // Atalho para cadastrar produto que não está no catálogo
 // (wrapper: captura o callback atual, não o valor no momento do bind)

@@ -8,7 +8,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as product from './product.js?v=16';
+import * as product from './product.js?v=17';
 import { showToast } from './toast.js?v=12';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
@@ -70,7 +70,6 @@ export function openEdit(productToEdit) {
   document.getElementById('field-tamanho-produto').value = productToEdit.tamanho || 'P';
   document.getElementById('field-valor').value = productToEdit.valor != null ? productToEdit.valor : '';
   document.getElementById('field-detalhes').value = productToEdit.detalhes || '';
-  document.getElementById('field-controla-estoque').checked = Boolean(productToEdit.controlaEstoque);
   updateTamanhoVisibility();
 
   titleEl.textContent = 'Editar produto';
@@ -136,7 +135,6 @@ function readFormData() {
     tamanho: document.getElementById('field-tamanho-produto').value,
     valor: document.getElementById('field-valor').value,
     detalhes: document.getElementById('field-detalhes').value,
-    controlaEstoque: document.getElementById('field-controla-estoque').checked,
   };
 }
 

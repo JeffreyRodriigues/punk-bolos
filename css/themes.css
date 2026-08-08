@@ -7,9 +7,11 @@
    Estrutura:
    :root        -> valores do tema CLARO (padrão)
    html.dark    -> sobrescreve as variáveis para o tema ESCURO
-   ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
+   NOTA: a fonte Quicksand é carregada por <link> no HTML (preconnect
+   + stylesheet com carga assíncrona), NÃO via @import: @import serializa
+   os downloads e bloqueia a renderização, penalizando o LCP.
+   ============================================================ */
 
 :root {
   /* Paleta de cores — tema claro */

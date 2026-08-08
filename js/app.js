@@ -11,7 +11,7 @@
 
    Responsabilidades:
    - carregar os dados da nuvem (storage.init) antes do 1º render
-   - navegação entre telas (abas Início / Pedidos / Produtos)
+   - navegação entre telas (abas Dashboard / Produtos / Produção / Pedidos)
    - botão flutuante (FAB) abre o modal "Novo Pedido"
    - ações de status (Concluir / Cancelar) com atualização automática
    - botão "Atualizar" recarrega os dados compartilhados
@@ -21,22 +21,23 @@
 import * as theme from './utils/theme.js?v=13';
 import * as storage from './modules/storage.js?v=13';
 import * as auth from './modules/auth.js?v=13';
-import * as orderForm from './modules/orderForm.js?v=17';
+import * as orderForm from './modules/orderForm.js?v=21';
 import * as orderList from './modules/orderList.js?v=14';
 import * as dashboard from './modules/dashboard.js?v=14';
 import * as dateFilter from './modules/dateFilter.js?v=13';
-import * as productForm from './modules/productForm.js?v=16';
-import * as productList from './modules/productList.js?v=15';
-import * as importExport from './modules/importExport.js?v=15';
-import * as estoque from './modules/estoque.js?v=1';
-import * as estoqueView from './modules/estoqueView.js?v=3';
+import * as productForm from './modules/productForm.js?v=17';
+import * as productList from './modules/productList.js?v=16';
+import * as importExport from './modules/importExport.js?v=16';
+import * as estoque from './modules/estoque.js?v=4';
+import * as estoqueView from './modules/estoqueView.js?v=5';
 import { showToast } from './modules/toast.js?v=12';
 
 /* ---------- Navegação entre telas ---------- */
 
 /**
- * Alterna a tela visível (Início / Pedidos / Produtos) e atualiza a aba ativa.
- * @param {string} target - Id da view ("dashboard" | "orders" | "produtos").
+ * Alterna a tela visível (Dashboard / Produtos / Produção / Pedidos) e
+ * atualiza a aba ativa.
+ * @param {string} target - Id da view ("dashboard" | "orders" | "produtos" | "estoque").
  */
 function navigate(target) {
   document.querySelectorAll('.view').forEach((view) => {
@@ -46,7 +47,7 @@ function navigate(target) {
     tab.classList.toggle('active', tab.dataset.viewTarget === target);
   });
 
-  // Filtro de período e botão flutuante só fazem sentido em Início/Pedidos
+  // Filtro de período e botão flutuante só fazem sentido em Dashboard/Pedidos
   const hasPeriodFilter = target === 'dashboard' || target === 'orders';
   document.querySelector('.date-filter').hidden = !hasPeriodFilter;
   document.getElementById('fabNewOrder').hidden = target !== 'orders';
@@ -78,14 +79,14 @@ function updateStatus(orderToUpdate, newStatus, successMessage) {
   const index = orders.findIndex((o) => o.id === orderToUpdate.id);
   if (index === -1) return;
 
-  // Ao concluir, garante que ainda há estoque para os itens do pedido
+  // Ao concluir, garante que ainda há estoque para os itens do pedido.
+  // Passa excludeOrderId para não contar a própria reserva (o pedido ora
+  // em andamento) contra a conclusão.
   if (newStatus === 'Concluído') {
-    const stockErrors = estoque.validateItens(orderToUpdate.itens);
+    const stockErrors = estoque.validateItens(orderToUpdate.itens, { excludeOrderId: orderToUpdate.id });
     if (stockErrors.length > 0) {
-      const detail = stockErrors
-        .map((e) => `"${estoque.nomeProduto(e.produto)}" — disponível: ${e.disponivel}`)
-        .join('; ');
-      showToast(`Não há mais produto disponível para a venda: ${detail}`, 'error');
+      const detail = stockErrors.map((e) => estoque.describeErro(e)).join('; ');
+      showToast(`Não é possível concluir — produto sem produção: ${detail}`, 'error');
       return;
     }
   }
@@ -109,7 +110,7 @@ function init() {
   // Erros de sincronização com a nuvem ficam visíveis ao usuário
   storage.setErrorHandler((message) => showToast(message, 'error'));
 
-  // Filtro por período (Início + Pedidos)
+  // Filtro por período (Dashboard + Pedidos)
   dateFilter.init();
   dateFilter.subscribe(() => {
     dashboard.render();
