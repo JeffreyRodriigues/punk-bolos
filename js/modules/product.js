@@ -7,8 +7,8 @@
    sem digitar nada — o valor vem do cadastro.
    ============================================================ */
 
-import * as storage from './storage.js?v=12';
-import { PRODUCT_TYPES, CAKE_SIZES } from './order.js?v=14';
+import * as storage from './storage.js?v=13';
+import { PRODUCT_TYPES, CAKE_SIZES } from './order.js?v=15';
 
 /**
  * Gera um id único para o produto.
@@ -33,6 +33,7 @@ export function createProduct(data = {}) {
     tamanho: tipoProduto === 'Bolo Inteiro' ? String(data.tamanho || '').trim() : '',
     valor: Number(data.valor) || 0,
     detalhes: String(data.detalhes || '').trim(),
+    controlaEstoque: Boolean(data.controlaEstoque),
   };
 }
 

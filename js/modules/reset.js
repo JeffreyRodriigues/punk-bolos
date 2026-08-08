@@ -9,8 +9,8 @@
    e volta para o login.
    ============================================================ */
 
-import * as auth from './auth.js?v=12';
-import * as theme from '../utils/theme.js?v=12';
+import * as auth from './auth.js?v=13';
+import * as theme from '../utils/theme.js?v=13';
 
 const resetSection = document.getElementById('resetSection');
 const statusSection = document.getElementById('statusSection');

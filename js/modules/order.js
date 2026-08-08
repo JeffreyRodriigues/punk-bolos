@@ -20,7 +20,7 @@
    }
    ============================================================ */
 
-import * as storage from './storage.js?v=12';
+import * as storage from './storage.js?v=13';
 
 /** Tipos de produto aceitos pelo sistema. */
 export const PRODUCT_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro'];
@@ -94,6 +94,7 @@ export function normalizeItems(rawItems) {
 
   return rawItems
     .map((item) => ({
+      produtoId: item.produtoId ? String(item.produtoId) : '',
       tipoProduto: String(item.tipoProduto || '').trim(),
       tamanho: (item.tamanho || '').trim(),
       sabor: (item.sabor || '').trim(),
@@ -164,6 +165,9 @@ export function createOrder(data, numero) {
     pagamento: data.pagamento || 'PIX',
     entrega: data.entrega || 'Retirada',
     observacoes: (data.observacoes || '').trim(),
+    // Pedidos criados pelo app a partir de agora consomem estoque.
+    // Importações/legados são marcados como false (histórico).
+    consomeEstoque: data.consomeEstoque !== false,
   };
 }
 

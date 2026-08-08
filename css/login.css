@@ -4,6 +4,7 @@
    ============================================================ */
 
 .login-body {
+  font-family: var(--font-family);
   min-height: 100vh;
   display: grid;
   place-items: center;
@@ -25,7 +26,9 @@
 }
 
 .login-logo {
-  font-size: 2rem;
+  height: 56px;
+  width: auto;
+  object-fit: contain;
 }
 
 .login-brand-name {

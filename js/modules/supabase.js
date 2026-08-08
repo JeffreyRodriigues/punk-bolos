@@ -323,3 +323,37 @@ export async function deleteProduct(id) {
     auth: true,
   });
 }
+
+/* ---------- Produções (productions) ---------- */
+
+/** Lista todas as produções (linhas cruas do banco). */
+export async function listProductions() {
+  return request('/rest/v1/productions?select=*', { auth: true });
+}
+
+/** Insere uma produção. @param {Object} row - Linha com colunas snake_case. */
+export async function insertProduction(row) {
+  return request('/rest/v1/productions', {
+    method: 'POST',
+    auth: true,
+    headers: { Prefer: 'return=representation' },
+    body: row,
+  });
+}
+
+/** Atualiza uma produção pelo id. */
+export async function updateProduction(id, row) {
+  return request(`/rest/v1/productions?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    auth: true,
+    body: row,
+  });
+}
+
+/** Exclui uma produção pelo id. */
+export async function deleteProduction(id) {
+  return request(`/rest/v1/productions?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}

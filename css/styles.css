@@ -34,7 +34,7 @@ button,
 input,
 select,
 textarea {
-  font-family: inherit;
+  font-family: var(--font-family);
   font-size: 1rem;
   color: inherit;
 }
@@ -71,7 +71,10 @@ input[type="number"] {
 }
 
 .logo {
-  font-size: 1.5rem;
+  height: 38px;
+  width: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .brand {
@@ -511,6 +514,12 @@ input[type="number"] {
 
 .fab:active {
   transform: scale(0.94);
+}
+
+/* Oculta o filtro de período e o FAB nas telas que não os usam */
+.date-filter[hidden],
+.fab[hidden] {
+  display: none !important;
 }
 
 /* ---------- Botões ---------- */
@@ -1107,4 +1116,227 @@ body.modal-open {
 .product-actions {
   display: flex;
   gap: 4px;
+}
+
+/* ============================================================
+   CONTROLE DE ESTOQUE
+   ============================================================ */
+
+/* Selo de estoque (badge colorido por nível) */
+.stock-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 6px;
+}
+
+.stock-ok    { background: var(--color-ok-soft);    color: var(--color-ok); }
+.stock-low   { background: var(--color-warn-soft);  color: var(--color-warn); }
+.stock-empty { background: var(--color-danger-soft); color: var(--color-danger); }
+
+/* Disponibilidade por item no formulário de pedido */
+.item-stock {
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
+.item-stock.stock-warning {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 1px;
+}
+
+/* Painéis da tela de Estoque */
+.estoque-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.estoque-panel h2 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.estoque-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.estoque-form select,
+.estoque-form input {
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  outline: none;
+  flex: 1 1 160px;
+  transition: border-color 0.15s ease;
+}
+
+.estoque-form input:focus,
+.estoque-form select:focus {
+  border-color: var(--color-primary);
+}
+
+.estoque-form input[type="number"] {
+  flex: 0 1 120px;
+}
+
+.estoque-form input[type="date"] {
+  flex: 0 1 150px;
+}
+
+.estoque-form .btn {
+  flex: 0 0 auto;
+}
+
+.estoque-aviso {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.estoque-aviso-ok {
+  color: var(--color-ok);
+  background: var(--color-ok-soft);
+}
+
+/* Tabela de estoque atual */
+.estoque-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.estoque-table th,
+.estoque-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.estoque-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.estoque-table .estoque-name {
+  width: 100%;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.estoque-table td:last-child {
+  text-align: right;
+}
+
+.estoque-table .estoque-produzir {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
+/* Histórico de produções */
+.estoque-history {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.estoque-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.estoque-history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.estoque-history-info strong {
+  font-size: 0.92rem;
+  color: var(--color-ok);
+}
+
+.estoque-history-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.estoque-history-item .icon-btn {
+  flex: 0 0 40px;
+}
+
+.estoque-history-empty {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  padding: 6px 0;
+}
+
+/* Checkbox do formulário de produto */
+.check-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.check-field:hover {
+  border-color: var(--color-primary);
+}
+
+.check-field input[type="checkbox"] {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  flex: 0 0 auto;
+}
+
+.check-field span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.check-field strong {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.check-field small {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
 }

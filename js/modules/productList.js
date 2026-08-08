@@ -6,7 +6,8 @@
    exclusão ao próprio módulo (com confirmação).
    ============================================================ */
 
-import * as storage from './storage.js?v=12';
+import * as storage from './storage.js?v=13';
+import * as estoque from './estoque.js?v=1';
 import { formatCurrency } from '../utils/money.js?v=12';
 import { showToast } from './toast.js?v=12';
 
@@ -115,6 +116,15 @@ function createCard(p) {  const card = document.createElement('article');
   const price = document.createElement('div');
   price.className = 'product-price';
   price.textContent = formatCurrency(p.valor);
+
+  // Estoque: badge colorido apenas para produtos com controle ativo
+  if (p.controlaEstoque) {
+    const disp = estoque.disponivel(p);
+    const stock = document.createElement('span');
+    stock.className = `stock-badge stock-${estoque.stockStatus(disp)}`;
+    stock.textContent = disp <= 0 ? 'Sem estoque' : `Estoque: ${disp}`;
+    info.appendChild(stock);
+  }
 
   const actions = document.createElement('div');
   actions.className = 'product-actions';

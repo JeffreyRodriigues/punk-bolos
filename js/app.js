@@ -18,16 +18,18 @@
    - re-render global após qualquer mudança de dados
    ============================================================ */
 
-import * as theme from './utils/theme.js?v=12';
-import * as storage from './modules/storage.js?v=12';
-import * as auth from './modules/auth.js?v=12';
-import * as orderForm from './modules/orderForm.js?v=16';
-import * as orderList from './modules/orderList.js?v=13';
-import * as dashboard from './modules/dashboard.js?v=13';
-import * as dateFilter from './modules/dateFilter.js?v=12';
-import * as productForm from './modules/productForm.js?v=15';
-import * as productList from './modules/productList.js?v=14';
-import * as importExport from './modules/importExport.js?v=14';
+import * as theme from './utils/theme.js?v=13';
+import * as storage from './modules/storage.js?v=13';
+import * as auth from './modules/auth.js?v=13';
+import * as orderForm from './modules/orderForm.js?v=17';
+import * as orderList from './modules/orderList.js?v=14';
+import * as dashboard from './modules/dashboard.js?v=14';
+import * as dateFilter from './modules/dateFilter.js?v=13';
+import * as productForm from './modules/productForm.js?v=16';
+import * as productList from './modules/productList.js?v=15';
+import * as importExport from './modules/importExport.js?v=15';
+import * as estoque from './modules/estoque.js?v=1';
+import * as estoqueView from './modules/estoqueView.js?v=3';
 import { showToast } from './modules/toast.js?v=12';
 
 /* ---------- Navegação entre telas ---------- */
@@ -44,11 +46,18 @@ function navigate(target) {
     tab.classList.toggle('active', tab.dataset.viewTarget === target);
   });
 
+  // Filtro de período e botão flutuante só fazem sentido em Início/Pedidos
+  const hasPeriodFilter = target === 'dashboard' || target === 'orders';
+  document.querySelector('.date-filter').hidden = !hasPeriodFilter;
+  document.getElementById('fabNewOrder').hidden = target !== 'orders';
+
   // A cada troca de tela, garante dados atualizados
   if (target === 'dashboard') {
     dashboard.render();
   } else if (target === 'produtos') {
     productList.render();
+  } else if (target === 'estoque') {
+    estoqueView.render();
   } else {
     orderList.render();
   }
@@ -58,6 +67,8 @@ function navigate(target) {
 
 /**
  * Atualiza o status de um pedido e re-renderiza tudo.
+ * Ao CONCLUIR, valida o estoque (bloqueia a conclusão se não houver
+ * produto disponível para a venda).
  * @param {Object} orderToUpdate - Pedido a alterar.
  * @param {string} newStatus - Novo status.
  * @param {string} successMessage - Mensagem de confirmação.
@@ -67,11 +78,25 @@ function updateStatus(orderToUpdate, newStatus, successMessage) {
   const index = orders.findIndex((o) => o.id === orderToUpdate.id);
   if (index === -1) return;
 
+  // Ao concluir, garante que ainda há estoque para os itens do pedido
+  if (newStatus === 'Concluído') {
+    const stockErrors = estoque.validateItens(orderToUpdate.itens);
+    if (stockErrors.length > 0) {
+      const detail = stockErrors
+        .map((e) => `"${estoque.nomeProduto(e.produto)}" — disponível: ${e.disponivel}`)
+        .join('; ');
+      showToast(`Não há mais produto disponível para a venda: ${detail}`, 'error');
+      return;
+    }
+  }
+
   orders[index].status = newStatus;
   storage.save(orders);
 
   orderList.render();
   dashboard.render();
+  estoqueView.render();
+  productList.render();
   showToast(successMessage);
 }
 
@@ -105,6 +130,7 @@ function init() {
         dashboard.render();
         orderList.render();
         productList.render();
+        estoqueView.render();
         showToast('Dados atualizados!');
       })
       .catch(() => {
@@ -122,6 +148,11 @@ function init() {
   document.querySelectorAll('.nav-tab').forEach((tab) => {
     tab.addEventListener('click', () => navigate(tab.dataset.viewTarget));
   });
+
+  // Estado inicial de visibilidade (FAB só na tela de Pedidos)
+  const activeView = document.querySelector('.view.active');
+  const activeTarget = activeView ? activeView.id.replace('view-', '') : 'dashboard';
+  navigate(activeTarget);
 
   // Botão flutuante: abre novo pedido (ou novo produto na view Produtos)
   document.getElementById('fabNewOrder').addEventListener('click', () => {
@@ -149,6 +180,8 @@ function init() {
   orderForm.setChangeListener(() => {
     orderList.render();
     dashboard.render();
+    estoqueView.render();
+    productList.render();
   });
 
   // Atalho "cadastrar produto" dentro do modal de pedido:
@@ -165,15 +198,24 @@ function init() {
     productList.render();
     orderList.render();
     dashboard.render();
+    estoqueView.render();
   });
   productForm.setChangeListener(() => {
     productList.render();
     orderList.render();
     dashboard.render();
+    estoqueView.render();
     // Se o cadastro veio do modal de pedido, volta ao pedido preservado
     if (orderForm.restorePending()) {
       navigate('orders');
     }
+  });
+
+  // Produção (estoque): após registrar/excluir, reflete o estoque no catálogo
+  estoqueView.setChangeListener(() => {
+    estoqueView.render();
+    productList.render();
+    orderList.render();
   });
 
   // Importar / exportar planilha (CSV)
@@ -218,6 +260,7 @@ function init() {
     dashboard.render();
     orderList.render();
     productList.render();
+    estoqueView.render();
   });
 }
 

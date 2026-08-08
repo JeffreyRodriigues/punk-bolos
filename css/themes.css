@@ -9,6 +9,8 @@
    html.dark    -> sobrescreve as variáveis para o tema ESCURO
    ============================================================ */
 
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
+
 :root {
   /* Paleta de cores — tema claro */
   --color-bg: #f4f5f9;
@@ -44,7 +46,7 @@
   --radius-sm: 10px;
 
   /* Fonte */
-  --font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --font-family: "Quicksand", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
 }
 
 /* ============================================================
