@@ -70,7 +70,6 @@ export function openEdit(productToEdit) {
   document.getElementById('field-tamanho-produto').value = productToEdit.tamanho || 'P';
   document.getElementById('field-valor').value = productToEdit.valor != null ? productToEdit.valor : '';
   document.getElementById('field-detalhes').value = productToEdit.detalhes || '';
-  document.getElementById('field-controla-estoque').checked = Boolean(productToEdit.controlaEstoque);
   updateTamanhoVisibility();
 
   titleEl.textContent = 'Editar produto';
@@ -136,7 +135,6 @@ function readFormData() {
     tamanho: document.getElementById('field-tamanho-produto').value,
     valor: document.getElementById('field-valor').value,
     detalhes: document.getElementById('field-detalhes').value,
-    controlaEstoque: document.getElementById('field-controla-estoque').checked,
   };
 }
 

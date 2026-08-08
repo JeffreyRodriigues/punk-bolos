@@ -14,7 +14,7 @@
 import * as storage from './storage.js?v=13';
 import * as order from './order.js?v=15';
 import * as product from './product.js?v=16';
-import * as estoque from './estoque.js?v=1';
+import * as estoque from './estoque.js?v=2';
 import { formatCurrency } from '../utils/money.js?v=12';
 import { defaultItemType } from '../utils/describe.js?v=1';
 
@@ -138,18 +138,21 @@ function createItemRow(item = {}) {
   stockEl.hidden = true;
 
   /**
-   * Mostra o preço unitário do produto selecionado e, quando o produto
-   * tem controle de estoque, o saldo disponível (avisa se a quantidade
-   * digitada excede o estoque).
+   * Mostra o preço unitário do produto selecionado e o saldo disponível
+   * (avisa se a quantidade digitada excede o estoque). Como a produção
+   * é obrigatória, o estoque é exibido para qualquer produto.
    */
   function updateItemInfo() {
     const chosen = product.getProducts().find((p) => p.id === saborSelect.value);
     priceEl.textContent = chosen ? formatCurrency(chosen.valor) : '';
 
-    if (chosen && chosen.controlaEstoque) {
+    if (chosen) {
       const disp = estoque.disponivel(chosen);
+      const produzido = estoque.totalProduzido(chosen.id);
       stockEl.hidden = false;
-      stockEl.textContent = `Estoque: ${disp}`;
+      stockEl.textContent = produzido <= 0
+        ? 'Sem produção registrada'
+        : `Estoque: ${disp}`;
       stockEl.className = `item-stock stock-${estoque.stockStatus(disp)}`;
       const qtd = Number(qtdInput.value) || 0;
       if (qtd > disp) {
@@ -481,17 +484,16 @@ function handleSubmit(event) {
     return false;
   }
 
-  // Estoque: bloqueia na criação/salvamento (exceto pedidos cancelados).
+  // Produção obrigatória: bloqueia na criação/salvamento (exceto pedidos
+  // cancelados) com mensagem explícita quando falta produção.
   // O abate em si ocorre ao CONCLUIR o pedido.
   if (data.status !== 'Cancelado') {
     const id = document.getElementById('field-id').value;
     const stockErrors = estoque.validateItens(data.itens, { excludeOrderId: id });
     if (stockErrors.length > 0) {
-      const detail = stockErrors
-        .map((e) => `"${estoque.nomeProduto(e.produto)}" — disponível: ${e.disponivel}`)
-        .join('; ');
-      showErrors({ itens: `Não há estoque suficiente para a venda: ${detail}.` });
-      showToast('Não há mais produto disponível para a venda.', 'error');
+      const detail = stockErrors.map((e) => estoque.describeErro(e)).join('; ');
+      showErrors({ itens: `Produto sem produção para a venda: ${detail}` });
+      showToast('Para vender, o produto precisa ter sido produzido.', 'error');
       return false;
     }
   }

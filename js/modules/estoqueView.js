@@ -1,5 +1,5 @@
 /* ============================================================
-   ESTOQUEVIEW.JS — Tela de Estoque (produção + saldo)
+   ESTOQUEVIEW.JS — Tela de Produção (produção + saldo)
    ------------------------------------------------------------
    - Formulário para registrar produção (produto + data + quantidade)
    - Tabela de estoque atual por produto (produzido/vendido/disponível)
@@ -10,7 +10,7 @@
 import * as storage from './storage.js?v=13';
 import * as product from './product.js?v=16';
 import * as order from './order.js?v=15';
-import * as estoque from './estoque.js?v=1';
+import * as estoque from './estoque.js?v=2';
 import { showToast } from './toast.js?v=12';
 import { formatDate } from '../utils/money.js?v=12';
 import { sortKey } from '../utils/describe.js?v=1';
@@ -49,15 +49,14 @@ function showAviso(message, ok = false) {
 
 /**
  * Preenche o seletor de TIPO de produto com os tipos que possuem ao
- * menos um produto com controle de estoque (ex.: Fatia, Punkitos...).
+ * menos um produto no catálogo.
  * @param {string} selectedTipo - Tipo a preselecionar (se ainda existir).
  */
 function populateTipoSelect(selectedTipo = '') {
   const tipoSelect = document.getElementById('estoqueFormTipo');
   if (!tipoSelect) return;
 
-  const controlled = product.getProducts().filter((p) => p.controlaEstoque);
-  const tipos = order.PRODUCT_TYPES.filter((t) => controlled.some((p) => p.tipoProduto === t));
+  const tipos = order.PRODUCT_TYPES.filter((t) => product.getProducts().some((p) => p.tipoProduto === t));
 
   tipoSelect.innerHTML = '';
   const placeholder = document.createElement('option');
@@ -79,7 +78,7 @@ function populateTipoSelect(selectedTipo = '') {
 
 /**
  * Preenche o seletor de produto do formulário com os produtos do tipo
- * escolhido que têm controle de estoque ativo.
+ * escolhido.
  * @param {string} selectedId - Id a preselecionar (se ainda existir).
  */
 function populateProductSelect(selectedId = '') {
@@ -88,16 +87,14 @@ function populateProductSelect(selectedId = '') {
   if (!select) return;
 
   const tipo = tipoSelect ? tipoSelect.value : '';
-  const controlled = product
-    .getProducts()
-    .filter((p) => p.controlaEstoque && p.tipoProduto === tipo);
+  const controlled = product.getProducts().filter((p) => p.tipoProduto === tipo);
   select.innerHTML = '';
 
   if (controlled.length === 0) {
     const opt = document.createElement('option');
     opt.value = '';
     opt.textContent = tipo
-      ? `— nenhum produto "${tipo}" com estoque —`
+      ? `— nenhum produto "${tipo}" no catálogo —`
       : '— escolha um tipo de produto —';
     select.appendChild(opt);
     return;
@@ -123,19 +120,31 @@ function populateProductSelect(selectedId = '') {
 }
 
 /**
- * Renderiza a tabela de estoque atual (produzido/vendido/disponível).
+ * Retorna os produtos a exibir no saldo, filtrados pela categoria
+ * selecionada no formulário (vazio = todos os produtos).
+ * @returns {{ tipo: string, list: Array<object> }}
+ */
+function getSaldoVisivel() {
+  const tipoSelect = document.getElementById('estoqueFormTipo');
+  const tipo = tipoSelect ? tipoSelect.value : '';
+  const produtos = product.getProducts().filter((p) => !tipo || p.tipoProduto === tipo);
+  return { tipo, produtos };
+}
+
+/**
+ * Renderiza a tabela de estoque atual (produzido/vendido/disponível),
+ * considerando o filtro de categoria selecionado no formulário.
  */
 function renderTable() {
   const tbody = document.getElementById('estoqueTableBody');
   if (!tbody) return;
 
-  const controlled = product
-    .getProducts()
-    .filter((p) => p.controlaEstoque)
+  const { produtos } = getSaldoVisivel();
+  const lista = [...produtos]
     .sort((a, b) => sortKey(estoque.nomeProduto(a)).localeCompare(sortKey(estoque.nomeProduto(b))));
 
   tbody.innerHTML = '';
-  controlled.forEach((p) => {
+  lista.forEach((p) => {
     const produzido = estoque.totalProduzido(p.id);
     const vendido = estoque.totalVendido(p.id);
     const disp = produzido - vendido;
@@ -181,6 +190,7 @@ function prepararProducao(produtoId) {
   const prod = product.getProducts().find((p) => p.id === produtoId);
   populateTipoSelect(prod ? prod.tipoProduto : '');
   populateProductSelect(produtoId);
+  updateSaldo();
   const dataEl = document.getElementById('estoqueFormData');
   if (dataEl && !dataEl.value) {
     dataEl.value = new Date().toISOString().slice(0, 10);
@@ -314,29 +324,38 @@ function handleRegister(event) {
 }
 
 /**
+ * Atualiza contador, estado vazio e tabela conforme o filtro de categoria
+ * selecionado no formulário.
+ */
+function updateSaldo() {
+  const { tipo, produtos } = getSaldoVisivel();
+
+  const countEl = document.getElementById('estoqueCount');
+  if (countEl) countEl.textContent = produtos.length;
+
+  const emptyEl = document.getElementById('estoqueEmpty');
+  const tableWrap = document.getElementById('estoqueTableWrap');
+  const vazio = produtos.length === 0;
+
+  if (tableWrap) tableWrap.hidden = vazio;
+  if (emptyEl) {
+    const msg = emptyEl.querySelector('p');
+    if (msg && tipo) {
+      msg.innerHTML = `Nenhum produto da categoria <strong>${tipo}</strong>.<br>Cadastre em <strong>Produtos</strong> para começar a registrar produção.`;
+    }
+    emptyEl.hidden = !vazio;
+  }
+
+  renderTable();
+}
+
+/**
  * Renderiza a tela de estoque completa.
  */
 export function render() {
-  const controlled = product.getProducts().filter((p) => p.controlaEstoque);
-
-  const countEl = document.getElementById('estoqueCount');
-  if (countEl) {
-    countEl.textContent = controlled.length;
-  }
-
-  const emptyEl = document.getElementById('estoqueEmpty');
-  if (emptyEl) {
-    emptyEl.hidden = controlled.length > 0;
-  }
-
-  const tableWrap = document.getElementById('estoqueTableWrap');
-  if (tableWrap) {
-    tableWrap.hidden = controlled.length === 0;
-  }
-
   populateTipoSelect();
   populateProductSelect();
-  renderTable();
+  updateSaldo();
   renderHistory();
 }
 
@@ -347,10 +366,12 @@ if (form) {
   form.addEventListener('submit', handleRegister);
 }
 
-// Tipo → Sabor: ao trocar o tipo, recarrega o seletor de produtos
+// Tipo → Sabor: ao trocar o tipo, recarrega o seletor de produtos e
+// refiltra o saldo por produto da tabela
 const tipoSelect = document.getElementById('estoqueFormTipo');
 if (tipoSelect) {
   tipoSelect.addEventListener('change', () => {
     populateProductSelect();
+    updateSaldo();
   });
 }

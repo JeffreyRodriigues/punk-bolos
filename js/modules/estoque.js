@@ -8,7 +8,10 @@
    - vendido(p):   soma dos itens de pedidos que CONSOMEM estoque
      (consomeEstoque = true) e já foram CONCLUÍDOS. Pedidos
      importados/históricos não abatem (consomeEstoque = false).
-   - Produtos sem "controlaEstoque" são ilimitados (Infinity).
+
+   REGRA ATUAL: TODOS os produtos precisam de produção para vender.
+   O campo "controlaEstoque" foi descontinuado — a produção agora é
+   obrigatória para qualquer produto do catálogo.
 
    Pedidos Pendente/Em Produção/Embalado NÃO reservam: só contam
    ao concluir. Por isso a validação acontece na criação E também
@@ -69,14 +72,15 @@ export function totalVendido(produtoId, excludeOrderId = '') {
 }
 
 /**
- * Estoque disponível de um produto.
+ * Estoque disponível de um produto. Como a produção é obrigatória para
+ * vender, todos os produtos têm estoque calculado (produzido − vendido).
  * @param {Object} produto - Produto do catálogo.
  * @param {string} [excludeOrderId] - Id de pedido a ignorar no cálculo de vendidos.
- * @returns {number} Unidades disponíveis (Infinity se sem controle).
+ * @returns {number} Unidades disponíveis.
  */
 export function disponivel(produto, excludeOrderId = '') {
-  if (!produto || !produto.controlaEstoque) {
-    return Infinity;
+  if (!produto) {
+    return 0;
   }
   return totalProduzido(produto.id) - totalVendido(produto.id, excludeOrderId);
 }
@@ -93,26 +97,50 @@ export function disponivelPorItem(item) {
 
 /**
  * Valida uma lista de itens contra o estoque disponível.
+ * A produção é obrigatória para vender: qualquer produto cuja quantidade
+ * do pedido exceda o disponível (inclusive sem produção registrada) é erro.
  * @param {Array<Object>} itens - Itens de um pedido.
  * @param {{ excludeOrderId?: string }} [options] - Id do pedido sendo editado
  *   (para não contar o próprio consumo atual contra o novo pedido).
- * @returns {Array<Object>} Erros: [{ produto, item, disponivel }].
+ * @returns {Array<Object>} Erros: [{ produto, item, disponivel, produzido, faltante }].
  */
 export function validateItens(itens, options = {}) {
   const excludeOrderId = options.excludeOrderId || '';
   const errors = [];
   (itens || []).forEach((item) => {
     const produto = resolveProduct(item);
-    if (!produto || !produto.controlaEstoque) {
+    if (!produto) {
       return;
     }
     const qtd = Number(item.quantidade) || 0;
+    const produzido = totalProduzido(produto.id);
     const disp = disponivel(produto, excludeOrderId);
     if (qtd > disp) {
-      errors.push({ produto, item, disponivel: disp });
+      errors.push({
+        produto,
+        item,
+        disponivel: disp,
+        produzido,
+        faltante: qtd - disp,
+      });
     }
   });
   return errors;
+}
+
+/**
+ * Descreve o motivo de um erro de estoque de forma legível para o usuário.
+ * Diferencia "nunca produzido" de "produção insuficiente".
+ * @param {Object} erro - Item do retorno de validateItens.
+ * @returns {string} Ex.: "Fatia de chocolate — sem produção registrada."
+ */
+export function describeErro(erro) {
+  const nome = nomeProduto(erro.produto) || 'Produto';
+  if (erro.produzido <= 0) {
+    return `${nome} — sem produção registrada (produza antes de vender).`;
+  }
+  const falta = Math.max(0, erro.faltante);
+  return `${nome} — disponível: ${erro.disponivel}, faltam ${falta} (produza mais ${falta}).`;
 }
 
 /**

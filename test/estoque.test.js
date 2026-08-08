@@ -85,16 +85,17 @@ test('disponivel: sem produções fica negativo quando vendido', async () => {
   assert.equal(esp.disponivel(P_FATIA), -2);
 });
 
-test('disponivel: Infinity para produto sem controle', async () => {
+test('disponivel: Infinity nunca mais — produto sem produção fica com disponível negativo quando vendido', async () => {
   await setDb(seed());
   const esp = await import('../js/modules/estoque.js?v=17');
-  assert.equal(esp.disponivel(P_ILIMITADO), Infinity);
+  assert.equal(esp.disponivel(P_ILIMITADO), 0);
+  assert.equal(esp.disponivel(P_FATIA), -2);
 });
 
 test('disponivel: undefined', async () => {
   await setDb(seed());
   const esp = await import('../js/modules/estoque.js?v=17');
-  assert.equal(esp.disponivel(undefined), Infinity);
+  assert.equal(esp.disponivel(undefined), 0);
 });
 
 // --- validateItens ---
@@ -114,13 +115,27 @@ test('validateItens: erro quando excede o disponível', async () => {
   const erros = esp.validateItens(itens);
   assert.equal(erros.length, 1);
   assert.equal(erros[0].disponivel, -1);
+  assert.equal(erros[0].produzido, 1);
+  assert.equal(erros[0].faltante, 6);
 });
 
-test('validateItens: ignora produto sem controle de estoque', async () => {
+test('validateItens: erro quando produto nunca foi produzido', async () => {
+  await setDb(seed());
+  const esp = await import('../js/modules/estoque.js?v=17');
+  const itens = [{ produtoId: 'f1', tipoProduto: 'Fatia', quantidade: 1 }];
+  const erros = esp.validateItens(itens);
+  assert.equal(erros.length, 1);
+  assert.equal(erros[0].produzido, 0);
+  assert.equal(erros[0].disponivel, -2);
+});
+
+test('validateItens: valida produto mesmo sem controle de estoque', async () => {
   await setDb(seed());
   const esp = await import('../js/modules/estoque.js?v=17');
   const itens = [{ produtoId: 'i1', tipoProduto: 'Punkitos', quantidade: 999 }];
-  assert.deepEqual(esp.validateItens(itens), []);
+  const erros = esp.validateItens(itens);
+  assert.equal(erros.length, 1);
+  assert.equal(erros[0].produzido, 0);
 });
 
 test('validateItens: excludeOrderId evita contar o próprio pedido', async () => {
@@ -150,4 +165,24 @@ test('stockStatus: classicacao por nível', () => {
   assert.equal(estoque.stockStatus(3), 'low');
   assert.equal(estoque.stockStatus(5), 'low');
   assert.equal(estoque.stockStatus(6), 'ok');
+});
+
+// --- describeErro ---
+test('describeErro: sem produção registrada', () => {
+  const erro = { produto: P_FATIA, produzido: 0, disponivel: -2, faltante: 3 };
+  const msg = estoque.describeErro(erro);
+  assert.match(msg, /sem produção registrada/i);
+  assert.match(msg, /Chocolate/);
+});
+
+test('describeErro: produção insuficiente', () => {
+  const erro = { produto: P_FATIA, produzido: 2, disponivel: 0, faltante: 3 };
+  const msg = estoque.describeErro(erro);
+  assert.match(msg, /disponível: 0/);
+  assert.match(msg, /faltam 3/);
+});
+
+test('describeErro: produto indefinido não quebra', () => {
+  const erro = { produto: undefined, produzido: 0, disponivel: 0, faltante: 1 };
+  assert.match(estoque.describeErro(erro), /sem produção registrada/i);
 });

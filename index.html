@@ -16,7 +16,7 @@
   <!-- Ordem: temas primeiro (define as variáveis), depois estilos, depois responsividade -->
   <!-- ?v=NN força o navegador a baixar os arquivos mais recentes (cache-busting) -->
   <link rel="stylesheet" href="css/themes.css?v=13">
-  <link rel="stylesheet" href="css/styles.css?v=21">
+  <link rel="stylesheet" href="css/styles.css?v=22">
   <link rel="stylesheet" href="css/responsive.css?v=12">
 
   <!-- Acelera as chamadas à API do Supabase (deve bater com js/config.js) -->
@@ -49,7 +49,7 @@
     <button class="nav-tab active" type="button" data-view-target="dashboard">Início</button>
     <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
     <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
-    <button class="nav-tab" type="button" data-view-target="estoque">Estoque</button>
+    <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
   </nav>
 
   <!-- ============================================================
@@ -279,18 +279,19 @@
   </main>
 
   <!-- ============================================================
-       VIEW — Estoque (produção + saldo por produto)
+       VIEW — Produção (produção + saldo por produto)
        Controlada por js/modules/estoqueView.js
        ============================================================ -->
   <main id="view-estoque" class="view">
     <div class="page-title">
-      <h1>Estoque</h1>
+      <h1>Produção</h1>
       <span id="estoqueCount" class="count-badge">0</span>
     </div>
 
     <p class="view-subtitle">
-      Registre aqui a quantidade produzida de cada produto. Ao CONCLUIR pedidos,
-      o estoque é abatido automaticamente. Produtos sem "controlar estoque" ficam ilimitados.
+      Registre aqui a quantidade produzida de cada produto. A produção é
+      OBRIGATÓRIA para vender: pedidos com produtos sem produção não podem
+      ser salvos nem concluídos. Ao CONCLUIR pedidos, o estoque é abatido.
     </p>
 
     <section class="estoque-panel">
@@ -313,9 +314,9 @@
     </section>
 
     <section class="estoque-panel">
-      <h2>Estoque atual</h2>
+      <h2>Saldo por produto</h2>
       <div id="estoqueTableWrap">
-        <table class="estoque-table" aria-label="Estoque atual por produto">
+        <table class="estoque-table" aria-label="Saldo por produto">
           <thead>
             <tr>
               <th>Produto</th>
@@ -330,8 +331,8 @@
       </div>
       <div id="estoqueEmpty" class="empty-state" hidden>
         <span class="empty-icon" aria-hidden="true">📦</span>
-        <p>Nenhum produto com controle de estoque.<br>
-          Ative em <strong>Produtos</strong> → Editar → <em>Controlar estoque deste produto</em>.</p>
+        <p>Nenhum produto cadastrado ainda.<br>
+          Cadastre em <strong>Produtos</strong> para começar a registrar produção.</p>
       </div>
     </section>
 
@@ -518,14 +519,6 @@
             <textarea id="field-detalhes" rows="3" placeholder="Ex.: Fatia média com recheio de brigadeiro e morango"></textarea>
             <span class="error-hint" id="error-detalhes"></span>
           </div>
-
-          <label class="check-field">
-            <input type="checkbox" id="field-controla-estoque">
-            <span>
-              <strong>Controlar estoque deste produto</strong>
-              <small>Registre a produção na aba Estoque; o saldo é abatido ao concluir pedidos. Desligado = produto ilimitado.</small>
-            </span>
-          </label>
         </div>
 
         <div class="modal-footer">
@@ -543,6 +536,6 @@
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=23"></script>
+  <script type="module" src="js/app.js?v=24"></script>
 </body>
 </html>
