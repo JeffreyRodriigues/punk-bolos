@@ -1,0 +1,14 @@
+{
+  "name": "punk-bolos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema de gestão Punk Bolos (encomendas, estoque e dashboard)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

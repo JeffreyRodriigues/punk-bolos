@@ -33,10 +33,11 @@ export function parseMoney(value) {
   if (!str) {
     return 0;
   }
-  // Troca vírgula por ponto e remove pontos de milhar ("1.234,56" -> "1234.56")
-  const normalized = str
-    .replace(/\./g, '')
-    .replace(',', '.');
+  // Se tem vírgula, pontos são milhar e vírgula é decimal ("1.234,56" -> "1234.56").
+  // Sem vírgula, ponto é decimal ("12.90" -> 12.9).
+  const normalized = str.includes(',')
+    ? str.replace(/\./g, '').replace(',', '.')
+    : str;
   const parsed = Number.parseFloat(normalized);
   return Number.isNaN(parsed) ? 0 : parsed;
 }

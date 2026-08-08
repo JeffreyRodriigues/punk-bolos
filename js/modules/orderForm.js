@@ -16,6 +16,7 @@ import * as order from './order.js?v=15';
 import * as product from './product.js?v=16';
 import * as estoque from './estoque.js?v=1';
 import { formatCurrency } from '../utils/money.js?v=12';
+import { defaultItemType } from '../utils/describe.js?v=1';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
 const modal = document.getElementById('orderModal');
@@ -205,17 +206,6 @@ function createItemRow(item = {}) {
 }
 
 /**
- * Tipo padrão para uma nova linha de item: o primeiro tipo do catálogo
- * que possuir produtos. Evita abrir a linha em "Fatia" quando só existem
- * bolos, por exemplo, deixando o seletor de sabor vazio.
- * @returns {string} Tipo de produto.
- */
-function defaultItemType() {
-  const available = new Set(product.getProducts().map((p) => p.tipoProduto));
-  return order.PRODUCT_TYPES.find((t) => available.has(t)) || 'Fatia';
-}
-
-/**
  * Adiciona uma linha de item ao formulário.
  * @param {Object} [item] - Dados iniciais do item.
  */
@@ -285,7 +275,7 @@ export function openNew() {
 
   // Reinicia com uma linha de item vazia (no tipo que tem produtos)
   itemsContainer.innerHTML = '';
-  addItemRow({ tipoProduto: defaultItemType() });
+  addItemRow({ tipoProduto: defaultItemType(product.getProducts(), order.PRODUCT_TYPES) });
   totalEl.textContent = formatCurrency(0);
 
   titleEl.textContent = 'Novo Pedido';
@@ -403,7 +393,7 @@ export function restorePending() {
 
   itemsContainer.innerHTML = '';
   if (d.rows.length === 0) {
-    addItemRow({ tipoProduto: defaultItemType() });
+    addItemRow({ tipoProduto: defaultItemType(product.getProducts(), order.PRODUCT_TYPES) });
   } else {
     d.rows.forEach((row) => addItemRow({ tipoProduto: row.tipo, saborId: row.saborId, quantidade: row.qtd }));
   }
@@ -536,7 +526,7 @@ function handleSubmit(event) {
 /* ---------- Eventos ---------- */
 
 // Botão "Adicionar item"
-addItemBtn.addEventListener('click', () => addItemRow({ tipoProduto: defaultItemType() }));
+addItemBtn.addEventListener('click', () => addItemRow({ tipoProduto: defaultItemType(product.getProducts(), order.PRODUCT_TYPES) }));
 
 // Atalho para cadastrar produto que não está no catálogo
 // (wrapper: captura o callback atual, não o valor no momento do bind)

@@ -9,9 +9,11 @@
 
 import * as storage from './storage.js?v=13';
 import * as product from './product.js?v=16';
+import * as order from './order.js?v=15';
 import * as estoque from './estoque.js?v=1';
 import { showToast } from './toast.js?v=12';
 import { formatDate } from '../utils/money.js?v=12';
+import { sortKey } from '../utils/describe.js?v=1';
 
 /** Callback disparado após registrar/excluir produção (setado por app.js). */
 let onChange = () => {};
@@ -45,27 +47,58 @@ function showAviso(message, ok = false) {
   aviso.classList.toggle('estoque-aviso-ok', ok);
 }
 
-/** Nome de produto para ordenar a tabela (ignora caixa/acentos). */
-function sortKey(text) {
-  return String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+/**
+ * Preenche o seletor de TIPO de produto com os tipos que possuem ao
+ * menos um produto com controle de estoque (ex.: Fatia, Punkitos...).
+ * @param {string} selectedTipo - Tipo a preselecionar (se ainda existir).
+ */
+function populateTipoSelect(selectedTipo = '') {
+  const tipoSelect = document.getElementById('estoqueFormTipo');
+  if (!tipoSelect) return;
+
+  const controlled = product.getProducts().filter((p) => p.controlaEstoque);
+  const tipos = order.PRODUCT_TYPES.filter((t) => controlled.some((p) => p.tipoProduto === t));
+
+  tipoSelect.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = '— Tipo de produto —';
+  tipoSelect.appendChild(placeholder);
+
+  tipos.forEach((t) => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    tipoSelect.appendChild(opt);
+  });
+
+  if (selectedTipo && tipos.includes(selectedTipo)) {
+    tipoSelect.value = selectedTipo;
+  }
 }
 
 /**
- * Preenche o seletor de produto do formulário com os produtos que
- * têm controle de estoque ativo.
+ * Preenche o seletor de produto do formulário com os produtos do tipo
+ * escolhido que têm controle de estoque ativo.
  * @param {string} selectedId - Id a preselecionar (se ainda existir).
  */
 function populateProductSelect(selectedId = '') {
   const select = document.getElementById('estoqueFormProduto');
+  const tipoSelect = document.getElementById('estoqueFormTipo');
   if (!select) return;
 
-  const controlled = product.getProducts().filter((p) => p.controlaEstoque);
+  const tipo = tipoSelect ? tipoSelect.value : '';
+  const controlled = product
+    .getProducts()
+    .filter((p) => p.controlaEstoque && p.tipoProduto === tipo);
   select.innerHTML = '';
 
   if (controlled.length === 0) {
     const opt = document.createElement('option');
     opt.value = '';
-    opt.textContent = '— nenhum produto com estoque —';
+    opt.textContent = tipo
+      ? `— nenhum produto "${tipo}" com estoque —`
+      : '— escolha um tipo de produto —';
     select.appendChild(opt);
     return;
   }
@@ -145,6 +178,8 @@ function renderTable() {
  * @param {string} produtoId - Id do produto.
  */
 function prepararProducao(produtoId) {
+  const prod = product.getProducts().find((p) => p.id === produtoId);
+  populateTipoSelect(prod ? prod.tipoProduto : '');
   populateProductSelect(produtoId);
   const dataEl = document.getElementById('estoqueFormData');
   if (dataEl && !dataEl.value) {
@@ -299,6 +334,7 @@ export function render() {
     tableWrap.hidden = controlled.length === 0;
   }
 
+  populateTipoSelect();
   populateProductSelect();
   renderTable();
   renderHistory();
@@ -309,4 +345,12 @@ export function render() {
 const form = document.getElementById('estoqueForm');
 if (form) {
   form.addEventListener('submit', handleRegister);
+}
+
+// Tipo → Sabor: ao trocar o tipo, recarrega o seletor de produtos
+const tipoSelect = document.getElementById('estoqueFormTipo');
+if (tipoSelect) {
+  tipoSelect.addEventListener('change', () => {
+    populateProductSelect();
+  });
 }

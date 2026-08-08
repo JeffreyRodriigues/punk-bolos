@@ -34,7 +34,7 @@ button,
 input,
 select,
 textarea {
-  font-family: inherit;
+  font-family: var(--font-family);
   font-size: 1rem;
   color: inherit;
 }
@@ -71,7 +71,10 @@ input[type="number"] {
 }
 
 .logo {
-  font-size: 1.5rem;
+  height: 38px;
+  width: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .brand {
@@ -511,6 +514,12 @@ input[type="number"] {
 
 .fab:active {
   transform: scale(0.94);
+}
+
+/* Oculta o filtro de período e o FAB nas telas que não os usam */
+.date-filter[hidden],
+.fab[hidden] {
+  display: none !important;
 }
 
 /* ---------- Botões ---------- */

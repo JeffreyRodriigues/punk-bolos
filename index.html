@@ -15,8 +15,8 @@
 
   <!-- Ordem: temas primeiro (define as variáveis), depois estilos, depois responsividade -->
   <!-- ?v=NN força o navegador a baixar os arquivos mais recentes (cache-busting) -->
-  <link rel="stylesheet" href="css/themes.css?v=12">
-  <link rel="stylesheet" href="css/styles.css?v=18">
+  <link rel="stylesheet" href="css/themes.css?v=13">
+  <link rel="stylesheet" href="css/styles.css?v=21">
   <link rel="stylesheet" href="css/responsive.css?v=12">
 
   <!-- Acelera as chamadas à API do Supabase (deve bater com js/config.js) -->
@@ -30,7 +30,7 @@
        ============================================================ -->
   <header class="app-header">
     <div class="header-left">
-      <span class="logo" aria-hidden="true">🍰</span>
+      <img class="logo" src="logo.png?v=2" alt="Logo Punk Bolos" aria-hidden="true">
       <span class="brand">Punk Bolos</span>
     </div>
     <div class="header-right">
@@ -296,6 +296,9 @@
     <section class="estoque-panel">
       <h2>Registrar produção</h2>
       <form id="estoqueForm" class="estoque-form" novalidate>
+        <select id="estoqueFormTipo" aria-label="Tipo de produto">
+          <option value="">— Tipo de produto —</option>
+        </select>
         <select id="estoqueFormProduto" required aria-label="Produto">
           <option value="">— Escolha o produto —</option>
         </select>
@@ -540,6 +543,6 @@
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=18"></script>
+  <script type="module" src="js/app.js?v=23"></script>
 </body>
 </html>

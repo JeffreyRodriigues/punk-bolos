@@ -14,6 +14,7 @@ import * as order from './order.js?v=15';
 import * as dateFilter from './dateFilter.js?v=13';
 import { showToast } from './toast.js?v=12';
 import { formatCurrency, formatDate } from '../utils/money.js?v=12';
+import { describeItens } from '../utils/describe.js?v=1';
 
 /* ---------- Elementos do DOM ---------- */
 const listEl = document.getElementById('orderList');
@@ -100,28 +101,6 @@ export function render() {
   filtered.forEach((o) => listEl.appendChild(createCard(o)));
 
   emptyState.hidden = filtered.length > 0;
-}
-
-/**
- * Formata a lista de itens de um pedido para exibição.
- * O campo "sabor" guarda o título do produto do catálogo.
- * Ex.: "2× Fatia de chocolate · 1× Bolo M Red Velvet"
- * @param {Object} o - Pedido.
- * @returns {string} Descrição dos itens.
- */
-function describeItens(o) {
-  const items = Array.isArray(o.itens) ? o.itens : [];
-  if (items.length === 0) {
-    return '—';
-  }
-  return items
-    .map((item) => {
-      const qty = Number(item.quantidade) || 0;
-      const type = item.tipoProduto || 'Fatia';
-      const label = item.sabor || type;
-      return `${qty}× ${label}`;
-    })
-    .join(' · ');
 }
 
 /**

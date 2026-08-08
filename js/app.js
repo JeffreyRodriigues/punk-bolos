@@ -29,7 +29,7 @@ import * as productForm from './modules/productForm.js?v=16';
 import * as productList from './modules/productList.js?v=15';
 import * as importExport from './modules/importExport.js?v=15';
 import * as estoque from './modules/estoque.js?v=1';
-import * as estoqueView from './modules/estoqueView.js?v=1';
+import * as estoqueView from './modules/estoqueView.js?v=3';
 import { showToast } from './modules/toast.js?v=12';
 
 /* ---------- Navegação entre telas ---------- */
@@ -45,6 +45,11 @@ function navigate(target) {
   document.querySelectorAll('.nav-tab').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.viewTarget === target);
   });
+
+  // Filtro de período e botão flutuante só fazem sentido em Início/Pedidos
+  const hasPeriodFilter = target === 'dashboard' || target === 'orders';
+  document.querySelector('.date-filter').hidden = !hasPeriodFilter;
+  document.getElementById('fabNewOrder').hidden = target !== 'orders';
 
   // A cada troca de tela, garante dados atualizados
   if (target === 'dashboard') {
@@ -143,6 +148,11 @@ function init() {
   document.querySelectorAll('.nav-tab').forEach((tab) => {
     tab.addEventListener('click', () => navigate(tab.dataset.viewTarget));
   });
+
+  // Estado inicial de visibilidade (FAB só na tela de Pedidos)
+  const activeView = document.querySelector('.view.active');
+  const activeTarget = activeView ? activeView.id.replace('view-', '') : 'dashboard';
+  navigate(activeTarget);
 
   // Botão flutuante: abre novo pedido (ou novo produto na view Produtos)
   document.getElementById('fabNewOrder').addEventListener('click', () => {
