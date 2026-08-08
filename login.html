@@ -6,16 +6,274 @@
   <meta name="theme-color" content="#1a1a2e">
   <title>Punk Bolos — Acesso</title>
 
-  <!-- Ordem: temas primeiro (define as variáveis), depois o estilo do login -->
-  <link rel="stylesheet" href="css/themes.css?v=13">
-  <link rel="stylesheet" href="css/login.css?v=14">
+  <!-- CSS INLINE (build: node tools/build-css.js) — evita requests de CSS bloqueantes no LCP -->
+  
+<!-- CSS_INLINE:START -->
+
+<style>
+/* css/themes.css */
+/* ============================================================
+   THEMES.CSS — Sistema de temas (Dark / Light)
+   ------------------------------------------------------------
+   Todo o app usa apenas variáveis CSS. O tema é trocado
+   adicionando a classe "dark" no elemento <html> via theme.js.
+
+   Estrutura:
+   :root        -> valores do tema CLARO (padrão)
+   html.dark    -> sobrescreve as variáveis para o tema ESCURO
+
+   NOTA: a fonte Quicksand é carregada por <link> no HTML (preconnect
+   + stylesheet com carga assíncrona), NÃO via @import: @import serializa
+   os downloads e bloqueia a renderização, penalizando o LCP.
+   ============================================================ */
+
+:root {
+  /* Paleta de cores — tema claro */
+  --color-bg: #f4f5f9;
+  --color-surface: #ffffff;
+  --color-surface-alt: #eef0f6;
+  --color-text: #1c2030;
+  --color-text-muted: #6b7280;
+  --color-border: #e3e6ee;
+
+  /* Cor de destaque (marca) */
+  --color-primary: #e91e63;
+  --color-primary-hover: #c2185b;
+  --color-primary-soft: #fde3ec;
+  --color-on-primary: #ffffff;
+
+  /* Cores semânticas (status e destaque) */
+  --color-ok: #16a34a;
+  --color-ok-soft: #dcfce7;
+  --color-warn: #f59e0b;
+  --color-warn-soft: #fef3c7;
+  --color-info: #2563eb;
+  --color-info-soft: #dbeafe;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+
+  /* Sombras */
+  --shadow-card: 0 2px 10px rgba(28, 32, 48, 0.08);
+  --shadow-modal: 0 12px 40px rgba(28, 32, 48, 0.25);
+  --shadow-fab: 0 6px 20px rgba(233, 30, 99, 0.45);
+
+  /* Bordas arredondadas */
+  --radius: 16px;
+  --radius-sm: 10px;
+
+  /* Fonte */
+  --font-family: "Quicksand", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+/* ============================================================
+   Tema ESCURO — sobrescreve apenas o necessário
+   ============================================================ */
+html.dark {
+  --color-bg: #14151d;
+  --color-surface: #1e2030;
+  --color-surface-alt: #252838;
+  --color-text: #e8eaf2;
+  --color-text-muted: #9aa0b4;
+  --color-border: #32364a;
+
+  --color-primary: #ff2d78;
+  --color-primary-hover: #ff5c95;
+  --color-primary-soft: #3a1526;
+  --color-on-primary: #1c2030;
+
+  --color-ok: #4ade80;
+  --color-ok-soft: #0f2a1a;
+  --color-warn: #fbbf24;
+  --color-warn-soft: #2b2210;
+  --color-info: #60a5fa;
+  --color-info-soft: #10243f;
+  --color-danger: #f87171;
+  --color-danger-soft: #3a1316;
+
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-fab: 0 6px 20px rgba(255, 45, 120, 0.45);
+}
+
+</style>
+
+<style>
+/* css/login.css */
+/* ============================================================
+   LOGIN.CSS — Página de acesso (login.html)
+   Usa as variáveis de tema definidas em themes.css.
+   ============================================================ */
+
+.login-body {
+  font-family: var(--font-family);
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, var(--color-bg), var(--color-surface-alt));
+  padding: 20px;
+}
+
+.login-shell {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.login-logo {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+}
+
+.login-brand-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: 0.5px;
+}
+
+.login-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 14px);
+  box-shadow: var(--shadow-card);
+  padding: 28px 26px;
+}
+
+.login-title {
+  font-size: 1.25rem;
+  color: var(--color-text);
+  margin: 0 0 6px;
+}
+
+.login-subtitle {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin: 0 0 20px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.login-field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.login-field input {
+  padding: 11px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 8px);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-field input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.login-error {
+  min-height: 1.1em;
+  font-size: 0.82rem;
+  color: var(--color-danger);
+  margin: 0 0 8px;
+}
+
+.login-success {
+  min-height: 1.1em;
+  font-size: 0.82rem;
+  color: var(--color-success, #2e7d32);
+  margin: 0 0 8px;
+}
+
+.login-status-message {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0 0 16px;
+}
+
+.login-footer {
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+.login-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.login-link:hover {
+  opacity: 0.85;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-sm, 8px);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: var(--color-on-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.login-btn:hover {
+  opacity: 0.92;
+}
+
+.login-btn:active {
+  transform: scale(0.98);
+}
+
+.login-note {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 16px 0 0;
+}
+
+</style>
+<!-- CSS_INLINE:END -->
+
+
+  <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=optional">
 </head>
 
 <body class="login-body">
 
   <div class="login-shell">
     <div class="login-brand">
-      <img class="login-logo" src="logo.png?v=2" alt="Logo Punk Bolos">
+      <picture>
+        <source type="image/webp" srcset="logo.webp?v=2">
+        <img class="login-logo" src="logo.png?v=2" alt="Logo Punk Bolos" width="180" height="160" fetchpriority="high">
+      </picture>
       <span class="login-brand-name">Punk Bolos</span>
     </div>
 
