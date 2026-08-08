@@ -27,6 +27,7 @@ import * as dashboard from './modules/dashboard.js?v=12';
 import * as dateFilter from './modules/dateFilter.js?v=12';
 import * as productForm from './modules/productForm.js?v=14';
 import * as productList from './modules/productList.js?v=14';
+import * as importExport from './modules/importExport.js?v=12';
 import { showToast } from './modules/toast.js?v=12';
 
 /* ---------- Navegação entre telas ---------- */
@@ -172,6 +173,39 @@ function init() {
     // Se o cadastro veio do modal de pedido, volta ao pedido preservado
     if (orderForm.restorePending()) {
       navigate('orders');
+    }
+  });
+
+  // Importar / exportar planilha (CSV)
+  document.getElementById('btnModeloCsv').addEventListener('click', () => {
+    importExport.downloadTemplate();
+  });
+  document.getElementById('btnExportOrders').addEventListener('click', () => {
+    importExport.exportOrders();
+  });
+  const fileInput = document.getElementById('orderImportFile');
+  document.getElementById('btnImportOrders').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const result = importExport.importCsv(text);
+      if (result.ok) {
+        orderList.render();
+        dashboard.render();
+        const aviso = result.erros.length > 0 ? ` (${result.erros.length} linha(s) ignorada(s))` : '';
+        showToast(`Importados ${result.pedidos} pedido(s), ${result.itens} item(ns) e ${result.produtosCriados} produto(s) novo(s).${aviso}`);
+        if (result.erros.length > 0) {
+          showToast(result.erros[0], 'error');
+        }
+      } else {
+        showToast(result.message || 'Falha ao importar.', 'error');
+      }
+    } catch (e) {
+      showToast(`Falha ao ler o arquivo: ${e.message}`, 'error');
+    } finally {
+      fileInput.value = '';
     }
   });
 

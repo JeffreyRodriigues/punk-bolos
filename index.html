@@ -16,7 +16,7 @@
   <!-- Ordem: temas primeiro (define as variáveis), depois estilos, depois responsividade -->
   <!-- ?v=NN força o navegador a baixar os arquivos mais recentes (cache-busting) -->
   <link rel="stylesheet" href="css/themes.css?v=12">
-  <link rel="stylesheet" href="css/styles.css?v=16">
+  <link rel="stylesheet" href="css/styles.css?v=17">
   <link rel="stylesheet" href="css/responsive.css?v=12">
 
   <!-- Acelera as chamadas à API do Supabase (deve bater com js/config.js) -->
@@ -200,6 +200,14 @@
     <div class="page-title">
       <h1>Pedidos</h1>
       <span id="orderCount" class="count-badge">0</span>
+    </div>
+
+    <!-- Importar / exportar planilha (CSV) -->
+    <div class="csv-actions" aria-label="Importar e exportar planilha">
+      <button id="btnModeloCsv" class="btn btn-ghost" type="button" title="Baixar arquivo-modelo para preencher no Excel">⬇ Modelo</button>
+      <button id="btnExportOrders" class="btn btn-ghost" type="button" title="Exportar todos os pedidos em CSV">⬆ Exportar</button>
+      <button id="btnImportOrders" class="btn btn-ghost" type="button" title="Importar pedidos de um arquivo CSV">⬇ Importar</button>
+      <input type="file" id="orderImportFile" accept=".csv,text/csv" hidden>
     </div>
 
     <!-- Pesquisa instantânea -->
@@ -463,6 +471,6 @@
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=14"></script>
+  <script type="module" src="js/app.js?v=15"></script>
 </body>
 </html>

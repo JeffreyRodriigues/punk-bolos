@@ -273,6 +273,19 @@ input[type="number"] {
   border-radius: 999px;
 }
 
+/* Importar / exportar planilha */
+.csv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.csv-actions .btn {
+  padding: 7px 12px;
+  font-size: 0.85rem;
+}
+
 /* ---------- Dashboard (cards de estatística) ---------- */
 .dashboard {
   display: grid;
