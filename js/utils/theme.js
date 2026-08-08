@@ -6,7 +6,7 @@
    Por padrão, segue a preferência do sistema operacional.
    ============================================================ */
 
-import * as storage from '../modules/storage.js?v=12';
+import * as storage from '../modules/storage.js?v=13';
 
 /** Classe CSS que ativa o tema escuro (definida em themes.css). */
 const DARK_CLASS = 'dark';

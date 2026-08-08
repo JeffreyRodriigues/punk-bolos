@@ -14,9 +14,9 @@
      tipo;tamanho;sabor;quantidade;valor_unitario
    ============================================================ */
 
-import * as storage from './storage.js?v=12';
-import * as order from './order.js?v=14';
-import * as product from './product.js?v=15';
+import * as storage from './storage.js?v=13';
+import * as order from './order.js?v=15';
+import * as product from './product.js?v=16';
 
 const HEADER = [
   'numero', 'data', 'cliente', 'contato', 'status', 'pagamento',
@@ -423,6 +423,8 @@ export function importCsv(text, options = {}) {
       },
       order.nextOrderNumber(existingOrders.concat(newOrders))
     );
+    // Histórico importado NÃO abate o estoque (estoque começa das produções).
+    created.consomeEstoque = false;
     newOrders.push(created);
     itensCount += items.length;
   });

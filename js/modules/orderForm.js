@@ -11,9 +11,10 @@
    - oferecer atalho para cadastrar produtos que não existem
    ============================================================ */
 
-import * as storage from './storage.js?v=12';
-import * as order from './order.js?v=14';
-import * as product from './product.js?v=15';
+import * as storage from './storage.js?v=13';
+import * as order from './order.js?v=15';
+import * as product from './product.js?v=16';
+import * as estoque from './estoque.js?v=1';
 import { formatCurrency } from '../utils/money.js?v=12';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
@@ -131,12 +132,33 @@ function createItemRow(item = {}) {
   priceEl.className = 'item-price';
   priceEl.setAttribute('aria-label', 'Preço unitário');
 
+  const stockEl = document.createElement('span');
+  stockEl.className = 'item-stock';
+  stockEl.hidden = true;
+
   /**
-   * Mostra o preço unitário do produto selecionado ao lado da quantidade.
+   * Mostra o preço unitário do produto selecionado e, quando o produto
+   * tem controle de estoque, o saldo disponível (avisa se a quantidade
+   * digitada excede o estoque).
    */
-  function updatePrice() {
+  function updateItemInfo() {
     const chosen = product.getProducts().find((p) => p.id === saborSelect.value);
     priceEl.textContent = chosen ? formatCurrency(chosen.valor) : '';
+
+    if (chosen && chosen.controlaEstoque) {
+      const disp = estoque.disponivel(chosen);
+      stockEl.hidden = false;
+      stockEl.textContent = `Estoque: ${disp}`;
+      stockEl.className = `item-stock stock-${estoque.stockStatus(disp)}`;
+      const qtd = Number(qtdInput.value) || 0;
+      if (qtd > disp) {
+        stockEl.classList.add('stock-warning');
+      } else {
+        stockEl.classList.remove('stock-warning');
+      }
+    } else {
+      stockEl.hidden = true;
+    }
   }
 
   const removeBtn = document.createElement('button');
@@ -161,21 +183,24 @@ function createItemRow(item = {}) {
   }
 
   // Exibe o preço após restaurar a seleção (senão some ao reabrir o pedido)
-  updatePrice();
+  updateItemInfo();
 
   // Recalculo ao editar a linha
   tipoSelect.addEventListener('change', () => {
     buildSaborOptions();
-    updatePrice();
+    updateItemInfo();
     recalcTotal();
   });
   saborSelect.addEventListener('change', () => {
-    updatePrice();
+    updateItemInfo();
     recalcTotal();
   });
-  qtdInput.addEventListener('input', recalcTotal);
+  qtdInput.addEventListener('input', () => {
+    updateItemInfo();
+    recalcTotal();
+  });
 
-  row.append(tipoSelect, saborSelect, qtdInput, priceEl, removeBtn);
+  row.append(tipoSelect, saborSelect, qtdInput, priceEl, stockEl, removeBtn);
   return row;
 }
 
@@ -215,6 +240,7 @@ function readItems() {
       const chosen = produtoId ? byId.get(produtoId) : null;
       if (!chosen) return null;
       return {
+        produtoId: chosen.id,
         tipoProduto: chosen.tipoProduto,
         tamanho: chosen.tipoProduto === 'Bolo Inteiro' ? (chosen.tamanho || '') : '',
         sabor: chosen.titulo,
@@ -465,14 +491,35 @@ function handleSubmit(event) {
     return false;
   }
 
+  // Estoque: bloqueia na criação/salvamento (exceto pedidos cancelados).
+  // O abate em si ocorre ao CONCLUIR o pedido.
+  if (data.status !== 'Cancelado') {
+    const id = document.getElementById('field-id').value;
+    const stockErrors = estoque.validateItens(data.itens, { excludeOrderId: id });
+    if (stockErrors.length > 0) {
+      const detail = stockErrors
+        .map((e) => `"${estoque.nomeProduto(e.produto)}" — disponível: ${e.disponivel}`)
+        .join('; ');
+      showErrors({ itens: `Não há estoque suficiente para a venda: ${detail}.` });
+      showToast('Não há mais produto disponível para a venda.', 'error');
+      return false;
+    }
+  }
+
   const orders = order.getOrders();
   const id = document.getElementById('field-id').value;
 
   if (id) {
-    // EDIÇÃO: atualiza o pedido existente mantendo id e número
+    // EDIÇÃO: atualiza o pedido existente mantendo id e número.
+    // Preserva o flag consomeEstoque (pedidos históricos/importados
+    // continuam sem abater estoque ao serem apenas editados).
     const index = orders.findIndex((o) => o.id === id);
     if (index !== -1) {
-      orders[index] = { ...order.createOrder(data, orders[index].numero), id };
+      orders[index] = {
+        ...order.createOrder(data, orders[index].numero),
+        id,
+        consomeEstoque: orders[index].consomeEstoque !== false,
+      };
     }
   } else {
     // CRIAÇÃO: novo pedido com próximo número

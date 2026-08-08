@@ -16,16 +16,18 @@
    são enviados automaticamente (migração única).
    ============================================================ */
 
-import * as supabase from './supabase.js?v=12';
+import * as supabase from './supabase.js?v=13';
 
 /** Chaves do LocalStorage (usadas offline e para a configuração). */
 const PEDIDOS_KEY = 'punkbolos.pedidos';
 const PRODUTOS_KEY = 'punkbolos.produtos';
+const PRODUCOES_KEY = 'punkbolos.producao';
 const CONFIG_KEY = 'punkbolos.config';
 
 /** Caches em memória (null = ainda não carregado). */
 let ordersCache = null;
 let productsCache = null;
+let productionsCache = null;
 
 /**
  * Snapshots do ÚLTIMO estado sincronizado com a nuvem.
@@ -35,6 +37,7 @@ let productsCache = null;
  */
 let ordersSynced = [];
 let productsSynced = [];
+let productionsSynced = [];
 
 /** true quando conectado ao Supabase (escritas vão para a nuvem). */
 let online = false;
@@ -106,6 +109,7 @@ function migrateOrder(order) {
     items = legacy.itens.map((item) => {
       const type = item.tipoProduto || legacyType;
       return {
+        produtoId: item.produtoId ? String(item.produtoId) : '',
         tipoProduto: type,
         tamanho: item.tamanho != null ? item.tamanho : (type === 'Bolo Inteiro' ? legacySize : ''),
         sabor: item.sabor || '',
@@ -116,6 +120,7 @@ function migrateOrder(order) {
   } else {
     items = [
       {
+        produtoId: legacy.produtoId ? String(legacy.produtoId) : '',
         tipoProduto: legacyType,
         tamanho: legacyType === 'Bolo Inteiro' ? legacySize : '',
         sabor: legacy.sabor || '',
@@ -129,6 +134,10 @@ function migrateOrder(order) {
   delete legacy.valorUnitario;
   delete legacy.tipoProduto;
   delete legacy.tamanho;
+  // Pedidos antigos/históricos não consomem estoque (recurso novo).
+  if (legacy.consomeEstoque == null) {
+    legacy.consomeEstoque = false;
+  }
   legacy.itens = items;
   return legacy;
 }
@@ -158,6 +167,7 @@ function migrateProduct(product) {
     tamanho: tipoProduto === 'Bolo Inteiro' ? String(product.tamanho || '').trim() : '',
     valor: Number(product.preco != null ? product.preco : product.valor) || 0,
     detalhes: String(product.detalhes != null ? product.detalhes : parts).trim(),
+    controlaEstoque: Boolean(product.controlaEstoque),
   };
 }
 
@@ -183,6 +193,31 @@ function readLocalProducts() {
   }
 }
 
+/** Normaliza uma produção carregada (guarda contra formatos antigos). */
+function normalizeProduction(production) {
+  if (!production || typeof production !== 'object') {
+    return production;
+  }
+  return {
+    id: production.id,
+    produtoId: String(production.produtoId || ''),
+    quantidade: Number(production.quantidade) || 0,
+    data: production.data || '',
+    observacao: String(production.observacao || '').trim(),
+  };
+}
+
+/** Lê as produções do LocalStorage. */
+function readLocalProductions() {
+  try {
+    const raw = localStorage.getItem(PRODUCOES_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.map(normalizeProduction) : [];
+  } catch {
+    return [];
+  }
+}
+
 /* ---------- Mapeamento para o banco (snake_case) ---------- */
 
 /** Pedido (app) → linha do banco. */
@@ -200,6 +235,7 @@ function toOrderRow(order) {
     pagamento: order.pagamento || 'PIX',
     entrega: order.entrega || 'Retirada',
     observacoes: order.observacoes || '',
+    consome_estoque: Boolean(order.consomeEstoque),
   };
 }
 
@@ -218,6 +254,7 @@ function fromOrderRow(row) {
     pagamento: row.pagamento || 'PIX',
     entrega: row.entrega || 'Retirada',
     observacoes: row.observacoes || '',
+    consomeEstoque: Boolean(row.consome_estoque),
   };
 }
 
@@ -230,6 +267,7 @@ function toProductRow(product) {
     tamanho: product.tamanho || '',
     valor: Number(product.valor) || 0,
     detalhes: product.detalhes || '',
+    controla_estoque: Boolean(product.controlaEstoque),
   };
 }
 
@@ -242,6 +280,29 @@ function fromProductRow(row) {
     tamanho: row.tamanho || '',
     valor: Number(row.valor) || 0,
     detalhes: row.detalhes || '',
+    controlaEstoque: Boolean(row.controla_estoque),
+  };
+}
+
+/** Produção (app) → linha do banco. */
+function toProductionRow(production) {
+  return {
+    id: production.id,
+    produto_id: production.produtoId || '',
+    quantidade: Number(production.quantidade) || 0,
+    data: production.data || null,
+    observacao: production.observacao || '',
+  };
+}
+
+/** Linha do banco → produção (app). */
+function fromProductionRow(row) {
+  return {
+    id: row.id,
+    produtoId: row.produto_id || '',
+    quantidade: Number(row.quantidade) || 0,
+    data: row.data || '',
+    observacao: row.observacao || '',
   };
 }
 
@@ -269,6 +330,17 @@ export function getAllProducts() {
   return productsCache;
 }
 
+/**
+ * Lê todas as produções (log de estoque).
+ * @returns {Array<Object>} Lista de produções.
+ */
+export function getAllProductions() {
+  if (productionsCache === null) {
+    productionsCache = readLocalProductions();
+  }
+  return productionsCache;
+}
+
 /* ---------- Inicialização / sincronização ---------- */
 
 /**
@@ -285,19 +357,22 @@ export async function init() {
   }
 
   try {
-    const [remoteOrders, remoteProducts] = await Promise.all([
+    const [remoteOrders, remoteProducts, remoteProductions] = await Promise.all([
       supabase.listOrders(),
       supabase.listProducts(),
+      supabase.listProductions(),
     ]);
 
     const localOrders = readLocalOrders();
     const localProducts = readLocalProducts();
+    const localProductions = readLocalProductions();
 
     // Reconciliação: envia para a nuvem o que existe apenas no
     // dispositivo (criado offline ou com escrita que falhou). Isso
-    // garante que nenhum pedido/produto se perca ao voltar online.
+    // garante que nenhum pedido/produto/produção se perca ao voltar online.
     const remoteOrderIds = new Set(remoteOrders.map((o) => o.id));
     const remoteProductIds = new Set(remoteProducts.map((p) => p.id));
+    const remoteProductionIds = new Set(remoteProductions.map((pr) => pr.id));
 
     for (const order of localOrders.filter((o) => !remoteOrderIds.has(o.id))) {
       try {
@@ -313,16 +388,26 @@ export async function init() {
         reportError('Falha ao reenviar produto', e && e.message ? e.message : 'sem conexão');
       }
     }
+    for (const production of localProductions.filter((pr) => !remoteProductionIds.has(pr.id))) {
+      try {
+        await supabase.insertProduction(toProductionRow(production));
+      } catch (e) {
+        reportError('Falha ao reenviar produção', e && e.message ? e.message : 'sem conexão');
+      }
+    }
 
     // Fonte de verdade = nuvem (após o merge), atualizada via refetch
-    const [o2, p2] = await Promise.all([
+    const [o2, p2, pr2] = await Promise.all([
       supabase.listOrders(),
       supabase.listProducts(),
+      supabase.listProductions(),
     ]);
     ordersCache = o2.map(fromOrderRow);
     productsCache = p2.map(fromProductRow);
+    productionsCache = pr2.map(fromProductionRow);
     ordersSynced = JSON.parse(JSON.stringify(ordersCache));
     productsSynced = JSON.parse(JSON.stringify(productsCache));
+    productionsSynced = JSON.parse(JSON.stringify(productionsCache));
     online = true;
   } catch (error) {
     if (error && error.message === 'Sessão expirada') {
@@ -375,6 +460,23 @@ export function saveProducts(products) {
   productsSynced = JSON.parse(JSON.stringify(products));
 }
 
+/**
+ * Persiste a lista de produções (log de estoque, mesma lógica diferencial).
+ * @param {Array<Object>} productions - Nova lista de produções.
+ */
+export function saveProductions(productions) {
+  productionsCache = productions;
+
+  // Backup local SEMPRE.
+  localStorage.setItem(PRODUCOES_KEY, JSON.stringify(productions));
+
+  if (!online) {
+    return;
+  }
+  diffProductions(productionsSynced, productions);
+  productionsSynced = JSON.parse(JSON.stringify(productions));
+}
+
 /** Envia ao banco os pedidos criados/alterados/removidos. */
 function diffOrders(previous, next) {
   const byId = new Map(previous.map((order) => [order.id, order]));
@@ -409,6 +511,23 @@ function diffProducts(previous, next) {
   byId.forEach((_, id) => supabase.deleteProduct(id).catch((e) => reportError('Falha ao excluir produto', e.message)));
 }
 
+/** Envia ao banco as produções criadas/alteradas/removidas. */
+function diffProductions(previous, next) {
+  const byId = new Map(previous.map((production) => [production.id, production]));
+
+  next.forEach((production) => {
+    const old = byId.get(production.id);
+    if (!old) {
+      supabase.insertProduction(toProductionRow(production)).catch((e) => reportError('Falha ao criar produção', e.message));
+    } else if (JSON.stringify(old) !== JSON.stringify(production)) {
+      supabase.updateProduction(production.id, toProductionRow(production)).catch((e) => reportError('Falha ao atualizar produção', e.message));
+    }
+    byId.delete(production.id);
+  });
+
+  byId.forEach((_, id) => supabase.deleteProduction(id).catch((e) => reportError('Falha ao excluir produção', e.message)));
+}
+
 /* ---------- Manutenção ---------- */
 
 /**
@@ -418,11 +537,14 @@ function diffProducts(previous, next) {
 export function clearAll() {
   ordersCache = null;
   productsCache = null;
+  productionsCache = null;
   ordersSynced = [];
   productsSynced = [];
+  productionsSynced = [];
   online = false;
   localStorage.removeItem(PEDIDOS_KEY);
   localStorage.removeItem(PRODUTOS_KEY);
+  localStorage.removeItem(PRODUCOES_KEY);
   localStorage.removeItem(CONFIG_KEY);
   localStorage.removeItem('punkbolos.session');
 }
@@ -434,7 +556,9 @@ export function clearAll() {
 export function reset() {
   ordersCache = null;
   productsCache = null;
+  productionsCache = null;
   ordersSynced = [];
   productsSynced = [];
+  productionsSynced = [];
   online = false;
 }

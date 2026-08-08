@@ -16,7 +16,7 @@
   <!-- Ordem: temas primeiro (define as variáveis), depois estilos, depois responsividade -->
   <!-- ?v=NN força o navegador a baixar os arquivos mais recentes (cache-busting) -->
   <link rel="stylesheet" href="css/themes.css?v=12">
-  <link rel="stylesheet" href="css/styles.css?v=17">
+  <link rel="stylesheet" href="css/styles.css?v=18">
   <link rel="stylesheet" href="css/responsive.css?v=12">
 
   <!-- Acelera as chamadas à API do Supabase (deve bater com js/config.js) -->
@@ -49,6 +49,7 @@
     <button class="nav-tab active" type="button" data-view-target="dashboard">Início</button>
     <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
     <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
+    <button class="nav-tab" type="button" data-view-target="estoque">Estoque</button>
   </nav>
 
   <!-- ============================================================
@@ -278,6 +279,66 @@
   </main>
 
   <!-- ============================================================
+       VIEW — Estoque (produção + saldo por produto)
+       Controlada por js/modules/estoqueView.js
+       ============================================================ -->
+  <main id="view-estoque" class="view">
+    <div class="page-title">
+      <h1>Estoque</h1>
+      <span id="estoqueCount" class="count-badge">0</span>
+    </div>
+
+    <p class="view-subtitle">
+      Registre aqui a quantidade produzida de cada produto. Ao CONCLUIR pedidos,
+      o estoque é abatido automaticamente. Produtos sem "controlar estoque" ficam ilimitados.
+    </p>
+
+    <section class="estoque-panel">
+      <h2>Registrar produção</h2>
+      <form id="estoqueForm" class="estoque-form" novalidate>
+        <select id="estoqueFormProduto" required aria-label="Produto">
+          <option value="">— Escolha o produto —</option>
+        </select>
+        <input type="date" id="estoqueFormData" required aria-label="Data da produção">
+        <input type="number" id="estoqueFormQtd" min="1" step="1" placeholder="Quantidade" required
+               aria-label="Quantidade produzida" inputmode="numeric">
+        <input type="text" id="estoqueFormObs" placeholder="Observação (opcional)"
+               aria-label="Observação" autocomplete="off">
+        <button type="submit" class="btn btn-primary">Registrar</button>
+      </form>
+      <p id="estoqueFormAviso" class="estoque-aviso" hidden></p>
+    </section>
+
+    <section class="estoque-panel">
+      <h2>Estoque atual</h2>
+      <div id="estoqueTableWrap">
+        <table class="estoque-table" aria-label="Estoque atual por produto">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Produzido</th>
+              <th>Vendido</th>
+              <th>Disponível</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="estoqueTableBody"></tbody>
+        </table>
+      </div>
+      <div id="estoqueEmpty" class="empty-state" hidden>
+        <span class="empty-icon" aria-hidden="true">📦</span>
+        <p>Nenhum produto com controle de estoque.<br>
+          Ative em <strong>Produtos</strong> → Editar → <em>Controlar estoque deste produto</em>.</p>
+      </div>
+    </section>
+
+    <section class="estoque-panel">
+      <h2>Últimas produções</h2>
+      <ul id="estoqueHistory" class="estoque-history" aria-live="polite"></ul>
+    </section>
+  </main>
+
+  <!-- ============================================================
        BOTÃO FLUTUANTE — novo pedido (FAB)
        ============================================================ -->
   <button id="fabNewOrder" class="fab" type="button" aria-label="Novo pedido">＋</button>
@@ -454,6 +515,14 @@
             <textarea id="field-detalhes" rows="3" placeholder="Ex.: Fatia média com recheio de brigadeiro e morango"></textarea>
             <span class="error-hint" id="error-detalhes"></span>
           </div>
+
+          <label class="check-field">
+            <input type="checkbox" id="field-controla-estoque">
+            <span>
+              <strong>Controlar estoque deste produto</strong>
+              <small>Registre a produção na aba Estoque; o saldo é abatido ao concluir pedidos. Desligado = produto ilimitado.</small>
+            </span>
+          </label>
         </div>
 
         <div class="modal-footer">
@@ -471,6 +540,6 @@
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=17"></script>
+  <script type="module" src="js/app.js?v=18"></script>
 </body>
 </html>
