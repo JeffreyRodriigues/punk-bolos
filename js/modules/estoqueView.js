@@ -10,7 +10,7 @@
 import * as storage from './storage.js?v=13';
 import * as product from './product.js?v=16';
 import * as order from './order.js?v=15';
-import * as estoque from './estoque.js?v=2';
+import * as estoque from './estoque.js?v=3';
 import { showToast } from './toast.js?v=12';
 import { formatDate } from '../utils/money.js?v=12';
 import { sortKey } from '../utils/describe.js?v=1';
@@ -146,8 +146,9 @@ function renderTable() {
   tbody.innerHTML = '';
   lista.forEach((p) => {
     const produzido = estoque.totalProduzido(p.id);
+    const reservado = estoque.totalReservado(p.id);
     const vendido = estoque.totalVendido(p.id);
-    const disp = produzido - vendido;
+    const disp = produzido - reservado - vendido;
 
     const tr = document.createElement('tr');
 
@@ -157,6 +158,10 @@ function renderTable() {
 
     const produzidoTd = document.createElement('td');
     produzidoTd.textContent = produzido;
+
+    const reservadoTd = document.createElement('td');
+    reservadoTd.className = reservado > 0 ? 'estoque-reservado' : '';
+    reservadoTd.textContent = reservado;
 
     const vendidoTd = document.createElement('td');
     vendidoTd.textContent = vendido;
@@ -176,7 +181,7 @@ function renderTable() {
     btn.addEventListener('click', () => prepararProducao(p.id));
     actionTd.appendChild(btn);
 
-    tr.append(name, produzidoTd, vendidoTd, dispTd, actionTd);
+    tr.append(name, produzidoTd, reservadoTd, vendidoTd, dispTd, actionTd);
     tbody.appendChild(tr);
   });
 }

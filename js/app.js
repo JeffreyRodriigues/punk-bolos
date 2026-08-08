@@ -28,7 +28,7 @@ import * as dateFilter from './modules/dateFilter.js?v=13';
 import * as productForm from './modules/productForm.js?v=17';
 import * as productList from './modules/productList.js?v=16';
 import * as importExport from './modules/importExport.js?v=15';
-import * as estoque from './modules/estoque.js?v=2';
+import * as estoque from './modules/estoque.js?v=3';
 import * as estoqueView from './modules/estoqueView.js?v=5';
 import { showToast } from './modules/toast.js?v=12';
 
@@ -78,9 +78,11 @@ function updateStatus(orderToUpdate, newStatus, successMessage) {
   const index = orders.findIndex((o) => o.id === orderToUpdate.id);
   if (index === -1) return;
 
-  // Ao concluir, garante que ainda há estoque para os itens do pedido
+  // Ao concluir, garante que ainda há estoque para os itens do pedido.
+  // Passa excludeOrderId para não contar a própria reserva (o pedido ora
+  // em andamento) contra a conclusão.
   if (newStatus === 'Concluído') {
-    const stockErrors = estoque.validateItens(orderToUpdate.itens);
+    const stockErrors = estoque.validateItens(orderToUpdate.itens, { excludeOrderId: orderToUpdate.id });
     if (stockErrors.length > 0) {
       const detail = stockErrors.map((e) => estoque.describeErro(e)).join('; ');
       showToast(`Não é possível concluir — produto sem produção: ${detail}`, 'error');

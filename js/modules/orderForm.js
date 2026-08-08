@@ -14,7 +14,7 @@
 import * as storage from './storage.js?v=13';
 import * as order from './order.js?v=15';
 import * as product from './product.js?v=16';
-import * as estoque from './estoque.js?v=2';
+import * as estoque from './estoque.js?v=3';
 import { formatCurrency } from '../utils/money.js?v=12';
 import { defaultItemType } from '../utils/describe.js?v=1';
 
@@ -149,10 +149,15 @@ function createItemRow(item = {}) {
     if (chosen) {
       const disp = estoque.disponivel(chosen);
       const produzido = estoque.totalProduzido(chosen.id);
+      const reservado = estoque.totalReservado(chosen.id);
       stockEl.hidden = false;
-      stockEl.textContent = produzido <= 0
-        ? 'Sem produção registrada'
-        : `Estoque: ${disp}`;
+      if (produzido <= 0) {
+        stockEl.textContent = 'Sem produção registrada';
+      } else if (reservado > 0) {
+        stockEl.textContent = `Disponível: ${disp} (${reservado} reservado)`;
+      } else {
+        stockEl.textContent = `Estoque: ${disp}`;
+      }
       stockEl.className = `item-stock stock-${estoque.stockStatus(disp)}`;
       const qtd = Number(qtdInput.value) || 0;
       if (qtd > disp) {

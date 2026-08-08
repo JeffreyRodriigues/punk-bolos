@@ -1248,6 +1248,11 @@ body.modal-open {
   text-align: right;
 }
 
+.estoque-table .estoque-reservado {
+  font-weight: 600;
+  color: var(--color-warn);
+}
+
 .estoque-table .estoque-produzir {
   padding: 6px 12px;
   font-size: 0.82rem;
