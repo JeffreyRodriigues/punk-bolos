@@ -8,7 +8,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as product from './product.js?v=16';
+import * as product from './product.js?v=17';
 import * as order from './order.js?v=16';
 import * as estoque from './estoque.js?v=4';
 import { showToast } from './toast.js?v=12';

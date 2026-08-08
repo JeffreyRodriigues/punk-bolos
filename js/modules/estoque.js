@@ -24,7 +24,7 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as product from './product.js?v=16';
+import * as product from './product.js?v=17';
 
 /**
  * Resolve o produto do catálogo correspondente a um item de pedido.

@@ -13,7 +13,7 @@
 
 import * as storage from './storage.js?v=13';
 import * as order from './order.js?v=16';
-import * as product from './product.js?v=16';
+import * as product from './product.js?v=17';
 import * as estoque from './estoque.js?v=4';
 import { formatCurrency } from '../utils/money.js?v=12';
 import { defaultItemType } from '../utils/describe.js?v=1';
@@ -58,12 +58,17 @@ export function setCreateProductHandler(cb) {
 
 /**
  * Descobre o produto do catálogo que originou um item (em edição).
- * Prioriza saborId (formato novo); senão casa por tipo+tamanho+valor.
+ * Prioriza produtoId (novo formato); senão saborId (transição);
+ * por último casa por tipo+tamanho+valor (pedidos legados/importados).
  * @param {Object} item - Item do pedido.
  * @returns {string} Id do produto (ou "" quando não resolve).
  */
 function resolveItemProductId(item) {
   if (!item || typeof item !== 'object') return '';
+  if (item.produtoId) {
+    const byId = product.getProducts().find((p) => p.id === item.produtoId);
+    if (byId) return byId.id;
+  }
   if (item.saborId) {
     const byId = product.getProducts().find((p) => p.id === item.saborId);
     if (byId) return byId.id;
@@ -215,13 +220,9 @@ function createItemRow(item = {}) {
   });
 
   // Ao editar: reconhece o produto que originou o item
-  if (item.saborId && [...saborSelect.options].some((o) => o.value === item.saborId)) {
-    saborSelect.value = item.saborId;
-  } else if (item.tipoProduto) {
-    const match = product.matchProduct(item);
-    if (match) {
-      saborSelect.value = match.id;
-    }
+  const resolvedId = resolveItemProductId(item);
+  if (resolvedId && [...saborSelect.options].some((o) => o.value === resolvedId)) {
+    saborSelect.value = resolvedId;
   }
 
   // Exibe o preço após restaurar a seleção (senão some ao reabrir o pedido)

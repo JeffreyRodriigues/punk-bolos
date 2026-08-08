@@ -98,15 +98,23 @@ export function findDuplicate(data = {}, excludeId = '') {
 
 /**
  * Busca o produto que corresponde a um item de pedido, para
- * auto-preenchimento ao editar. Casa pelo tipo + tamanho + valor unitário.
+ * auto-preenchimento ao editar. Casa pelo tipo + tamanho + valor unitário
+ * e, quando o item guarda o título (sabor), usa-o para desempatar
+ * produtos com o mesmo preço (evita resolver um item para o produto
+ * errado só porque os tamanhos custam igual).
  * @param {Object} item - Item de pedido.
  * @returns {Object|undefined} Produto correspondente (ou undefined).
  */
 export function matchProduct(item = {}) {
-  return getProducts().find(
-    (p) =>
-      p.tipoProduto === item.tipoProduto &&
-      (p.tamanho || '') === (item.tamanho || '') &&
-      Number(p.valor) === Number(item.valorUnitario)
+  const sabor = String(item.sabor || '').trim().toLowerCase();
+  return getProducts().find((p) =>
+    p.tipoProduto === item.tipoProduto &&
+    (p.tamanho || '') === (item.tamanho || '') &&
+    Number(p.valor) === Number(item.valorUnitario) &&
+    (!sabor || String(p.titulo || '').trim().toLowerCase() === sabor)
+  ) || getProducts().find((p) =>
+    p.tipoProduto === item.tipoProduto &&
+    (p.tamanho || '') === (item.tamanho || '') &&
+    Number(p.valor) === Number(item.valorUnitario)
   );
 }
