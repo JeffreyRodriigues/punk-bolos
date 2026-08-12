@@ -1623,6 +1623,63 @@ body.modal-open {
     #insumoModal .estoque-form .btn {
       flex: 0 0 auto;
     }
+
+    /* Precificação */
+    .prec-insumos {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .prec-insumo-row .prec-insumo-qtd {
+      flex: 1 1 140px;
+    }
+
+    .prec-status {
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      margin: 10px 0;
+    }
+
+    .prec-status-ok {
+      background: var(--color-ok-soft);
+      color: var(--color-ok);
+    }
+
+    .prec-status-warn {
+      background: var(--color-warn-soft);
+      color: var(--color-warn);
+    }
+
+    .prec-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background-color: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+
+    .prec-preview-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.92rem;
+    }
+
+    .prec-preview-final {
+      color: var(--color-primary);
+      font-size: 1.05rem;
+    }
+
+    #btnUsarPreco:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
@@ -1656,6 +1713,7 @@ body.modal-open {
     <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
     <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
     <button class="nav-tab" type="button" data-view-target="inventario">Inventário</button>
+    <button class="nav-tab" type="button" data-view-target="precificacao">Precificação</button>
     <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
   </nav>
 
@@ -1983,6 +2041,78 @@ body.modal-open {
   </main>
 
   <!-- ============================================================
+       VIEW — Precificação (receita/custo por produto)
+       Controlada por js/modules/pricingView.js
+       ============================================================ -->
+  <main id="view-precificacao" class="view">
+    <div class="page-title">
+      <h1>Precificação</h1>
+    </div>
+
+    <p class="view-subtitle">
+      Monte a receita de cada produto (insumos + quantidades) e o sistema calcula
+      o <strong>custo por unidade</strong> com margem e multiplicador. O valor de
+      venda é sempre manual — use "Usar este preço" para copiar a sugestão.
+    </p>
+
+    <div id="precificacaoEmpty" class="empty-state" hidden>
+      <span class="empty-icon" aria-hidden="true">🍰</span>
+      <p>Nenhum produto cadastrado ainda.<br>
+        Cadastre produtos em <strong>Produtos</strong> para começar a precificar.</p>
+    </div>
+
+    <div id="precificacaoForm" class="estoque-panel">
+      <h2>Produto</h2>
+      <div class="estoque-form">
+        <select id="precificacaoProduto" aria-label="Produto a precificar"></select>
+      </div>
+      <p id="precificacaoStatus" class="prec-status prec-status-warn"></p>
+
+      <h2 class="insumo-section-title">Receita (insumos)</h2>
+      <div id="precInsumos" class="prec-insumos" aria-live="polite"></div>
+      <button type="button" id="btnAddPrecInsumo" class="btn-add-item">＋ Adicionar insumo</button>
+
+      <h2 class="insumo-section-title">Fatores de custo</h2>
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="precMargem">Margem (%)</label>
+          <input type="number" id="precMargem" min="0" step="0.01" value="25" aria-label="Margem percentual">
+        </div>
+        <div class="form-field">
+          <label for="precMultiplicador">Multiplicador</label>
+          <input type="number" id="precMultiplicador" min="0" step="0.01" value="3" aria-label="Multiplicador">
+        </div>
+        <div class="form-field">
+          <label for="precRendimento">Rendimento (unidades)</label>
+          <input type="number" id="precRendimento" min="1" step="1" value="10" aria-label="Rendimento em unidades">
+        </div>
+        <div class="form-field">
+          <label for="precEmbalagem">Embalagem (R$/un)</label>
+          <input type="number" id="precEmbalagem" min="0" step="0.01" value="1" aria-label="Custo de embalagem por unidade">
+        </div>
+        <div class="form-field form-field-full">
+          <label for="precCustoAdicional">Custo adicional (R$/un, opcional)</label>
+          <input type="number" id="precCustoAdicional" min="0" step="0.01" value="0" aria-label="Custo adicional por unidade">
+        </div>
+        <div class="form-field form-field-full">
+          <label for="precCustoAdicionalObs">Observação do custo adicional</label>
+          <input type="text" id="precCustoAdicionalObs" placeholder="Ex.: gás/energia" autocomplete="off">
+        </div>
+      </div>
+
+      <h2 class="insumo-section-title">Preview do custo</h2>
+      <div id="precPreview" class="prec-preview" aria-live="polite"></div>
+
+      <p id="precAviso" class="estoque-aviso" hidden></p>
+
+      <div class="modal-footer" style="position: static; padding: 16px 0 0; background: transparent;">
+        <button type="button" id="btnUsarPreco" class="btn btn-ghost">Usar este preço no catálogo</button>
+        <button type="button" id="btnSavePrecificacao" class="btn btn-primary">Salvar precificação</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================
        BOTÃO FLUTUANTE — novo pedido (FAB)
        ============================================================ -->
   <button id="fabNewOrder" class="fab" type="button" aria-label="Novo pedido">＋</button>
@@ -2236,6 +2366,6 @@ body.modal-open {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=25"></script>
+  <script type="module" src="js/app.js?v=26"></script>
 </body>
 </html>

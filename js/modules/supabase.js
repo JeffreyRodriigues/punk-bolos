@@ -391,3 +391,37 @@ export async function deleteInsumo(id) {
     auth: true,
   });
 }
+
+/* ---------- Precificações (receitas por produto) ---------- */
+
+/** Lista todas as precificações (linhas cruas do banco). */
+export async function listPrecificacoes() {
+  return request('/rest/v1/precificacoes?select=*', { auth: true });
+}
+
+/** Insere uma precificação. @param {Object} row - Linha com colunas snake_case. */
+export async function insertPrecificacao(row) {
+  return request('/rest/v1/precificacoes', {
+    method: 'POST',
+    auth: true,
+    headers: { Prefer: 'return=representation' },
+    body: row,
+  });
+}
+
+/** Atualiza uma precificação pelo id. */
+export async function updatePrecificacao(id, row) {
+  return request(`/rest/v1/precificacoes?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    auth: true,
+    body: row,
+  });
+}
+
+/** Exclui uma precificação pelo id. */
+export async function deletePrecificacao(id) {
+  return request(`/rest/v1/precificacoes?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}

@@ -31,6 +31,7 @@ import * as importExport from './modules/importExport.js?v=16';
 import * as estoque from './modules/estoque.js?v=4';
 import * as estoqueView from './modules/estoqueView.js?v=5';
 import * as inventoryView from './modules/inventoryView.js?v=2';
+import * as pricingView from './modules/pricingView.js?v=1';
 import { showToast } from './modules/toast.js?v=12';
 
 /* ---------- Navegação entre telas ---------- */
@@ -62,6 +63,8 @@ function navigate(target) {
     estoqueView.render();
   } else if (target === 'inventario') {
     inventoryView.render();
+  } else if (target === 'precificacao') {
+    pricingView.render();
   } else {
     orderList.render();
   }
@@ -136,6 +139,7 @@ function init() {
         productList.render();
         estoqueView.render();
         inventoryView.render();
+        pricingView.render();
         showToast('Dados atualizados!');
       })
       .catch(() => {
@@ -228,6 +232,14 @@ function init() {
     inventoryView.render();
   });
 
+  // Precificação: após salvar/usar preço, re-renderiza e reflete no catálogo
+  pricingView.setChangeListener(() => {
+    pricingView.render();
+    productList.render();
+    orderList.render();
+    dashboard.render();
+  });
+
   // Importar / exportar planilha (CSV)
   document.getElementById('btnModeloCsv').addEventListener('click', () => {
     importExport.downloadTemplate();
@@ -272,6 +284,7 @@ function init() {
     productList.render();
     estoqueView.render();
     inventoryView.render();
+    pricingView.render();
   });
 }
 

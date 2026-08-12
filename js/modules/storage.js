@@ -23,6 +23,7 @@ const PEDIDOS_KEY = 'punkbolos.pedidos';
 const PRODUTOS_KEY = 'punkbolos.produtos';
 const PRODUCOES_KEY = 'punkbolos.producao';
 const INSUMOS_KEY = 'punkbolos.insumos';
+const PRECIFICACOES_KEY = 'punkbolos.precificacoes';
 const CONFIG_KEY = 'punkbolos.config';
 
 /** Caches em memória (null = ainda não carregado). */
@@ -30,6 +31,7 @@ let ordersCache = null;
 let productsCache = null;
 let productionsCache = null;
 let insumosCache = null;
+let precificacoesCache = null;
 
 /**
  * Snapshots do ÚLTIMO estado sincronizado com a nuvem.
@@ -41,6 +43,7 @@ let ordersSynced = [];
 let productsSynced = [];
 let productionsSynced = [];
 let insumosSynced = [];
+let precificacoesSynced = [];
 
 /** true quando conectado ao Supabase (escritas vão para a nuvem). */
 let online = false;
@@ -253,6 +256,43 @@ function readLocalInsumos() {
   }
 }
 
+/** Normaliza uma precificação carregada (guarda contra formatos antigos). */
+function normalizePrecificacao(receita) {
+  if (!receita || typeof receita !== 'object') {
+    return receita;
+  }
+  return {
+    id: receita.id,
+    produtoId: String(receita.produtoId || '').trim(),
+    itens: Array.isArray(receita.itens)
+      ? receita.itens.map((i) => ({
+          insumoId: String(i.insumoId || '').trim(),
+          quantidade: Number(i.quantidade) || 0,
+        }))
+      : [],
+    margem: Number(receita.margem) || 0,
+    multiplicador: Number(receita.multiplicador) || 0,
+    rendimento: Number(receita.rendimento) || 0,
+    embalagem: Number(receita.embalagem) || 0,
+    custoAdicional: Number(receita.custoAdicional) || 0,
+    custoAdicionalObs: String(receita.custoAdicionalObs || '').trim(),
+    dataCalculo: receita.dataCalculo || '',
+    custoIngredientes: Number(receita.custoIngredientes) || 0,
+    custoPorUnidade: Number(receita.custoPorUnidade) || 0,
+  };
+}
+
+/** Lê as precificações do LocalStorage. */
+function readLocalPrecificacoes() {
+  try {
+    const raw = localStorage.getItem(PRECIFICACOES_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.map(normalizePrecificacao) : [];
+  } catch {
+    return [];
+  }
+}
+
 /* ---------- Mapeamento para o banco (snake_case) ---------- */
 
 /** Pedido (app) → linha do banco. */
@@ -363,6 +403,42 @@ function fromInsumoRow(row) {
   };
 }
 
+/** Precificação (app) → linha do banco (itens embutidos em JSONB). */
+function toPrecificacaoRow(receita) {
+  return {
+    id: receita.id,
+    produto_id: receita.produtoId || '',
+    itens: Array.isArray(receita.itens) ? receita.itens : [],
+    margem: Number(receita.margem) || 0,
+    multiplicador: Number(receita.multiplicador) || 0,
+    rendimento: Number(receita.rendimento) || 0,
+    embalagem: Number(receita.embalagem) || 0,
+    custo_adicional: Number(receita.custoAdicional) || 0,
+    custo_adicional_obs: receita.custoAdicionalObs || '',
+    data_calculo: receita.dataCalculo || null,
+    custo_ingredientes: Number(receita.custoIngredientes) || 0,
+    custo_por_unidade: Number(receita.custoPorUnidade) || 0,
+  };
+}
+
+/** Linha do banco → precificação (app). */
+function fromPrecificacaoRow(row) {
+  return {
+    id: row.id,
+    produtoId: row.produto_id || '',
+    itens: Array.isArray(row.itens) ? row.itens : [],
+    margem: Number(row.margem) || 0,
+    multiplicador: Number(row.multiplicador) || 0,
+    rendimento: Number(row.rendimento) || 0,
+    embalagem: Number(row.embalagem) || 0,
+    custoAdicional: Number(row.custo_adicional) || 0,
+    custoAdicionalObs: row.custo_adicional_obs || '',
+    dataCalculo: row.data_calculo || '',
+    custoIngredientes: Number(row.custo_ingredientes) || 0,
+    custoPorUnidade: Number(row.custo_por_unidade) || 0,
+  };
+}
+
 /* ---------- Leitura síncrona (cache) ---------- */
 
 /**
@@ -409,6 +485,17 @@ export function getAllInsumos() {
   return insumosCache;
 }
 
+/**
+ * Lê todas as precificações (receitas por produto).
+ * @returns {Array<Object>} Lista de precificações.
+ */
+export function getAllPrecificacoes() {
+  if (precificacoesCache === null) {
+    precificacoesCache = readLocalPrecificacoes();
+  }
+  return precificacoesCache;
+}
+
 /* ---------- Inicialização / sincronização ---------- */
 
 /**
@@ -425,25 +512,28 @@ export async function init() {
   }
 
   try {
-    const [remoteOrders, remoteProducts, remoteProductions, remoteInsumos] = await Promise.all([
+    const [remoteOrders, remoteProducts, remoteProductions, remoteInsumos, remotePrecificacoes] = await Promise.all([
       supabase.listOrders(),
       supabase.listProducts(),
       supabase.listProductions(),
       supabase.listInsumos(),
+      supabase.listPrecificacoes(),
     ]);
 
     const localOrders = readLocalOrders();
     const localProducts = readLocalProducts();
     const localProductions = readLocalProductions();
     const localInsumos = readLocalInsumos();
+    const localPrecificacoes = readLocalPrecificacoes();
 
     // Reconciliação: envia para a nuvem o que existe apenas no
     // dispositivo (criado offline ou com escrita que falhou). Isso
-    // garante que nenhum pedido/produto/produção se perca ao voltar online.
+    // garante que nenhum pedido/produto/produção/insumo se perca ao voltar online.
     const remoteOrderIds = new Set(remoteOrders.map((o) => o.id));
     const remoteProductIds = new Set(remoteProducts.map((p) => p.id));
     const remoteProductionIds = new Set(remoteProductions.map((pr) => pr.id));
     const remoteInsumoIds = new Set(remoteInsumos.map((i) => i.id));
+    const remotePrecificacaoIds = new Set(remotePrecificacoes.map((r) => r.id));
 
     for (const order of localOrders.filter((o) => !remoteOrderIds.has(o.id))) {
       try {
@@ -473,22 +563,32 @@ export async function init() {
         reportError('Falha ao reenviar insumo', e && e.message ? e.message : 'sem conexão');
       }
     }
+    for (const receita of localPrecificacoes.filter((r) => !remotePrecificacaoIds.has(r.id))) {
+      try {
+        await supabase.insertPrecificacao(toPrecificacaoRow(receita));
+      } catch (e) {
+        reportError('Falha ao reenviar precificação', e && e.message ? e.message : 'sem conexão');
+      }
+    }
 
     // Fonte de verdade = nuvem (após o merge), atualizada via refetch
-    const [o2, p2, pr2, i2] = await Promise.all([
+    const [o2, p2, pr2, i2, prc2] = await Promise.all([
       supabase.listOrders(),
       supabase.listProducts(),
       supabase.listProductions(),
       supabase.listInsumos(),
+      supabase.listPrecificacoes(),
     ]);
     ordersCache = o2.map(fromOrderRow);
     productsCache = p2.map(fromProductRow);
     productionsCache = pr2.map(fromProductionRow);
     insumosCache = i2.map(fromInsumoRow);
+    precificacoesCache = prc2.map(fromPrecificacaoRow);
     ordersSynced = JSON.parse(JSON.stringify(ordersCache));
     productsSynced = JSON.parse(JSON.stringify(productsCache));
     productionsSynced = JSON.parse(JSON.stringify(productionsCache));
     insumosSynced = JSON.parse(JSON.stringify(insumosCache));
+    precificacoesSynced = JSON.parse(JSON.stringify(precificacoesCache));
     online = true;
   } catch (error) {
     if (error && error.message === 'Sessão expirada') {
@@ -643,6 +743,40 @@ function diffInsumos(previous, next) {
   byId.forEach((_, id) => supabase.deleteInsumo(id).catch((e) => reportError('Falha ao excluir insumo', e.message)));
 }
 
+/**
+ * Persiste a lista de precificações (mesma lógica diferencial das
+ * produções/insumos).
+ * @param {Array<Object>} precificacoes - Nova lista de precificações.
+ */
+export function savePrecificacoes(precificacoes) {
+  precificacoesCache = precificacoes;
+
+  localStorage.setItem(PRECIFICACOES_KEY, JSON.stringify(precificacoes));
+
+  if (!online) {
+    return;
+  }
+  diffPrecificacoes(precificacoesSynced, precificacoes);
+  precificacoesSynced = JSON.parse(JSON.stringify(precificacoes));
+}
+
+/** Envia ao banco as precificações criadas/alteradas/removidas. */
+function diffPrecificacoes(previous, next) {
+  const byId = new Map(previous.map((r) => [r.id, r]));
+
+  next.forEach((r) => {
+    const old = byId.get(r.id);
+    if (!old) {
+      supabase.insertPrecificacao(toPrecificacaoRow(r)).catch((e) => reportError('Falha ao criar precificação', e.message));
+    } else if (JSON.stringify(old) !== JSON.stringify(r)) {
+      supabase.updatePrecificacao(r.id, toPrecificacaoRow(r)).catch((e) => reportError('Falha ao atualizar precificação', e.message));
+    }
+    byId.delete(r.id);
+  });
+
+  byId.forEach((_, id) => supabase.deletePrecificacao(id).catch((e) => reportError('Falha ao excluir precificação', e.message)));
+}
+
 /* ---------- Manutenção ---------- */
 
 /**
@@ -654,15 +788,18 @@ export function clearAll() {
   productsCache = null;
   productionsCache = null;
   insumosCache = null;
+  precificacoesCache = null;
   ordersSynced = [];
   productsSynced = [];
   productionsSynced = [];
   insumosSynced = [];
+  precificacoesSynced = [];
   online = false;
   localStorage.removeItem(PEDIDOS_KEY);
   localStorage.removeItem(PRODUTOS_KEY);
   localStorage.removeItem(PRODUCOES_KEY);
   localStorage.removeItem(INSUMOS_KEY);
+  localStorage.removeItem(PRECIFICACOES_KEY);
   localStorage.removeItem(CONFIG_KEY);
   localStorage.removeItem('punkbolos.session');
 }
@@ -676,9 +813,11 @@ export function reset() {
   productsCache = null;
   productionsCache = null;
   insumosCache = null;
+  precificacoesCache = null;
   ordersSynced = [];
   productsSynced = [];
   productionsSynced = [];
   insumosSynced = [];
+  precificacoesSynced = [];
   online = false;
 }
