@@ -349,7 +349,6 @@ function flushCompraPendente() {
     comprasDraft.push(compra);
   }
 }
-}
 
 /**
  * Remove uma compra do rascunho pelo id.
