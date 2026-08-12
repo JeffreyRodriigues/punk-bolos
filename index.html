@@ -1242,6 +1242,328 @@ body.modal-open {
 }
 
 /* ============================================================
+   TABELA DE INVENTÁRIO (visão tipo planilha)
+   ============================================================ */
+
+.inv-list {
+  overflow-x: auto;
+}
+
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.inv-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  border-bottom: 2px solid var(--color-border);
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.inv-table tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.inv-table tbody tr:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.inv-table .inv-nome {
+  font-weight: 700;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.inv-table .inv-desc {
+  color: var(--color-text-muted);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inv-table .inv-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.inv-table .inv-cell-main {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.inv-table .inv-cell-sub {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.inv-table .inv-actions-col {
+  text-align: right;
+}
+
+.inv-table .inv-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.inv-cat-ingrediente {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.inv-cat-base {
+  background-color: var(--color-ok-soft);
+  color: var(--color-ok);
+}
+
+.inv-toggle {
+  margin-left: 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 2px;
+}
+
+.inv-base-row:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.inv-base-detail > td {
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 12px;
+}
+
+.inv-base-components {
+  font-size: 0.85rem;
+}
+
+.inv-base-components-title {
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--color-text);
+}
+
+.inv-base-components ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-text-muted);
+}
+
+.inv-base-components li {
+  margin: 2px 0;
+}
+
+.base-componentes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+.base-componente-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.base-componentes-head,
+.base-componente-row {
+  min-width: 540px;
+}
+
+.base-componente-select {
+  flex: 1 1 170px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.base-componente-qtd {
+  flex: 1 1 auto;
+  min-width: 60px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.base-componente-unit {
+  flex: 0 0 auto;
+  min-width: 22px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.base-componente-cost {
+  flex: 0 0 100px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.base-componente-preco {
+  flex: 0 0 160px;
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.base-componente-uso {
+  flex: 1 1 90px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.base-componentes-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  padding: 0 4px 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.base-col-ing { flex: 1 1 170px; text-align: left; }
+.base-col-preco { flex: 0 0 160px; text-align: right; }
+.base-col-uso { flex: 1 1 90px; text-align: left; }
+.base-col-custo { flex: 0 0 100px; text-align: right; }
+.base-col-act { flex: 0 0 36px; }
+
+/* No celular/tablet estreito, a tabela de componentes vira cards empilhados
+   com rótulos, em vez de rolar horizontalmente. */
+@media (max-width: 600px) {
+  .base-componentes {
+    overflow-x: visible;
+  }
+
+  .base-componentes-head {
+    display: none;
+  }
+
+  .base-componente-row {
+    flex-wrap: wrap;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+    gap: 10px 0;
+  }
+
+  .base-componente-row > [data-label],
+  .base-componente-row > .item-remove {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .base-componente-row > [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+    margin-bottom: 4px;
+  }
+
+  .base-componente-select {
+    width: 100%;
+  }
+
+  .base-componente-uso {
+    flex: 1 1 100%;
+  }
+
+  .base-componente-row .item-remove {
+    width: 100%;
+    height: 38px;
+    margin-top: 4px;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-alt);
+    color: transparent;
+    font-size: 0;
+  }
+
+  .base-componente-row .item-remove::before {
+    content: 'Remover';
+    color: var(--color-danger, #c0392b);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+}
+
+.base-custo-preview {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.base-custo-por {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.modal-card-sm {
+  max-width: 420px;
+}
+
+.modal-card-wide {
+  max-width: min(880px, 94vw);
+}
+
+.categoria-chooser {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ============================================================
    CONTROLE DE ESTOQUE
    ============================================================ */
 
@@ -1659,6 +1981,22 @@ body.modal-open {
       flex: 1 1 140px;
     }
 
+    .prec-insumo-select,
+    .prec-insumo-qtd {
+      background-color: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: inherit;
+      padding: 11px 12px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .prec-insumo-select:focus,
+    .prec-insumo-qtd:focus {
+      border-color: var(--color-primary);
+    }
+
     .prec-status {
       font-size: 0.85rem;
       font-weight: 700;
@@ -2044,8 +2382,9 @@ body.modal-open {
 
     <p class="view-subtitle">
       Cadastre os insumos (farinha, açúcar, leite, fermento etc.) com a unidade de
-      medida e o histórico de compras. O sistema calcula o custo unitário (preço
-      total ÷ quantidade) a partir da última compra.
+      medida e o histórico de compras. Crie também <strong>bases</strong> (receitas
+      de insumos, ex.: massa de bolo) — o sistema soma o custo de todos os componentes.
+      A coluna <strong>Categoria</strong> distingue Ingrediente de Base.
     </p>
 
     <div class="search-bar">
@@ -2053,8 +2392,8 @@ body.modal-open {
       <input id="insumoSearch" type="search" placeholder="Pesquisar insumo..." autocomplete="off">
     </div>
 
-    <div id="insumoList" class="product-grid" aria-live="polite">
-      <!-- Cards de insumos serão renderizados aqui -->
+    <div id="insumoList" class="inv-list" aria-live="polite">
+      <!-- Tabela de insumos será renderizada aqui -->
     </div>
 
     <div id="insumoEmpty" class="empty-state" hidden>
@@ -2332,7 +2671,7 @@ body.modal-open {
        ============================================================ -->
   <div id="insumoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="insumoModalTitle">
     <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-card">
+    <div class="modal-card modal-card-wide">
       <div class="modal-header">
         <h2 id="insumoModalTitle">Novo insumo</h2>
         <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
@@ -2385,8 +2724,79 @@ body.modal-open {
     </div>
   </div>
 
+  <!-- ============================================================
+       MODAL — cadastro/edição de BASE (receita de insumos)
+       Controlado por js/modules/inventoryView.js
+       ============================================================ -->
+  <div id="baseModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="baseModalTitle">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card modal-card-wide">
+      <div class="modal-header">
+        <h2 id="baseModalTitle">Nova base</h2>
+        <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="baseForm" novalidate>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-field form-field-full">
+              <label for="baseFieldNome">Nome da base</label>
+              <input type="text" id="baseFieldNome" placeholder="Ex.: Bolo branco híbrido" autocomplete="off">
+            </div>
+            <div class="form-field">
+              <label for="baseFieldRendimento">Rendimento</label>
+              <input type="number" id="baseFieldRendimento" min="0" step="0.001" placeholder="Ex.: 1" inputmode="decimal">
+            </div>
+            <div class="form-field">
+              <label for="baseFieldRendUnidade">Unidade do rendimento</label>
+              <select id="baseFieldRendUnidade" aria-label="Unidade do rendimento">
+                <option value="g">g</option>
+                <option value="ml">ml</option>
+                <option value="unidade">unidade</option>
+              </select>
+            </div>
+            <div class="form-field form-field-full">
+              <label for="baseFieldDescricao">Descrição (opcional)</label>
+              <input type="text" id="baseFieldDescricao" placeholder="Ex.: Massa base para bolos" autocomplete="off">
+            </div>
+          </div>
+
+          <h2 class="insumo-section-title">Componentes (insumos)</h2>
+          <p class="view-subtitle">Adicione os insumos que compõem a base e suas quantidades. O sistema soma o custo de todos para calcular o preço da base.</p>
+
+          <div id="baseComponentes" class="base-componentes" aria-live="polite"></div>
+          <button type="button" id="btnAddComponente" class="btn-add-item">＋ Adicionar insumo</button>
+
+          <div id="baseCustoPreview" class="base-custo-preview" aria-live="polite"></div>
+
+          <p id="baseFormAviso" class="estoque-aviso" hidden></p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnCancelBase" class="btn btn-ghost" data-close-modal>Cancelar</button>
+          <button type="button" id="btnSaveBase" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Container de notificações (toasts) -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <div id="categoriaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="categoriaModalTitle">
+    <div class="modal-backdrop" data-close-categoria></div>
+    <div class="modal-card modal-card-sm">
+      <div class="modal-header">
+        <h2 id="categoriaModalTitle">Criar como</h2>
+        <button type="button" class="modal-close" data-close-categoria aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body categoria-chooser">
+        <p class="view-subtitle">Selecione o tipo de item que deseja cadastrar no inventário:</p>
+        <button type="button" id="btnEscolherIngrediente" class="btn btn-primary btn-block">Ingrediente</button>
+        <button type="button" id="btnEscolherBase" class="btn btn-primary btn-block">Base (receita de insumos)</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Chart.js (gráficos do dashboard) — carregado localmente (offline) -->
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>

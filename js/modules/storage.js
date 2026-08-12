@@ -24,6 +24,7 @@ const PRODUTOS_KEY = 'punkbolos.produtos';
 const PRODUCOES_KEY = 'punkbolos.producao';
 const INSUMOS_KEY = 'punkbolos.insumos';
 const PRECIFICACOES_KEY = 'punkbolos.precificacoes';
+const BASES_KEY = 'punkbolos.bases';
 const CONFIG_KEY = 'punkbolos.config';
 
 /** Caches em memória (null = ainda não carregado). */
@@ -32,6 +33,7 @@ let productsCache = null;
 let productionsCache = null;
 let insumosCache = null;
 let precificacoesCache = null;
+let basesCache = null;
 
 /**
  * Snapshots do ÚLTIMO estado sincronizado com a nuvem.
@@ -267,6 +269,7 @@ function normalizePrecificacao(receita) {
     itens: Array.isArray(receita.itens)
       ? receita.itens.map((i) => ({
           insumoId: String(i.insumoId || '').trim(),
+          baseId: String(i.baseId || '').trim(),
           quantidade: Number(i.quantidade) || 0,
         }))
       : [],
@@ -280,6 +283,37 @@ function normalizePrecificacao(receita) {
     custoIngredientes: Number(receita.custoIngredientes) || 0,
     custoPorUnidade: Number(receita.custoPorUnidade) || 0,
   };
+}
+
+/** Normaliza uma base carregada (guarda contra formatos antigos). */
+function normalizeBase(base) {
+  if (!base || typeof base !== 'object') {
+    return base;
+  }
+  return {
+    id: base.id,
+    nome: String(base.nome || '').trim(),
+    descricao: String(base.descricao || '').trim(),
+    rendimento: Number(base.rendimento) || 0,
+    rendimentoUnidade: String(base.rendimentoUnidade || 'un').trim(),
+    componentes: Array.isArray(base.componentes)
+      ? base.componentes.map((c) => ({
+          insumoId: String(c.insumoId || ''),
+          quantidade: Number(c.quantidade) || 0,
+        }))
+      : [],
+  };
+}
+
+/** Lê as bases do LocalStorage. */
+function readLocalBases() {
+  try {
+    const raw = localStorage.getItem(BASES_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.map(normalizeBase) : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Lê as precificações do LocalStorage. */
@@ -726,6 +760,27 @@ export function saveInsumos(insumos) {
   insumosSynced = JSON.parse(JSON.stringify(insumos));
 }
 
+/**
+ * Lê todas as bases (receitas de insumos) do cache/local.
+ * @returns {Array<Object>} Lista de bases.
+ */
+export function getAllBases() {
+  if (basesCache === null) {
+    basesCache = readLocalBases();
+  }
+  return basesCache;
+}
+
+/**
+ * Salva a lista de bases (apenas LocalStorage — sem sincronização
+ * com a nuvem nesta versão).
+ * @param {Array<Object>} bases - Nova lista de bases.
+ */
+export function saveBases(bases) {
+  basesCache = bases;
+  localStorage.setItem(BASES_KEY, JSON.stringify(bases));
+}
+
 /** Envia ao banco os insumos criados/alterados/removidos. */
 function diffInsumos(previous, next) {
   const byId = new Map(previous.map((insumo) => [insumo.id, insumo]));
@@ -789,6 +844,7 @@ export function clearAll() {
   productionsCache = null;
   insumosCache = null;
   precificacoesCache = null;
+  basesCache = null;
   ordersSynced = [];
   productsSynced = [];
   productionsSynced = [];
@@ -800,6 +856,7 @@ export function clearAll() {
   localStorage.removeItem(PRODUCOES_KEY);
   localStorage.removeItem(INSUMOS_KEY);
   localStorage.removeItem(PRECIFICACOES_KEY);
+  localStorage.removeItem(BASES_KEY);
   localStorage.removeItem(CONFIG_KEY);
   localStorage.removeItem('punkbolos.session');
 }
@@ -814,6 +871,7 @@ export function reset() {
   productionsCache = null;
   insumosCache = null;
   precificacoesCache = null;
+  basesCache = null;
   ordersSynced = [];
   productsSynced = [];
   productionsSynced = [];

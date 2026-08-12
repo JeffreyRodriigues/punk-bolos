@@ -1119,6 +1119,194 @@ body.modal-open {
 }
 
 /* ============================================================
+   TABELA DE INVENTÁRIO (visão tipo planilha)
+   ============================================================ */
+
+.inv-list {
+  overflow-x: auto;
+}
+
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.inv-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  border-bottom: 2px solid var(--color-border);
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.inv-table tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.inv-table tbody tr:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.inv-table .inv-nome {
+  font-weight: 700;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.inv-table .inv-desc {
+  color: var(--color-text-muted);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inv-table .inv-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.inv-table .inv-cell-main {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.inv-table .inv-cell-sub {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.inv-table .inv-actions-col {
+  text-align: right;
+}
+
+.inv-table .inv-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.inv-cat-ingrediente {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.inv-cat-base {
+  background-color: var(--color-ok-soft);
+  color: var(--color-ok);
+}
+
+.inv-toggle {
+  margin-left: 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 2px;
+}
+
+.inv-base-row:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.inv-base-detail > td {
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 12px;
+}
+
+.inv-base-components {
+  font-size: 0.85rem;
+}
+
+.inv-base-components-title {
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--color-text);
+}
+
+.inv-base-components ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-text-muted);
+}
+
+.inv-base-components li {
+  margin: 2px 0;
+}
+
+.base-componentes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+.base-componentes-head,
+.base-componente-row {
+  min-width: 580px;
+}
+
+.base-componente-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.base-componente-select {
+  flex: 1 1 170px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.base-componente-qtd {
+  flex: 1 1 auto;
+  min-width: 60px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.base-componente-uso {
+  flex: 1 1 90px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.base-componente-unit {
+  flex: 0 0 auto;
+  min-width: 22px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* ============================================================
    CONTROLE DE ESTOQUE
    ============================================================ */
 

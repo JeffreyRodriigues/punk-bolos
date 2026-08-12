@@ -14,6 +14,8 @@
 import * as storage from './storage.js?v=13';
 import * as product from './product.js?v=17';
 import * as pricing from './pricing.js?v=1';
+import * as base from './base.js?v=1';
+import * as inventory from './inventory.js?v=2';
 import { showToast } from './toast.js?v=12';
 import { formatCurrency } from '../utils/money.js?v=12';
 import { sortKey } from '../utils/describe.js?v=1';
@@ -122,13 +124,18 @@ function populateProdutoSelect() {
 
   const produtos = [...product.getProducts()]
     .filter((p) => !tipo || p.tipoProduto === tipo)
-    .sort((a, b) => sortKey(a.titulo || '').localeCompare(sortKey(b.titulo || '')));
+    .sort((a, b) =>
+      (sortKey(a.titulo || '') + sortKey(a.tamanho || '')).localeCompare(
+        sortKey(b.titulo || '') + sortKey(b.tamanho || '')
+      )
+    );
 
   select.innerHTML = '';
   produtos.forEach((p) => {
     const opt = document.createElement('option');
     opt.value = p.id;
-    opt.textContent = `${p.titulo || 'Produto'} (${p.tipoProduto || '—'})`;
+    const tam = p.tipoProduto === 'Bolo Inteiro' && p.tamanho ? ` ${p.tamanho}` : '';
+    opt.textContent = `${p.titulo || 'Produto'} (${p.tipoProduto || '—'}${tam})`;
     select.appendChild(opt);
   });
 
@@ -170,9 +177,13 @@ function loadProduto(produtoId) {
   if (custoAdic) custoAdic.value = base.custoAdicional != null ? base.custoAdicional : pricing.PRICING_DEFAULTS.custoAdicional;
   if (obs) obs.value = base.custoAdicionalObs || '';
 
-  insumoRows = (base.itens || []).map((i) => ({ insumoId: i.insumoId, quantidade: i.quantidade }));
+  insumoRows = (base.itens || []).map((i) => ({
+    refId: i.baseId || i.insumoId || '',
+    tipo: i.baseId ? 'base' : 'insumo',
+    quantidade: i.quantidade,
+  }));
   if (insumoRows.length === 0) {
-    insumoRows.push({ insumoId: '', quantidade: '' });
+    insumoRows.push({ refId: '', tipo: '', quantidade: '' });
   }
 
   showAviso('');
@@ -195,66 +206,155 @@ function renderInsumoRows() {
   const insumos = [...storage.getAllInsumos()].sort((a, b) =>
     sortKey(a.nome || '').localeCompare(sortKey(b.nome || ''))
   );
+  const bases = [...base.getBases()].sort((a, b) =>
+    sortKey(a.nome || '').localeCompare(sortKey(b.nome || ''))
+  );
+  const baseById = new Map(bases.map((b) => [b.id, b]));
 
-  if (insumos.length === 0) {
+  if (insumos.length === 0 && bases.length === 0) {
     const aviso = document.createElement('p');
     aviso.className = 'estoque-history-empty';
-    aviso.textContent = 'Nenhum insumo cadastrado. Cadastre insumos na aba Inventário.';
+    aviso.textContent = 'Nenhum insumo ou base cadastrado. Cadastre na aba Inventário ou Bases.';
     wrap.appendChild(aviso);
     return;
   }
 
+  wrap.classList.add('base-componentes');
+
+  const head = document.createElement('div');
+  head.className = 'base-componentes-head';
+  head.innerHTML =
+    '<span class="base-col-ing">Ingrediente</span>' +
+    '<span class="base-col-uso">Quantidade utilizada</span>' +
+    '<span class="base-col-preco">Custo e gramas da embalagem</span>' +
+    '<span class="base-col-custo">Quanto custou</span>' +
+    '<span class="base-col-act"></span>';
+  wrap.appendChild(head);
+
   insumoRows.forEach((row, index) => {
     const linha = document.createElement('div');
-    linha.className = 'item-row prec-insumo-row';
+    linha.className = 'item-row base-componente-row';
 
     const sel = document.createElement('select');
-    sel.className = 'prec-insumo-select item-tipo';
-    sel.setAttribute('aria-label', 'Insumo');
+    sel.className = 'base-componente-select item-tipo';
+    sel.setAttribute('aria-label', 'Insumo ou base');
+    sel.setAttribute('data-label', 'Ingrediente');
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = '— Insumo —';
+    placeholder.textContent = '— Insumo / Base —';
     sel.appendChild(placeholder);
     insumos.forEach((i) => {
       const opt = document.createElement('option');
       opt.value = i.id;
+      opt.dataset.tipo = 'insumo';
       opt.textContent = `${i.nome} (${i.unidade})`;
       sel.appendChild(opt);
     });
-    sel.value = row.insumoId || '';
-    sel.addEventListener('change', () => {
-      insumoRows[index].insumoId = sel.value;
-      updatePreview();
+    bases.forEach((b) => {
+      const opt = document.createElement('option');
+      opt.value = b.id;
+      opt.dataset.tipo = 'base';
+      opt.textContent = `${b.nome} (base)`;
+      sel.appendChild(opt);
     });
+    sel.value = row.refId || '';
 
     const qtd = document.createElement('input');
     qtd.type = 'number';
-    qtd.className = 'prec-insumo-qtd item-qtd';
+    qtd.className = 'base-componente-qtd item-qtd';
     qtd.min = '0';
     qtd.step = '0.001';
-    qtd.placeholder = 'Qtd (g/ml/un)';
+    qtd.placeholder = 'Qtd';
     qtd.value = row.quantidade != null ? row.quantidade : '';
-    qtd.setAttribute('aria-label', 'Quantidade do insumo');
-    qtd.addEventListener('input', () => {
-      insumoRows[index].quantidade = qtd.value;
-      updatePreview();
-    });
+    qtd.setAttribute('aria-label', 'Quantidade utilizada');
+
+    const unitEl = document.createElement('span');
+    unitEl.className = 'base-componente-unit';
+
+    const precoEl = document.createElement('span');
+    precoEl.className = 'base-componente-preco';
+    precoEl.title = 'Preço do pacote e quantidade da embalagem (base de custo)';
+    precoEl.setAttribute('data-label', 'Custo e gramas da embalagem');
+
+    const costEl = document.createElement('span');
+    costEl.className = 'base-componente-cost';
+    costEl.title = 'Custo proporcional deste item';
+    costEl.setAttribute('data-label', 'Quanto custou');
 
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'item-remove';
     del.textContent = '✕';
-    del.title = 'Remover insumo';
-    del.setAttribute('aria-label', 'Remover insumo');
+    del.title = 'Remover item';
+    del.setAttribute('aria-label', 'Remover item');
+
+    const uso = document.createElement('div');
+    uso.className = 'base-componente-uso';
+    uso.setAttribute('data-label', 'Quantidade utilizada');
+    uso.append(qtd, unitEl);
+
+    const trimNum = (n) => String(Math.round((Number(n) || 0) * 1000) / 1000);
+
+    function atualizarLinha() {
+      const opt = sel.selectedOptions[0];
+      const tipo = opt ? opt.dataset.tipo : '';
+      insumoRows[index].tipo = tipo;
+      insumoRows[index].refId = sel.value;
+
+      const item = {
+        insumoId: tipo === 'insumo' ? sel.value : '',
+        baseId: tipo === 'base' ? sel.value : '',
+        quantidade: Number(qtd.value) || 0,
+      };
+
+      if (tipo === 'base') {
+        const b = baseById.get(sel.value);
+        unitEl.textContent = b ? b.rendimentoUnidade : '';
+        if (b) {
+          const custoTotal = base.custoBase(b, insumos);
+          const rend = Number(b.rendimento) || 0;
+          precoEl.textContent = rend > 0
+            ? `${formatCurrency(custoTotal)} / ${trimNum(rend)} ${b.rendimentoUnidade || 'un'}`
+            : formatCurrency(custoTotal);
+        } else {
+          precoEl.textContent = '—';
+        }
+      } else {
+        const ins = insumos.find((i) => i.id === sel.value);
+        unitEl.textContent = ins ? ins.unidade : '';
+        const compra = ins ? inventory.ultimaCompra(ins) : null;
+        if (compra && Number(compra.custoTotal) > 0) {
+          const q = Number(compra.quantidadeCompra) || 0;
+          const und = compra.unidade || (ins && ins.unidade) || 'unidade';
+          precoEl.textContent = q > 0
+            ? `${formatCurrency(Number(compra.custoTotal) || 0)} / ${trimNum(q)} ${und}`
+            : formatCurrency(Number(compra.custoTotal) || 0);
+        } else {
+          precoEl.textContent = '—';
+        }
+      }
+
+      const custo = pricing.custoItem(item, insumos, bases);
+      costEl.textContent = tipo && sel.value ? formatCurrency(custo) : '—';
+      updatePreview();
+    }
+
+    sel.addEventListener('change', atualizarLinha);
+    qtd.addEventListener('input', () => {
+      insumoRows[index].quantidade = qtd.value;
+      atualizarLinha();
+    });
     del.addEventListener('click', () => {
       insumoRows.splice(index, 1);
-      if (insumoRows.length === 0) insumoRows.push({ insumoId: '', quantidade: '' });
+      if (insumoRows.length === 0) insumoRows.push({ refId: '', tipo: '', quantidade: '' });
       renderInsumoRows();
       updatePreview();
     });
 
-    linha.append(sel, qtd, del);
+    linha.append(sel, uso, precoEl, costEl, del);
     wrap.appendChild(linha);
+
+    atualizarLinha();
   });
 }
 
@@ -262,7 +362,7 @@ function renderInsumoRows() {
  * Adiciona uma linha de insumo em branco ao formulário.
  */
 function addInsumoRow() {
-  insumoRows.push({ insumoId: '', quantidade: '' });
+  insumoRows.push({ refId: '', tipo: '', quantidade: '' });
   renderInsumoRows();
   updatePreview();
 }
@@ -281,7 +381,8 @@ function updatePreview() {
 
   const receita = buildReceitaFromForm();
   const insumos = storage.getAllInsumos();
-  const c = pricing.calcular(receita, insumos);
+  const bases = base.getBases();
+  const c = pricing.calcular(receita, insumos, bases);
 
   preview.innerHTML = '';
   const add = (label, value, strong = false) => {
@@ -304,7 +405,7 @@ function updatePreview() {
 
   // Status: atualizada / desatualizada / sem precificação
   if (status) {
-    const desatualizada = editingReceita && pricing.isDesatualizada(editingReceita, insumos);
+    const desatualizada = editingReceita && pricing.isDesatualizada(editingReceita, insumos, bases);
     if (!editingReceita) {
       status.textContent = 'Sem precificação — defina a receita e salve.';
       status.className = 'prec-status prec-status-warn';
@@ -339,8 +440,12 @@ function buildReceitaFromForm() {
     id: editingReceita ? editingReceita.id : generateId(),
     produtoId: currentProdutoId,
     itens: insumoRows
-      .filter((r) => r.insumoId)
-      .map((r) => ({ insumoId: r.insumoId, quantidade: Number(r.quantidade) || 0 })),
+      .filter((r) => r.refId)
+      .map((r) => ({
+        insumoId: r.tipo === 'insumo' ? r.refId : '',
+        baseId: r.tipo === 'base' ? r.refId : '',
+        quantidade: Number(r.quantidade) || 0,
+      })),
     margem: num('precMargem', pricing.PRICING_DEFAULTS.margem),
     multiplicador: num('precMultiplicador', pricing.PRICING_DEFAULTS.multiplicador),
     rendimento: num('precRendimento', pricing.PRICING_DEFAULTS.rendimento),
@@ -361,8 +466,9 @@ function buildReceitaFromForm() {
 function savePrecificacao() {
   const receita = buildReceitaFromForm();
   const insumos = storage.getAllInsumos();
+  const bases = base.getBases();
 
-  const erro = pricing.validateReceita(receita, insumos);
+  const erro = pricing.validateReceita(receita, insumos, bases);
   if (erro) {
     showAviso(erro);
     return false;
@@ -374,7 +480,7 @@ function savePrecificacao() {
     return false;
   }
 
-  const calculada = pricing.recalcular(receita, insumos);
+  const calculada = pricing.recalcular(receita, insumos, bases);
   const lista = storage.getAllPrecificacoes().slice();
   const idx = lista.findIndex((r) => r.id === calculada.id);
   if (idx >= 0) lista[idx] = calculada;
@@ -398,7 +504,8 @@ function usarPreco() {
   if (!currentProdutoId) return;
   const receita = buildReceitaFromForm();
   const insumos = storage.getAllInsumos();
-  const c = pricing.calcular(receita, insumos);
+  const bases = base.getBases();
+  const c = pricing.calcular(receita, insumos, bases);
   if (!(Number(c.custoPorUnidade) > 0)) {
     showAviso('Calcule um custo válido antes de usar o preço.');
     return;

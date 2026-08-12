@@ -20,6 +20,7 @@
    ============================================================ */
 
 import * as inventory from './inventory.js?v=2';
+import * as base from './base.js?v=1';
 
 /** Valores padrão de uma receita (definidos na spec). */
 export const PRICING_DEFAULTS = {
@@ -75,14 +76,20 @@ export function createReceita(data = {}) {
 /**
  * Custo dos ingredientes da receita (Σ de cada item, arredondado a 2
  * casas). Cada item usa inventory.custoItem (já arredondado por item).
- * @param {Object} receita - Receita com itens [{ insumoId, quantidade }].
+ * @param {Object} receita - Receita com itens [{ insumoId|baseId, quantidade }].
  * @param {Array<Object>} insumos - Lista de insumos (com compras).
- * @returns {number} Custo total dos ingredientes.
+ * @param {Array<Object>} [bases] - Lista de bases (com componentes).
+ * @returns {number} Custo total dos ingredientes + bases.
  */
-export function custoIngredientes(receita, insumos = []) {
-  const byId = new Map((insumos || []).map((i) => [i.id, i]));
+export function custoIngredientes(receita, insumos = [], bases = []) {
+  const insById = new Map((insumos || []).map((i) => [i.id, i]));
+  const baseById = new Map((bases || []).map((b) => [b.id, b]));
   const total = (receita.itens || []).reduce((sum, item) => {
-    const insumo = byId.get(item.insumoId);
+    if (item.baseId && baseById.has(item.baseId)) {
+      const b = baseById.get(item.baseId);
+      return sum + base.custoBaseItem(b, insumos, Number(item.quantidade) || 0);
+    }
+    const insumo = insById.get(item.insumoId);
     if (!insumo) return sum;
     return sum + inventory.custoItem(insumo, Number(item.quantidade) || 0);
   }, 0);
@@ -90,14 +97,33 @@ export function custoIngredientes(receita, insumos = []) {
 }
 
 /**
+ * Custo de um único item (insumo ou base) dado o seu id/tipo e quantidade.
+ * @param {Object} item - Item { insumoId|baseId, quantidade }.
+ * @param {Array<Object>} insumos - Lista de insumos (compras).
+ * @param {Array<Object>} [bases] - Lista de bases.
+ * @returns {number} Custo do item (R$).
+ */
+export function custoItem(item, insumos = [], bases = []) {
+  if (item.baseId) {
+    const b = (bases || []).find((x) => x.id === item.baseId);
+    if (!b) return 0;
+    return base.custoBaseItem(b, insumos, Number(item.quantidade) || 0);
+  }
+  const ins = (insumos || []).find((x) => x.id === item.insumoId);
+  if (!ins) return 0;
+  return inventory.custoItem(ins, Number(item.quantidade) || 0);
+}
+
+/**
  * Cálculo completo do custo por unidade, seguindo a fórmula e o
  * arredondamento de 2 casas em cada etapa.
  * @param {Object} receita - Receita (fatores + itens).
  * @param {Array<Object>} insumos - Lista de insumos (com compras).
+ * @param {Array<Object>} [bases] - Lista de bases (com componentes).
  * @returns {{ custoIngredientes: number, comMargem: number, comMultiplicador: number, porUnidade: number, custoPorUnidade: number }}
  */
-export function calcular(receita, insumos = []) {
-  const ci = custoIngredientes(receita, insumos);
+export function calcular(receita, insumos = [], bases = []) {
+  const ci = custoIngredientes(receita, insumos, bases);
   const margem = Number(receita.margem) || 0;
   const multiplicador = Number(receita.multiplicador) || 1;
   const rendimento = Number(receita.rendimento) || 1;
@@ -117,10 +143,11 @@ export function calcular(receita, insumos = []) {
  * (custoIngredientes, custoPorUnidade, dataCalculo) atualizados.
  * @param {Object} receita - Receita a recalcular.
  * @param {Array<Object>} insumos - Lista de insumos.
+ * @param {Array<Object>} [bases] - Lista de bases.
  * @returns {Object} Receita com snapshot atualizado.
  */
-export function recalcular(receita, insumos = []) {
-  const c = calcular(receita, insumos);
+export function recalcular(receita, insumos = [], bases = []) {
+  const c = calcular(receita, insumos, bases);
   return {
     ...receita,
     custoIngredientes: c.custoIngredientes,
@@ -134,10 +161,11 @@ export function recalcular(receita, insumos = []) {
  * atual (algum insumo mudou de preço ou foi removido).
  * @param {Object} receita - Receita (com snapshot custoIngredientes).
  * @param {Array<Object>} insumos - Lista atual de insumos.
+ * @param {Array<Object>} [bases] - Lista atual de bases.
  * @returns {boolean} true se o custo atual diverge do armazenado.
  */
-export function isDesatualizada(receita, insumos = []) {
-  const atual = custoIngredientes(receita, insumos);
+export function isDesatualizada(receita, insumos = [], bases = []) {
+  const atual = custoIngredientes(receita, insumos, bases);
   return round2(atual) !== round2(Number(receita.custoIngredientes) || 0);
 }
 
@@ -145,23 +173,29 @@ export function isDesatualizada(receita, insumos = []) {
  * Valida os campos de uma receita.
  * @param {Object} receita - Receita a validar.
  * @param {Array<Object>} insumos - Lista de insumos (para checar existência).
+ * @param {Array<Object>} [bases] - Lista de bases (para checar existência).
  * @returns {string|null} Mensagem de erro ou null se válida.
  */
-export function validateReceita(receita, insumos = []) {
+export function validateReceita(receita, insumos = [], bases = []) {
   if (!receita) return 'Receita inválida.';
   if (!receita.produtoId) return 'Selecione o produto da receita.';
 
   const itens = Array.isArray(receita.itens) ? receita.itens : [];
-  if (itens.length === 0) return 'Adicione ao menos um insumo à receita.';
+  if (itens.length === 0) return 'Adicione ao menos um item à receita.';
 
-  const byId = new Map((insumos || []).map((i) => [i.id, i]));
+  const inById = new Map((insumos || []).map((i) => [i.id, i]));
+  const baseById = new Map((bases || []).map((b) => [b.id, b]));
   for (const item of itens) {
-    if (!item.insumoId || !byId.has(item.insumoId)) {
-      return 'Insumo da receita não encontrado no inventário.';
+    const isBase = Boolean(item.baseId);
+    const ref = isBase ? baseById.get(item.baseId) : inById.get(item.insumoId);
+    if (!ref) {
+      return isBase
+        ? 'Base da receita não encontrada.'
+        : 'Insumo da receita não encontrado no inventário.';
     }
     const qtd = Number(item.quantidade);
     if (!Number.isFinite(qtd) || qtd <= 0) {
-      return 'Quantidade de insumo deve ser maior que zero.';
+      return 'Quantidade deve ser maior que zero.';
     }
   }
 
