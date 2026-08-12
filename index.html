@@ -1605,6 +1605,25 @@ body.modal-open {
 
   <!-- Acelera as chamadas à API do Supabase (deve bater com js/config.js) -->
   <link rel="preconnect" href="https://xzkcbygjxvcevoqblneo.supabase.co" crossorigin>
+
+  <style>
+    /* Inventário — seção de compras no modal de insumo */
+    .insumo-section-title {
+      font-size: 1rem;
+      margin: 16px 0 4px;
+    }
+
+    .insumo-custo-vigente {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      margin: 10px 0;
+    }
+
+    #insumoModal .estoque-form .btn {
+      flex: 0 0 auto;
+    }
+  </style>
 </head>
 
 <body data-view="dashboard">
@@ -1636,6 +1655,7 @@ body.modal-open {
     <button class="nav-tab active" type="button" data-view-target="dashboard">Dashboard</button>
     <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
     <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
+    <button class="nav-tab" type="button" data-view-target="inventario">Inventário</button>
     <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
   </nav>
 
@@ -1931,6 +1951,38 @@ body.modal-open {
   </main>
 
   <!-- ============================================================
+       VIEW — Inventário (insumos + histórico de compras)
+       Controlada por js/modules/inventoryView.js
+       ============================================================ -->
+  <main id="view-inventario" class="view">
+    <div class="page-title">
+      <h1>Inventário</h1>
+      <span id="inventarioCount" class="count-badge">0</span>
+      <button id="btnAddInsumo" class="btn btn-primary page-action" type="button">＋ Novo insumo</button>
+    </div>
+
+    <p class="view-subtitle">
+      Cadastre os insumos (farinha, açúcar, leite, fermento etc.) com a unidade de
+      medida e o histórico de compras. O sistema calcula o custo unitário (preço
+      total ÷ quantidade) a partir da última compra.
+    </p>
+
+    <div class="search-bar">
+      <span class="search-icon" aria-hidden="true">🔎</span>
+      <input id="insumoSearch" type="search" placeholder="Pesquisar insumo..." autocomplete="off">
+    </div>
+
+    <div id="insumoList" class="product-grid" aria-live="polite">
+      <!-- Cards de insumos serão renderizados aqui -->
+    </div>
+
+    <div id="insumoEmpty" class="empty-state" hidden>
+      <span class="empty-icon" aria-hidden="true">🧺</span>
+      <p>Nenhum insumo cadastrado ainda.</p>
+    </div>
+  </main>
+
+  <!-- ============================================================
        BOTÃO FLUTUANTE — novo pedido (FAB)
        ============================================================ -->
   <button id="fabNewOrder" class="fab" type="button" aria-label="Novo pedido">＋</button>
@@ -2118,6 +2170,65 @@ body.modal-open {
     </div>
   </div>
 
+  <!-- ============================================================
+       MODAL — cadastro/edição de insumo (Inventário)
+       Controlado por js/modules/inventoryView.js
+       ============================================================ -->
+  <div id="insumoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="insumoModalTitle">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="insumoModalTitle">Novo insumo</h2>
+        <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="insumoForm" novalidate>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-field form-field-full">
+              <label for="insumoFieldNome">Nome do insumo</label>
+              <input type="text" id="insumoFieldNome" placeholder="Ex.: Farinha de trigo" required autocomplete="off">
+              <span class="error-hint"></span>
+            </div>
+            <div class="form-field">
+              <label for="insumoFieldUnidade">Unidade de medida</label>
+              <select id="insumoFieldUnidade" aria-label="Unidade de medida">
+                <option value="kg">kg</option>
+                <option value="L">L</option>
+                <option value="unidade">unidade</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="insumoFieldDescricao">Descrição (opcional)</label>
+              <input type="text" id="insumoFieldDescricao" placeholder="Ex.: Marca X" autocomplete="off">
+            </div>
+          </div>
+
+          <h2 class="insumo-section-title">Compras</h2>
+          <p class="view-subtitle">Informe o preço total pago e a quantidade comprada. O sistema calcula o custo unitário.</p>
+
+          <div class="estoque-form">
+            <input type="date" id="insumoCompraData" required aria-label="Data da compra">
+            <input type="number" id="insumoCompraCusto" min="0" step="0.01" placeholder="Preço total (R$)" required aria-label="Preço total da compra" inputmode="decimal">
+            <input type="number" id="insumoCompraQtd" min="0" step="0.001" placeholder="Quantidade" required aria-label="Quantidade comprada" inputmode="decimal">
+            <button type="button" id="btnAddCompra" class="btn btn-primary">Adicionar</button>
+          </div>
+
+          <div id="insumoCustoVigente" class="insumo-custo-vigente"></div>
+
+          <ul id="insumoCompras" class="estoque-history" aria-live="polite"></ul>
+
+          <p id="insumoFormAviso" class="estoque-aviso" hidden></p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnCancelInsumo" class="btn btn-ghost">Cancelar</button>
+          <button type="button" id="btnSaveInsumo" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Container de notificações (toasts) -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
@@ -2125,6 +2236,6 @@ body.modal-open {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=24"></script>
+  <script type="module" src="js/app.js?v=25"></script>
 </body>
 </html>

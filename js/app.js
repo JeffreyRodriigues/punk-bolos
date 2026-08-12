@@ -30,6 +30,7 @@ import * as productList from './modules/productList.js?v=16';
 import * as importExport from './modules/importExport.js?v=16';
 import * as estoque from './modules/estoque.js?v=4';
 import * as estoqueView from './modules/estoqueView.js?v=5';
+import * as inventoryView from './modules/inventoryView.js?v=2';
 import { showToast } from './modules/toast.js?v=12';
 
 /* ---------- Navegação entre telas ---------- */
@@ -59,6 +60,8 @@ function navigate(target) {
     productList.render();
   } else if (target === 'estoque') {
     estoqueView.render();
+  } else if (target === 'inventario') {
+    inventoryView.render();
   } else {
     orderList.render();
   }
@@ -132,6 +135,7 @@ function init() {
         orderList.render();
         productList.render();
         estoqueView.render();
+        inventoryView.render();
         showToast('Dados atualizados!');
       })
       .catch(() => {
@@ -219,6 +223,11 @@ function init() {
     orderList.render();
   });
 
+  // Inventário: após criar/editar/excluir insumo, re-renderiza a tela
+  inventoryView.setChangeListener(() => {
+    inventoryView.render();
+  });
+
   // Importar / exportar planilha (CSV)
   document.getElementById('btnModeloCsv').addEventListener('click', () => {
     importExport.downloadTemplate();
@@ -262,6 +271,7 @@ function init() {
     orderList.render();
     productList.render();
     estoqueView.render();
+    inventoryView.render();
   });
 }
 

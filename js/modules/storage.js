@@ -425,15 +425,17 @@ export async function init() {
   }
 
   try {
-    const [remoteOrders, remoteProducts, remoteProductions] = await Promise.all([
+    const [remoteOrders, remoteProducts, remoteProductions, remoteInsumos] = await Promise.all([
       supabase.listOrders(),
       supabase.listProducts(),
       supabase.listProductions(),
+      supabase.listInsumos(),
     ]);
 
     const localOrders = readLocalOrders();
     const localProducts = readLocalProducts();
     const localProductions = readLocalProductions();
+    const localInsumos = readLocalInsumos();
 
     // Reconciliação: envia para a nuvem o que existe apenas no
     // dispositivo (criado offline ou com escrita que falhou). Isso
@@ -441,6 +443,7 @@ export async function init() {
     const remoteOrderIds = new Set(remoteOrders.map((o) => o.id));
     const remoteProductIds = new Set(remoteProducts.map((p) => p.id));
     const remoteProductionIds = new Set(remoteProductions.map((pr) => pr.id));
+    const remoteInsumoIds = new Set(remoteInsumos.map((i) => i.id));
 
     for (const order of localOrders.filter((o) => !remoteOrderIds.has(o.id))) {
       try {
@@ -463,19 +466,29 @@ export async function init() {
         reportError('Falha ao reenviar produção', e && e.message ? e.message : 'sem conexão');
       }
     }
+    for (const insumo of localInsumos.filter((i) => !remoteInsumoIds.has(i.id))) {
+      try {
+        await supabase.insertInsumo(toInsumoRow(insumo));
+      } catch (e) {
+        reportError('Falha ao reenviar insumo', e && e.message ? e.message : 'sem conexão');
+      }
+    }
 
     // Fonte de verdade = nuvem (após o merge), atualizada via refetch
-    const [o2, p2, pr2] = await Promise.all([
+    const [o2, p2, pr2, i2] = await Promise.all([
       supabase.listOrders(),
       supabase.listProducts(),
       supabase.listProductions(),
+      supabase.listInsumos(),
     ]);
     ordersCache = o2.map(fromOrderRow);
     productsCache = p2.map(fromProductRow);
     productionsCache = pr2.map(fromProductionRow);
+    insumosCache = i2.map(fromInsumoRow);
     ordersSynced = JSON.parse(JSON.stringify(ordersCache));
     productsSynced = JSON.parse(JSON.stringify(productsCache));
     productionsSynced = JSON.parse(JSON.stringify(productionsCache));
+    insumosSynced = JSON.parse(JSON.stringify(insumosCache));
     online = true;
   } catch (error) {
     if (error && error.message === 'Sessão expirada') {
