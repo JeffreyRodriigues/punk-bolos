@@ -97,6 +97,26 @@ export function render() {
 }
 
 /**
+ * Monta as duas linhas de custo exibidas no card de inventário:
+ * - principal: preço "de balcão" em L (para ml) ou kg (para g), 2 casas;
+ * - sub: preço por 1 ml / 1 g, 4 casas (menor, abaixo do principal).
+ * Para unidade, só há a linha principal.
+ * @param {Object} insumo - Insumo.
+ * @returns {{ principal: string, sub: ?string }}
+ */
+function custoDisplay(insumo) {
+  const sub = inventory.subunidade(insumo); // 'g' | 'ml' | 'un'
+  const custoSub = inventory.custoPorSubunidade(insumo);
+  if (sub === 'ml') {
+    return { principal: `${formatCurrency(custoSub * 1000)} / L`, sub: `${formatPrecise(custoSub)} / ml` };
+  }
+  if (sub === 'g') {
+    return { principal: `${formatCurrency(custoSub * 1000)} / kg`, sub: `${formatPrecise(custoSub)} / g` };
+  }
+  return { principal: `${formatCurrency(custoSub)} / unidade`, sub: null };
+}
+
+/**
  * Monta o card de um insumo.
  * @param {Object} insumo - Insumo do catálogo.
  * @returns {HTMLElement} Card do insumo.
@@ -131,9 +151,21 @@ function renderCard(insumo) {
 
   const custoEl = document.createElement('div');
   custoEl.className = 'product-price';
-  custoEl.textContent = nCompras > 0
-    ? `${formatPrecise(inventory.custoPorSubunidade(insumo))} / ${inventory.subunidade(insumo)}`
-    : 'sem compras';
+  if (nCompras > 0) {
+    const d = custoDisplay(insumo);
+    const main = document.createElement('span');
+    main.className = 'product-price-main';
+    main.textContent = d.principal;
+    custoEl.appendChild(main);
+    if (d.sub) {
+      const sub = document.createElement('span');
+      sub.className = 'product-price-sub';
+      sub.textContent = d.sub;
+      custoEl.appendChild(sub);
+    }
+  } else {
+    custoEl.textContent = 'sem compras';
+  }
   info.appendChild(custoEl);
 
   const meta = document.createElement('div');
@@ -294,11 +326,25 @@ function renderCompras() {
 
   const custoVigente = document.getElementById('insumoCustoVigente');
   if (custoVigente) {
+    custoVigente.replaceChildren();
     const ultima = inventory.ultimaCompra({ compras: comprasDraft });
     const sub = editing ? inventory.subunidade(editing) : 'un';
-    custoVigente.textContent = ultima
-      ? `Custo por 1 ${sub}: ${formatPrecise(inventory.custoPorSubunidade({ ...editing, compras: comprasDraft }))}`
-      : 'Custo por 1 ' + sub + ': —';
+    if (!ultima) {
+      const span = document.createElement('span');
+      span.textContent = `Custo por 1 ${sub}: —`;
+      custoVigente.appendChild(span);
+    } else {
+      const d = custoDisplay({ ...editing, compras: comprasDraft });
+      const main = document.createElement('span');
+      main.textContent = d.principal;
+      custoVigente.appendChild(main);
+      if (d.sub) {
+        const subEl = document.createElement('span');
+        subEl.className = 'insumo-custo-sub';
+        subEl.textContent = d.sub;
+        custoVigente.appendChild(subEl);
+      }
+    }
   }
 }
 

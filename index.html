@@ -1216,9 +1216,23 @@ body.modal-open {
 }
 
 .product-price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.product-price-main {
   font-weight: 700;
   font-size: 1.05rem;
   color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.product-price-sub {
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
@@ -1618,6 +1632,15 @@ body.modal-open {
       font-weight: 700;
       color: var(--color-primary);
       margin: 10px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .insumo-custo-sub {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--color-text-muted);
     }
 
     #insumoModal .estoque-form .btn {
