@@ -355,9 +355,10 @@ function saveInsumo() {
   const base = { nome, unidade, descricao, compras: comprasDraft };
   const insumo = editing ? { ...base, id: editing.id } : inventory.createInsumo(base);
 
-  const erro = inventory.validateInsumo(insumo);
-  if (erro) {
-    showAviso(erro);
+  const validacao = inventory.validateInsumo(insumo);
+  if (!validacao.valid) {
+    const msg = Object.values(validacao.errors)[0] || 'Verifique os dados do insumo.';
+    showAviso(msg);
     return false;
   }
 

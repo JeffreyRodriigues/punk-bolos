@@ -32,6 +32,9 @@ export function setChangeListener(cb) {
 /** Produto selecionado no momento. */
 let currentProdutoId = '';
 
+/** Tipo de produto selecionado no filtro ('' = todos). */
+let currentTipoFilter = '';
+
 /** Receita em edição (null = nova precificação para o produto). */
 let editingReceita = null;
 
@@ -67,6 +70,7 @@ function showAviso(message, ok = false) {
  * Renderiza a tela de Precificação (seletor de produto + formulário).
  */
 export function render() {
+  populateTipoFilter();
   populateProdutoSelect();
   const emptyEl = document.getElementById('precificacaoEmpty');
   const formEl = document.getElementById('precificacaoForm');
@@ -79,34 +83,66 @@ export function render() {
   if (emptyEl) emptyEl.hidden = true;
   if (formEl) formEl.hidden = false;
 
-  // Mantém a seleção atual se ainda existir; senão seleciona o primeiro
   const select = document.getElementById('precificacaoProduto');
-  if (select && !currentProdutoId) {
-    currentProdutoId = product.getProducts()[0].id;
-    select.value = currentProdutoId;
-  }
-  loadProduto(currentProdutoId);
+  loadProduto(select ? select.value : currentProdutoId);
 }
 
 /**
- * Preenche o seletor de produtos do catálogo.
+ * Preenche o filtro de tipo de produto (derivado do catálogo).
+ */
+function populateTipoFilter() {
+  const filtro = document.getElementById('precTipoFilter');
+  if (!filtro) return;
+  const tipos = [...new Set(product.getProducts().map((p) => p.tipoProduto).filter(Boolean))].sort();
+  const anterior = filtro.value;
+  filtro.innerHTML = '';
+  const all = document.createElement('option');
+  all.value = '';
+  all.textContent = 'Todos os tipos';
+  filtro.appendChild(all);
+  tipos.forEach((t) => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    filtro.appendChild(opt);
+  });
+  if (tipos.includes(anterior)) filtro.value = anterior;
+  currentTipoFilter = filtro.value;
+}
+
+/**
+ * Preenche o seletor de produtos do catálogo, filtrando pelo tipo
+ * escolhido e exibindo o tipo em cada opção (ex.: "Fatia de chocolate (Fatia)").
  */
 function populateProdutoSelect() {
   const select = document.getElementById('precificacaoProduto');
   if (!select) return;
-  const anterior = select.value || currentProdutoId;
-  const produtos = [...product.getProducts()].sort((a, b) =>
-    sortKey(a.titulo || '').localeCompare(sortKey(b.titulo || ''))
-  );
+  const filtro = document.getElementById('precTipoFilter');
+  const tipo = filtro ? filtro.value : '';
+
+  const produtos = [...product.getProducts()]
+    .filter((p) => !tipo || p.tipoProduto === tipo)
+    .sort((a, b) => sortKey(a.titulo || '').localeCompare(sortKey(b.titulo || '')));
 
   select.innerHTML = '';
   produtos.forEach((p) => {
     const opt = document.createElement('option');
     opt.value = p.id;
-    opt.textContent = p.titulo || 'Produto';
+    opt.textContent = `${p.titulo || 'Produto'} (${p.tipoProduto || '—'})`;
     select.appendChild(opt);
   });
-  if (anterior) select.value = anterior;
+
+  if (produtos.length === 0) {
+    currentProdutoId = '';
+    select.value = '';
+    return;
+  }
+
+  // Mantém a seleção atual se ainda estiver visível; senão escolhe a primeira
+  const mantem = produtos.some((p) => p.id === currentProdutoId);
+  const escolhido = mantem ? currentProdutoId : produtos[0].id;
+  select.value = escolhido;
+  currentProdutoId = escolhido;
 }
 
 /**
@@ -384,6 +420,13 @@ function usarPreco() {
 
 const produtoSelect = document.getElementById('precificacaoProduto');
 if (produtoSelect) produtoSelect.addEventListener('change', () => loadProduto(produtoSelect.value));
+
+const tipoFilter = document.getElementById('precTipoFilter');
+if (tipoFilter) tipoFilter.addEventListener('change', () => {
+  populateProdutoSelect();
+  const sel = document.getElementById('precificacaoProduto');
+  loadProduto(sel ? sel.value : '');
+});
 
 const addBtn = document.getElementById('btnAddPrecInsumo');
 if (addBtn) addBtn.addEventListener('click', () => addInsumoRow());
