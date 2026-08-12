@@ -315,9 +315,10 @@ function addCompra() {
   const quantidadeCompra = qtdEl ? Number(qtdEl.value) : NaN;
 
   const compra = { id: generateId(), data, custoTotal, quantidadeCompra };
-  const erro = inventory.validateCompra(compra);
-  if (erro) {
-    showAviso(erro);
+  const validacao = inventory.validateCompra(compra);
+  if (!validacao.valid) {
+    const msg = Object.values(validacao.errors)[0] || 'Verifique os dados da compra.';
+    showAviso(msg);
     return false;
   }
 
@@ -328,6 +329,26 @@ function addCompra() {
   showAviso('');
   renderCompras();
   return true;
+}
+
+/**
+ * Captura uma compra digitada nos campos do modal mas ainda não
+ * adicionada à lista, para não perdê-la ao salvar o insumo.
+ * Só inclui se data + preço + quantidade estiverem preenchidos e válidos.
+ */
+function flushCompraPendente() {
+  const dataEl = document.getElementById('insumoCompraData');
+  const custoEl = document.getElementById('insumoCompraCusto');
+  const qtdEl = document.getElementById('insumoCompraQtd');
+  const data = dataEl ? dataEl.value : '';
+  const custo = custoEl ? Number(custoEl.value) : NaN;
+  const qtd = qtdEl ? Number(qtdEl.value) : NaN;
+  if (!data || !(custo > 0) || !(qtd > 0)) return;
+  const compra = { id: generateId(), data, custoTotal: custo, quantidadeCompra: qtd };
+  if (inventory.validateCompra(compra).valid) {
+    comprasDraft.push(compra);
+  }
+}
 }
 
 /**
@@ -347,6 +368,9 @@ function saveInsumo() {
   const nomeEl = document.getElementById('insumoFieldNome');
   const unidadeEl = document.getElementById('insumoFieldUnidade');
   const descEl = document.getElementById('insumoFieldDescricao');
+
+  // Captura uma compra digitada mas ainda não adicionada à lista
+  flushCompraPendente();
 
   const nome = nomeEl ? String(nomeEl.value).trim() : '';
   const unidade = unidadeEl ? unidadeEl.value : 'unidade';
