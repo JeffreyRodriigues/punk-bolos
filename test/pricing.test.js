@@ -10,16 +10,16 @@ import * as pricing from '../js/modules/pricing.js?v=1';
 /* ---------- Fixtures (exemplo real da spec) ---------- */
 
 function FARINHA() {
-  return inventory.createInsumo({ nome: 'Farinha', unidade: 'kg', compras: [{ data: '2026-01-01', custoTotal: 35, quantidadeCompra: 5 }] });
+  return inventory.createInsumo({ nome: 'Farinha', unidade: 'g', compras: [{ data: '2026-01-01', custoTotal: 35, quantidadeCompra: 5000 }] });
 }
 function ACUCAR() {
-  return inventory.createInsumo({ nome: 'Açúcar', unidade: 'kg', compras: [{ data: '2026-01-01', custoTotal: 30, quantidadeCompra: 5 }] });
+  return inventory.createInsumo({ nome: 'Açúcar', unidade: 'g', compras: [{ data: '2026-01-01', custoTotal: 30, quantidadeCompra: 5000 }] });
 }
 function CHOCOLATE() {
   return inventory.createInsumo({ nome: 'Chocolate', unidade: 'g', compras: [{ data: '2026-01-01', custoTotal: 12, quantidadeCompra: 300 }] });
 }
 function LEITE() {
-  return inventory.createInsumo({ nome: 'Leite', unidade: 'L', compras: [{ data: '2026-01-01', custoTotal: 4.5, quantidadeCompra: 1 }] });
+  return inventory.createInsumo({ nome: 'Leite', unidade: 'ml', compras: [{ data: '2026-01-01', custoTotal: 4.5, quantidadeCompra: 1000 }] });
 }
 function FERMENTO() {
   return inventory.createInsumo({ nome: 'Fermento', unidade: 'g', compras: [{ data: '2026-01-01', custoTotal: 3, quantidadeCompra: 15 }] });

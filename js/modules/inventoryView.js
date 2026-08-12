@@ -212,7 +212,7 @@ function openModal(insumo) {
   const descEl = document.getElementById('insumoFieldDescricao');
 
   if (nomeEl) nomeEl.value = insumo ? (insumo.nome || '') : '';
-  if (unidadeEl) unidadeEl.value = insumo ? (insumo.unidade || 'unidade') : 'kg';
+  if (unidadeEl) unidadeEl.value = insumo ? (insumo.unidade || 'unidade') : 'g';
   if (descEl) descEl.value = insumo ? (insumo.descricao || '') : '';
 
   const dataEl = document.getElementById('insumoCompraData');

@@ -5,30 +5,33 @@
    - criação de insumo (id único, normalização)
    - histórico de compras (data + custo total + quantidade)
    - custo unitário derivado (custoTotal ÷ quantidadeCompra)
-   - conversão de unidade: kg → g · L → ml · unidade → un
+   - conversão de unidade: g → g · ml → ml · unidade → un (kg/L legados ×1000)
    - custo por subunidade (base para a precificação)
    - validação de insumo e de compra
    - busca por duplicado (mesmo nome + unidade)
 
    Estrutura do insumo:
    {
-     id, nome, unidade (kg|L|unidade), descricao,
+      id, nome, unidade (g|ml|unidade), descricao,
      compras: [ { id, data, custoTotal, quantidadeCompra } ]
    }
    A precificação (pricing.js) usa a ÚLTIMA compra como custo
-   vigente. Unidades: "kg" vira grama na receita (×1000),
-   "L" vira ml (×1000) e "unidade" permanece igual.
+   vigente. O cadastro usa g (gramas) e ml (mililitros) direto;
+   "unidade" permanece. Dados antigos em "kg"/"L" ainda são
+   convertidos (×1000) para preservar o histórico de custos.
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
 
 /** Unidades aceitas no cadastro do insumo. */
-export const INSUMO_UNITS = ['kg', 'L', 'unidade'];
+export const INSUMO_UNITS = ['g', 'ml', 'unidade'];
 
 /** Subunidades usadas na receita (conversão por família). */
 export const RECIPE_UNITS = {
   kg: 'g',
   L: 'ml',
+  g: 'g',
+  ml: 'ml',
   unidade: 'un',
 };
 
@@ -124,6 +127,8 @@ export function validateCompra(compra = {}) {
 
 /**
  * Custo unitário de uma compra: custoTotal ÷ quantidadeCompra.
+ * Não arredonda: é um valor intermediário usado no cálculo de custo
+ * por subunidade (g/ml/un). A exibição arredonda via formatCurrency.
  * @param {Object} compra - Compra do insumo.
  * @returns {number} Custo por unidade base (0 quando inválida).
  */
@@ -133,7 +138,7 @@ export function custoUnitario(compra) {
   if (total <= 0 || qtd <= 0) {
     return 0;
   }
-  return round2(total / qtd);
+  return total / qtd;
 }
 
 /**
@@ -172,13 +177,16 @@ export function subunidade(insumo) {
 }
 
 /**
- * Fator de conversão para a subunidade (kg/L → 1000, unidade → 1).
+ * Fator de conversão para a subunidade.
+ * g/ml/unidade já estão na unidade da receita (fator 1);
+ * dados legados em kg/L mantêm o fator 1000.
  * @param {Object} insumo - Insumo.
  * @returns {number} Fator multiplicador.
  */
 export function fatorConversao(insumo) {
   const unidade = (insumo && insumo.unidade) || 'unidade';
-  return unidade === 'unidade' ? 1 : 1000;
+  if (unidade === 'kg' || unidade === 'L') return 1000;
+  return 1;
 }
 
 /**
