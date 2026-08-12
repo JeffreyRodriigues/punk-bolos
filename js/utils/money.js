@@ -20,6 +20,24 @@ export function formatCurrency(value) {
 }
 
 /**
+ * Formata um número como moeda BRL com N casas decimais.
+ * Útil para custos muito pequenos (ex.: R$ 0,0053 / ml), onde o
+ * formatCurrency de 2 casas arredondaria e esconderia o valor.
+ * @param {number|string} value - Valor numérico.
+ * @param {number} [decimals=4] - Quantidade de casas decimais.
+ * @returns {string} Valor formatado. Ex.: "R$ 0,0053"
+ */
+export function formatPrecise(value, decimals = 4) {
+  const number = Number(value) || 0;
+  return number.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+/**
  * Converte uma string de número (aceita vírgula como separador
  * decimal) em Number. Ex.: "45,90" -> 45.9 | "45.90" -> 45.9
  * @param {string|number} value - Valor a ser convertido.

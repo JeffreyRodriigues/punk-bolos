@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCurrency, parseMoney, formatDate } from '../js/utils/money.js?v=13';
+import { formatCurrency, parseMoney, formatDate, formatPrecise } from '../js/utils/money.js?v=13';
 
 const brl = (value) => formatCurrency(value).replace(/\u00A0/g, ' ');
 
@@ -15,6 +15,14 @@ test('formatCurrency: aceita string numérica e valores inválidos viram R$ 0,00
   assert.equal(brl('abc'), 'R$ 0,00');
   assert.equal(brl(undefined), 'R$ 0,00');
   assert.equal(brl(null), 'R$ 0,00');
+});
+
+test('formatPrecise: exibe N casas decimais (custo por ml/g)', () => {
+  const brl4 = (v) => formatPrecise(v, 4).replace(/\u00A0/g, ' ');
+  assert.equal(brl4(0.0053), 'R$ 0,0053');
+  assert.equal(brl4(45), 'R$ 45,0000');
+  assert.equal(brl4(0), 'R$ 0,0000');
+  assert.equal(brl4(0.0053), 'R$ 0,0053'); // default = 4 casas
 });
 
 test('parseMoney: número passthrough', () => {

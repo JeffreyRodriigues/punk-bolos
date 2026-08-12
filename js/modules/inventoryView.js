@@ -12,7 +12,7 @@
 import * as storage from './storage.js?v=13';
 import * as inventory from './inventory.js?v=2';
 import { showToast } from './toast.js?v=12';
-import { formatCurrency } from '../utils/money.js?v=12';
+import { formatCurrency, formatPrecise } from '../utils/money.js?v=12';
 import { formatDate } from '../utils/money.js?v=12';
 import { sortKey } from '../utils/describe.js?v=1';
 
@@ -132,7 +132,7 @@ function renderCard(insumo) {
   const custoEl = document.createElement('div');
   custoEl.className = 'product-price';
   custoEl.textContent = nCompras > 0
-    ? `${formatCurrency(custo)} / ${insumo.unidade || 'un'}`
+    ? `${formatPrecise(inventory.custoPorSubunidade(insumo))} / ${inventory.subunidade(insumo)}`
     : 'sem compras';
   info.appendChild(custoEl);
 
@@ -295,9 +295,10 @@ function renderCompras() {
   const custoVigente = document.getElementById('insumoCustoVigente');
   if (custoVigente) {
     const ultima = inventory.ultimaCompra({ compras: comprasDraft });
+    const sub = editing ? inventory.subunidade(editing) : 'un';
     custoVigente.textContent = ultima
-      ? `Custo unitário vigente: ${formatCurrency(inventory.custoUnitario(ultima))} / ${editing ? editing.unidade : 'un'}`
-      : 'Custo unitário vigente: —';
+      ? `Custo por 1 ${sub}: ${formatPrecise(inventory.custoPorSubunidade({ ...editing, compras: comprasDraft }))}`
+      : 'Custo por 1 ' + sub + ': —';
   }
 }
 
