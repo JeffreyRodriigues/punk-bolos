@@ -24,12 +24,13 @@ export function installLocalStorage() {
  * Semeia o localStorage com o estado do "banco" dos testes
  * e zera o cache do storage.js (módulo real).
  */
-export async function setDb({ orders = [], products = [], productions = [] } = {}) {
+export async function setDb({ orders = [], products = [], productions = [], insumos = [] } = {}) {
   installLocalStorage();
   localStorage.clear();
   localStorage.setItem('punkbolos.pedidos', JSON.stringify(orders));
   localStorage.setItem('punkbolos.produtos', JSON.stringify(products));
   localStorage.setItem('punkbolos.producao', JSON.stringify(productions));
+  localStorage.setItem('punkbolos.insumos', JSON.stringify(insumos));
   const storage = await import(storageSpec);
   storage.reset();
 }

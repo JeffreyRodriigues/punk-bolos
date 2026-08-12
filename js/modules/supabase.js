@@ -357,3 +357,37 @@ export async function deleteProduction(id) {
     auth: true,
   });
 }
+
+/* ---------- Insumos (inventário) ---------- */
+
+/** Lista todos os insumos (linhas cruas do banco). */
+export async function listInsumos() {
+  return request('/rest/v1/insumos?select=*', { auth: true });
+}
+
+/** Insere um insumo. @param {Object} row - Linha com colunas snake_case. */
+export async function insertInsumo(row) {
+  return request('/rest/v1/insumos', {
+    method: 'POST',
+    auth: true,
+    headers: { Prefer: 'return=representation' },
+    body: row,
+  });
+}
+
+/** Atualiza um insumo pelo id. */
+export async function updateInsumo(id, row) {
+  return request(`/rest/v1/insumos?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    auth: true,
+    body: row,
+  });
+}
+
+/** Exclui um insumo pelo id. */
+export async function deleteInsumo(id) {
+  return request(`/rest/v1/insumos?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}

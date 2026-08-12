@@ -22,12 +22,14 @@ import * as supabase from './supabase.js?v=13';
 const PEDIDOS_KEY = 'punkbolos.pedidos';
 const PRODUTOS_KEY = 'punkbolos.produtos';
 const PRODUCOES_KEY = 'punkbolos.producao';
+const INSUMOS_KEY = 'punkbolos.insumos';
 const CONFIG_KEY = 'punkbolos.config';
 
 /** Caches em memória (null = ainda não carregado). */
 let ordersCache = null;
 let productsCache = null;
 let productionsCache = null;
+let insumosCache = null;
 
 /**
  * Snapshots do ÚLTIMO estado sincronizado com a nuvem.
@@ -38,6 +40,7 @@ let productionsCache = null;
 let ordersSynced = [];
 let productsSynced = [];
 let productionsSynced = [];
+let insumosSynced = [];
 
 /** true quando conectado ao Supabase (escritas vão para a nuvem). */
 let online = false;
@@ -218,6 +221,38 @@ function readLocalProductions() {
   }
 }
 
+/** Normaliza um insumo carregado (guarda contra formatos antigos). */
+function normalizeInsumo(insumo) {
+  if (!insumo || typeof insumo !== 'object') {
+    return insumo;
+  }
+  return {
+    id: insumo.id,
+    nome: String(insumo.nome || '').trim(),
+    unidade: String(insumo.unidade || 'unidade').trim(),
+    descricao: String(insumo.descricao || '').trim(),
+    compras: Array.isArray(insumo.compras)
+      ? insumo.compras.map((c) => ({
+          id: c.id,
+          data: c.data || '',
+          custoTotal: Number(c.custoTotal) || 0,
+          quantidadeCompra: Number(c.quantidadeCompra) || 0,
+        }))
+      : [],
+  };
+}
+
+/** Lê os insumos do LocalStorage. */
+function readLocalInsumos() {
+  try {
+    const raw = localStorage.getItem(INSUMOS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.map(normalizeInsumo) : [];
+  } catch {
+    return [];
+  }
+}
+
 /* ---------- Mapeamento para o banco (snake_case) ---------- */
 
 /** Pedido (app) → linha do banco. */
@@ -306,6 +341,28 @@ function fromProductionRow(row) {
   };
 }
 
+/** Insumo (app) → linha do banco (compras embutidas em JSONB). */
+function toInsumoRow(insumo) {
+  return {
+    id: insumo.id,
+    nome: insumo.nome || '',
+    unidade: insumo.unidade || 'unidade',
+    descricao: insumo.descricao || '',
+    compras: Array.isArray(insumo.compras) ? insumo.compras : [],
+  };
+}
+
+/** Linha do banco → insumo (app). */
+function fromInsumoRow(row) {
+  return {
+    id: row.id,
+    nome: row.nome || '',
+    unidade: row.unidade || 'unidade',
+    descricao: row.descricao || '',
+    compras: Array.isArray(row.compras) ? row.compras : [],
+  };
+}
+
 /* ---------- Leitura síncrona (cache) ---------- */
 
 /**
@@ -339,6 +396,17 @@ export function getAllProductions() {
     productionsCache = readLocalProductions();
   }
   return productionsCache;
+}
+
+/**
+ * Lê todos os insumos (inventário).
+ * @returns {Array<Object>} Lista de insumos.
+ */
+export function getAllInsumos() {
+  if (insumosCache === null) {
+    insumosCache = readLocalInsumos();
+  }
+  return insumosCache;
 }
 
 /* ---------- Inicialização / sincronização ---------- */
@@ -528,6 +596,40 @@ function diffProductions(previous, next) {
   byId.forEach((_, id) => supabase.deleteProduction(id).catch((e) => reportError('Falha ao excluir produção', e.message)));
 }
 
+/**
+ * Persiste a lista de insumos (inventário, mesma lógica diferencial).
+ * @param {Array<Object>} insumos - Nova lista de insumos.
+ */
+export function saveInsumos(insumos) {
+  insumosCache = insumos;
+
+  // Backup local SEMPRE.
+  localStorage.setItem(INSUMOS_KEY, JSON.stringify(insumos));
+
+  if (!online) {
+    return;
+  }
+  diffInsumos(insumosSynced, insumos);
+  insumosSynced = JSON.parse(JSON.stringify(insumos));
+}
+
+/** Envia ao banco os insumos criados/alterados/removidos. */
+function diffInsumos(previous, next) {
+  const byId = new Map(previous.map((insumo) => [insumo.id, insumo]));
+
+  next.forEach((insumo) => {
+    const old = byId.get(insumo.id);
+    if (!old) {
+      supabase.insertInsumo(toInsumoRow(insumo)).catch((e) => reportError('Falha ao criar insumo', e.message));
+    } else if (JSON.stringify(old) !== JSON.stringify(insumo)) {
+      supabase.updateInsumo(insumo.id, toInsumoRow(insumo)).catch((e) => reportError('Falha ao atualizar insumo', e.message));
+    }
+    byId.delete(insumo.id);
+  });
+
+  byId.forEach((_, id) => supabase.deleteInsumo(id).catch((e) => reportError('Falha ao excluir insumo', e.message)));
+}
+
 /* ---------- Manutenção ---------- */
 
 /**
@@ -538,13 +640,16 @@ export function clearAll() {
   ordersCache = null;
   productsCache = null;
   productionsCache = null;
+  insumosCache = null;
   ordersSynced = [];
   productsSynced = [];
   productionsSynced = [];
+  insumosSynced = [];
   online = false;
   localStorage.removeItem(PEDIDOS_KEY);
   localStorage.removeItem(PRODUTOS_KEY);
   localStorage.removeItem(PRODUCOES_KEY);
+  localStorage.removeItem(INSUMOS_KEY);
   localStorage.removeItem(CONFIG_KEY);
   localStorage.removeItem('punkbolos.session');
 }
@@ -557,8 +662,10 @@ export function reset() {
   ordersCache = null;
   productsCache = null;
   productionsCache = null;
+  insumosCache = null;
   ordersSynced = [];
   productsSynced = [];
   productionsSynced = [];
+  insumosSynced = [];
   online = false;
 }
