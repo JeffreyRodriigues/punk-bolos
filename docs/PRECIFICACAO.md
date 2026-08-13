@@ -48,8 +48,9 @@ Regras:
 {
   id: "prc<timestamp>-<rand>",
   produtoId: "p123-abc",          // 1 receita por produto (sem dupla)
-  itens: [                         // insumos utilizados
-    { insumoId: "i55-xyz", quantidade: 250 /* na unidade do insumo (g/ml/un) */ }
+  itens: [                         // insumos OU bases utilizados
+    { insumoId: "i55-xyz", quantidade: 250 /* na unidade do insumo (g/ml/un) */ },
+    { baseId: "b12-abc", quantidade: 1 /* na unidade de rendimento da base */ }
   ],
   margem: 25,                      // % — custos incalculáveis (gás, energia)
   multiplicador: 3,                // lucro + mão de obra
@@ -59,10 +60,31 @@ Regras:
   custoAdicionalObs: "",           // observação do custo adicional
   // Snapshot (resultado calculado):
   dataCalculo: "2026-08-08",
-  custoIngredientes: 9.03,         // Σ insumos
-  custoPorUnidade: 4.39            // resultado final armazenado
+   custoIngredientes: 9.03,         // Σ insumos + bases
+   custoPorUnidade: 4.39            // resultado final armazenado
 }
 ```
+
+### 3. Base (componente reutilizável)
+
+Bloco de insumos com quantidade, que pode ser usado como **item de receita** (ex.: "Massa de bolo", "Recheio de brigadeiro"):
+
+```js
+{
+  id: "b12-abc",
+  nome: "Massa de bolo",
+  descricao: "",
+  rendimento: 1000,            // quantidade produzida pela base
+  rendimentoUnidade: "g",      // unidade do rendimento (g | ml | un)
+  componentes: [               // insumos que compõem a base
+    { insumoId: "i55-xyz", quantidade: 500 /* na unidade do insumo */ }
+  ]
+}
+```
+
+- **Custo total da base** = soma do custo de cada componente (mesma regra de custo de insumo: `custoItem(componente, última compra)`).
+- **Custo por unidade de rendimento** = custo total ÷ rendimento.
+- Na precificação, a `quantidade` de uma base é informada na **unidade de rendimento** dela; o custo proporcional do item = custo total × (quantidade ÷ rendimento).
 
 ---
 
@@ -118,8 +140,9 @@ custoIngredientes   = 2,23+0,90+2,00+0,90+1,00+2,00  =  9,03
 ### Precificação
 - **1 receita por produto** (bloqueia dupla).
 - Produto do catálogo **sem receita**: aparece com status **"Sem precificação"** + convite "＋ Criar precificação".
-- A receita é um **snapshot**: guarda `dataCalculo`, `custoIngredientes` e `custoPorUnidade` no momento do cálculo. **Mudanças futuras** no preço do inventário **não alteram** receitas já calculadas — o produto "vira" desatualizado até o usuário **recalcular manualmente**.
-- **Valor de venda sempre à mão**: a precificação **só sugere** logo valor ("usar este preço no catálogo" copia para o campo de valor do produto, sem sobreescrever sozinho). Não há escrita automática no `valor` do catálogo.
+- **Itens podem ser insumos ou bases**: o seletor lista ambos; cada linha mostra o **custo proporcional ao vivo** e um **cabeçalho igual à tela de Bases** (*Ingrediente · Quantidade utilizada · Custo e gramas da embalagem · Quanto custou*). O custo de uma base leva em conta todos os seus componentes.
+- A receita é um **snapshot**: guarda `dataCalculo`, `custoIngredientes` e `custoPorUnidade` no momento do cálculo. **Mudanças futuras** no preço do inventário — inclusive em insumos que compõem uma **base** usada na receita — **não alteram** receitas já calculadas; a precificação "vira" desatualizada até o usuário **recalcular manualmente**.
+- **Valor de venda sempre à mão**: a precificação **só sugere** o valor ("usar este preço no catálogo" copia para o campo de valor do produto, sem sobreescrever sozinho). Não há escrita automática no `valor` do catálogo.
 - Campos personalizáveis na receita: `margem` (default 25%), `multiplicador` (default 3), `rendimento` (default 10), `embalagem` (default 1,00), `custoAdicional` + `observacaoAdicional`.
 - Bloqueio de venda **sem estoque** (regra atual) permanece inalterado — precificação é cálculo independente.
 
@@ -129,9 +152,10 @@ custoIngredientes   = 2,23+0,90+2,00+0,90+1,00+2,00  =  9,03
 
 ```
 js/modules/inventory.js      # regras puras: CRUD insumo, histórico, custo unitário
-js/modules/pricing.js        # regras puras: receita, cálculo por unidade (fórmula acima)
-js/modules/inventoryView.js  # tela Inventário (lista insumos + modal compras/edição)
-js/modules/pricingView.js    # tela Precificação (seletor de produto + linhas de insumos)
+js/modules/pricing.js        # regras puras: receita, cálculo por unidade (fórmula acima), custoItem
+js/modules/base.js           # regras puras: bases reutilizáveis (custoBase, custoBaseItem)
+js/modules/inventoryView.js  # tela Inventário (lista insumos + modal compras/edição + aba Bases)
+js/modules/pricingView.js    # tela Precificação (seletor de produto + linhas de insumos/bases, custo por linha)
 ```
 
 - `storage.js`: caches `insumos` e `precificacoes` + getters/setters e **diff** (mesmo padrão de `productions`).

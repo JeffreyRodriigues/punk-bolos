@@ -20,6 +20,8 @@ Documento-resumo do sistema de gestão da confeitaria **Punk Bolos**: pedidos, c
 
 Todas as telas (exceto login) são controladas por um **filtro por período de datas** compartilhado.
 
+Há também as abas **Inventário** (insumos, com histórico de compras) e **Bases** (componentes reutilizáveis como massas/recheios) e **Precificação** (custo por unidade dos produtos a partir de insumos e bases). Detalhes de regras e cálculo em `docs/PRECIFICACAO.md`; as bases são regra pura em `js/modules/base.js`.
+
 ---
 
 ## 2. Arquitetura

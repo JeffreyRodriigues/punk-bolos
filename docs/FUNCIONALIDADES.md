@@ -202,6 +202,13 @@ Uma barra abaixo da navegação filtra **simultaneamente** o dashboard e a lista
 - **RLS:** as tabelas só permitem leitura/escrita de usuários autenticados.
 - A **chave do Supabase** vem de variáveis de ambiente (`.env` local / env vars no Render); o servidor a injeta em `js/config.js` (aperto público via anon key).
 
+### 4.9 Bases reutilizáveis (massas/recheios)
+
+- **Base** é um bloco de insumos com quantidade (ex.: "Massa de bolo", "Recheio de brigadeiro"), com custo total e custo por unidade de rendimento calculados a partir dos insumos.
+- Cadastro na aba **Bases** (`inventoryView.js`): nome, rendimento + unidade, componentes (insumo + quantidade) e preview de custo ao vivo.
+- **Usada na Precificação:** o seletor de itens lista insumos e bases; cada linha mostra o custo proporcional ao vivo e o cabeçalho *Ingrediente · Quantidade utilizada · Custo e gramas da embalagem · Quanto custou*.
+- Regra de negócio em `base.js` (funções puras): `createBase`, `custoBase`, `custoPorUnidadeBase`, `custoBaseItem`.
+
 ---
 
 ## 5. Cadastro / edição de pedido (modal)

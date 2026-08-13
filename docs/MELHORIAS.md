@@ -83,6 +83,17 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 ### 17. Menu de navegação reorganizado
 - Aba "Início" renomeada para **Dashboard** e a ordem ajustada para: **Dashboard, Produtos, Produção, Pedidos**.
 
+### 18. Bases reutilizáveis (massas/recheios)
+- Novo conceito **Base**: componente composto por insumos com quantidades (ex.: "Massa de bolo", "Recheio de brigadeiro"), com **custo total** e **custo por unidade de rendimento** calculados a partir dos insumos.
+- Novo módulo puro `base.js` (regras: `createBase`, `custoBase`, `custoPorUnidadeBase`, `custoBaseItem`) e nova aba **Bases** (`inventoryView.js` + `index.html`), com modal de cadastro (nome, rendimento + unidade, componentes insumo/quantidade, preview de custo ao vivo).
+- `storage.normalizeBase` garante o formato ao carregar; sincroniza com o Supabase via coluna JSONB.
+
+### 19. Precificação usa bases + custo por linha
+- O seletor de itens da Precificação agora lista **insumos e bases**; cada item da receita suporta `insumoId` **ou** `baseId`.
+- Cada linha exibe o **custo proporcional ao vivo** e um **cabeçalho igual à tela de Bases**: *Ingrediente · Quantidade utilizada · Custo e gramas da embalagem · Quanto custou*.
+- A detecção de "desatualizada" passa a considerar também mudanças de preço em insumos que compõem uma **base** usada na receita.
+- `baseId` é preservado no `storage` (e no Supabase, pois `itens` viaja como JSONB).
+
 ---
 
 ## Segurança
