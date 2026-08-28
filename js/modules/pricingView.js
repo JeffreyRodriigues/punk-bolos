@@ -385,9 +385,9 @@ function updatePreview() {
   const c = pricing.calcular(receita, insumos, bases);
 
   preview.innerHTML = '';
-  const add = (label, value, strong = false) => {
+  const add = (label, value, strong = false, small = false) => {
     const p = document.createElement('div');
-    p.className = 'prec-preview-row';
+    p.className = 'prec-preview-row' + (small ? ' prec-preview-row-small' : '');
     const l = document.createElement('span');
     l.textContent = label;
     const v = document.createElement('strong');
@@ -398,6 +398,9 @@ function updatePreview() {
   };
 
   add('Custo dos ingredientes', formatCurrency(c.custoIngredientes));
+  const rendimentoNum = Number(receita.rendimento) || 1;
+  const custoPorUnidadeIngredientes = pricing.round2(c.custoIngredientes / rendimentoNum);
+  add('Custo por unidade (ingredientes)', `${formatCurrency(custoPorUnidadeIngredientes)} /un`, false, true);
   add(`+ Margem ${receita.margem}%`, formatCurrency(c.comMargem));
   add(`× Multiplicador ${receita.multiplicador}`, formatCurrency(c.comMultiplicador));
   add(`÷ Rendimento ${receita.rendimento}`, `${formatCurrency(c.porUnidade)} /un`);
