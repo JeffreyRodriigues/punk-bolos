@@ -97,8 +97,8 @@ async function request(path, { method = 'GET', body, auth = false, headers: extr
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401 && auth) {
-    // Sessão expirada/inválida: encerra e volta para o login
+  if (res.status === 401 && path.startsWith('/auth/')) {
+    // Sessão expirada/inválida em chamada de autenticação: encerra e volta ao login
     clearSession();
     if (typeof window !== 'undefined' && window.location) {
       window.location.replace('login.html');
