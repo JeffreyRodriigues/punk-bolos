@@ -16,6 +16,75 @@
     display: none;
   }
 
+  /* Tabela de Produção vira cards no mobile (evita overflow no portrait).
+     Mantém explícitos: Produto, Produzido, Reservado, Vendido, Disponível. */
+  .estoque-table,
+  .estoque-table tbody,
+  .estoque-table tr,
+  .estoque-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .estoque-table thead {
+    display: none;
+  }
+
+  .estoque-table tr {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+  }
+
+  .estoque-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border: none;
+    white-space: normal;
+    text-align: right;
+  }
+
+  .estoque-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-align: left;
+    flex: 0 0 auto;
+  }
+
+  .estoque-table .estoque-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    justify-content: flex-start;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .estoque-table .estoque-name::before {
+    display: none;
+    content: '';
+  }
+
+  .estoque-table td:last-child {
+    padding-top: 10px;
+    justify-content: center;
+  }
+
+  .estoque-table td:last-child::before {
+    display: none;
+  }
+
+  .estoque-table .estoque-produzir {
+    width: 100%;
+    justify-content: center;
+  }
+
   /* Cards de estatística ficam em 3 colunas */
   .dashboard {
     grid-template-columns: repeat(3, 1fr);

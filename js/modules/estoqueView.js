@@ -154,19 +154,24 @@ function renderTable() {
 
     const name = document.createElement('td');
     name.className = 'estoque-name';
+    name.dataset.label = 'Produto';
     name.textContent = estoque.nomeProduto(p);
 
     const produzidoTd = document.createElement('td');
+    produzidoTd.dataset.label = 'Produzido';
     produzidoTd.textContent = produzido;
 
     const reservadoTd = document.createElement('td');
     reservadoTd.className = reservado > 0 ? 'estoque-reservado' : '';
+    reservadoTd.dataset.label = 'Reservado';
     reservadoTd.textContent = reservado;
 
     const vendidoTd = document.createElement('td');
+    vendidoTd.dataset.label = 'Vendido';
     vendidoTd.textContent = vendido;
 
     const dispTd = document.createElement('td');
+    dispTd.dataset.label = 'Disponível';
     const badge = document.createElement('span');
     badge.className = `stock-badge stock-${estoque.stockStatus(disp)}`;
     badge.textContent = disp <= 0 ? 'Zerado' : disp;
