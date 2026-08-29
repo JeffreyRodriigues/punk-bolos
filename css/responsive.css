@@ -11,6 +11,11 @@
     top: 60px;
   }
 
+  /* Oculta Inventário e Precificação no mobile (abaixo da dobra) */
+  .nav-tab--mobile-hidden {
+    display: none;
+  }
+
   /* Cards de estatística ficam em 3 colunas */
   .dashboard {
     grid-template-columns: repeat(3, 1fr);

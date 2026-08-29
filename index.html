@@ -16,6 +16,7 @@
 <!-- CSS INLINE (build: node tools/build-css.js) — evita requests de CSS bloqueantes no LCP.
      Enquanto o build não roda, os <link> são o fallback. -->
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -893,6 +894,12 @@ body.modal-open {
   text-decoration: underline;
 }
 
+.prec-preview-row-small {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: -2px;
+}
+
 .btn-link:hover {
   color: var(--color-primary-hover);
 }
@@ -1216,23 +1223,9 @@ body.modal-open {
 }
 
 .product-price {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  white-space: nowrap;
-}
-
-.product-price-main {
   font-weight: 700;
   font-size: 1.05rem;
   color: var(--color-primary);
-  white-space: nowrap;
-}
-
-.product-price-sub {
-  font-weight: 500;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
@@ -1381,18 +1374,17 @@ body.modal-open {
   padding-bottom: 4px;
 }
 
+.base-componentes-head,
+.base-componente-row {
+  min-width: 580px;
+}
+
 .base-componente-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: nowrap;
   padding: 8px 4px;
   border-bottom: 1px solid var(--color-border);
-}
-
-.base-componentes-head,
-.base-componente-row {
-  min-width: 540px;
 }
 
 .base-componente-select {
@@ -1416,30 +1408,6 @@ body.modal-open {
   outline: none;
 }
 
-.base-componente-unit {
-  flex: 0 0 auto;
-  min-width: 22px;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.base-componente-cost {
-  flex: 0 0 100px;
-  text-align: right;
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: var(--color-text);
-  white-space: nowrap;
-}
-
-.base-componente-preco {
-  flex: 0 0 160px;
-  text-align: right;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
 .base-componente-uso {
   flex: 1 1 90px;
   display: flex;
@@ -1447,120 +1415,11 @@ body.modal-open {
   gap: 6px;
 }
 
-.base-componentes-head {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+.base-componente-unit {
+  flex: 0 0 auto;
+  min-width: 22px;
+  font-size: 0.85rem;
   color: var(--color-text-muted);
-  padding: 0 4px 6px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.base-col-ing { flex: 1 1 170px; text-align: left; }
-.base-col-preco { flex: 0 0 160px; text-align: right; }
-.base-col-uso { flex: 1 1 90px; text-align: left; }
-.base-col-custo { flex: 0 0 100px; text-align: right; }
-.base-col-act { flex: 0 0 36px; }
-
-/* No celular/tablet estreito, a tabela de componentes vira cards empilhados
-   com rótulos, em vez de rolar horizontalmente. */
-@media (max-width: 600px) {
-  .base-componentes {
-    overflow-x: visible;
-  }
-
-  .base-componentes-head {
-    display: none;
-  }
-
-  .base-componente-row {
-    flex-wrap: wrap;
-    min-width: 0;
-    padding: 10px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background-color: var(--color-surface);
-    gap: 10px 0;
-  }
-
-  .base-componente-row > [data-label],
-  .base-componente-row > .item-remove {
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-
-  .base-componente-row > [data-label]::before {
-    content: attr(data-label);
-    display: block;
-    font-weight: 700;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--color-text-muted);
-    margin-bottom: 4px;
-  }
-
-  .base-componente-select {
-    width: 100%;
-  }
-
-  .base-componente-uso {
-    flex: 1 1 100%;
-  }
-
-  .base-componente-row .item-remove {
-    width: 100%;
-    height: 38px;
-    margin-top: 4px;
-    border-radius: var(--radius-sm);
-    background-color: var(--color-surface-alt);
-    color: transparent;
-    font-size: 0;
-  }
-
-  .base-componente-row .item-remove::before {
-    content: 'Remover';
-    color: var(--color-danger, #c0392b);
-    font-size: 0.85rem;
-    font-weight: 700;
-  }
-}
-
-.base-custo-preview {
-  margin-top: 10px;
-  padding: 10px 12px;
-  background-color: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 0.95rem;
-  color: var(--color-text);
-}
-
-.base-custo-por {
-  color: var(--color-text-muted);
-  font-weight: 400;
-}
-
-.modal-card-sm {
-  max-width: 420px;
-}
-
-.modal-card-wide {
-  max-width: min(880px, 94vw);
-}
-
-.categoria-chooser {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.btn-block {
-  width: 100%;
 }
 
 /* ============================================================
@@ -1808,6 +1667,11 @@ body.modal-open {
     top: 60px;
   }
 
+  /* Oculta Inventário e Precificação no mobile (abaixo da dobra) */
+  .nav-tab--mobile-hidden {
+    display: none;
+  }
+
   /* Cards de estatística ficam em 3 colunas */
   .dashboard {
     grid-template-columns: repeat(3, 1fr);
@@ -1932,6 +1796,7 @@ body.modal-open {
 
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
@@ -2073,8 +1938,8 @@ body.modal-open {
     <button class="nav-tab active" type="button" data-view-target="dashboard">Dashboard</button>
     <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
     <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
-    <button class="nav-tab" type="button" data-view-target="inventario">Inventário</button>
-    <button class="nav-tab" type="button" data-view-target="precificacao">Precificação</button>
+    <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="inventario">Inventário</button>
+    <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="precificacao">Precificação</button>
     <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
   </nav>
 
@@ -2802,6 +2667,6 @@ body.modal-open {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=26"></script>
+  <script type="module" src="js/app.js?v=27"></script>
 </body>
 </html>
