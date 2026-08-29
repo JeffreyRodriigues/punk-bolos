@@ -41,6 +41,10 @@ import { showToast } from './modules/toast.js?v=12';
  * atualiza a aba ativa.
  * @param {string} target - Id da view ("dashboard" | "orders" | "produtos" | "estoque").
  */
+/* Telas Inventário/Precificação ficam ocultas no mobile (abaixo de 768px):
+   evitamos renderizar/carregar dados dessas views nesses dispositivos. */
+const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+
 function navigate(target) {
   document.querySelectorAll('.view').forEach((view) => {
     view.classList.toggle('active', view.id === `view-${target}`);
@@ -62,9 +66,9 @@ function navigate(target) {
   } else if (target === 'estoque') {
     estoqueView.render();
   } else if (target === 'inventario') {
-    inventoryView.render();
+    if (!isMobile()) inventoryView.render();
   } else if (target === 'precificacao') {
-    pricingView.render();
+    if (!isMobile()) pricingView.render();
   } else {
     orderList.render();
   }
@@ -138,8 +142,10 @@ function init() {
         orderList.render();
         productList.render();
         estoqueView.render();
-        inventoryView.render();
-        pricingView.render();
+        if (!isMobile()) {
+          inventoryView.render();
+          pricingView.render();
+        }
         showToast('Dados atualizados!');
       })
       .catch(() => {
@@ -229,12 +235,12 @@ function init() {
 
   // Inventário: após criar/editar/excluir insumo, re-renderiza a tela
   inventoryView.setChangeListener(() => {
-    inventoryView.render();
+    if (!isMobile()) inventoryView.render();
   });
 
   // Precificação: após salvar/usar preço, re-renderiza e reflete no catálogo
   pricingView.setChangeListener(() => {
-    pricingView.render();
+    if (!isMobile()) pricingView.render();
     productList.render();
     orderList.render();
     dashboard.render();
@@ -283,8 +289,10 @@ function init() {
     orderList.render();
     productList.render();
     estoqueView.render();
-    inventoryView.render();
-    pricingView.render();
+    if (!isMobile()) {
+      inventoryView.render();
+      pricingView.render();
+    }
   });
 }
 
