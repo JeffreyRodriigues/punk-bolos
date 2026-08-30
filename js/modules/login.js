@@ -8,7 +8,7 @@
    ============================================================ */
 
 import * as auth from './auth.js?v=13';
-import * as supabase from './supabase.js?v=13';
+import * as supabase from './supabase.js?v=14';
 import * as theme from '../utils/theme.js?v=13';
 
 const loginSection = document.getElementById('loginSection');

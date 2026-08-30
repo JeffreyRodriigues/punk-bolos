@@ -72,13 +72,49 @@ function accessToken() {
 /* ---------- Requisições ---------- */
 
 /**
+ * Tenta renovar a sessão usando o refresh_token salvo.
+ * Chama o endpoint de refresh diretamente (sem passar por request, para evitar loop).
+ * @returns {Promise<boolean>} true se o token foi renovado com sucesso.
+ */
+async function tryRefreshSession() {
+  const session = loadSession();
+  if (!session || !session.refresh_token) {
+    return false;
+  }
+  try {
+    const res = await fetch(`${baseUrl()}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: {
+        apikey: CONFIG.supabaseAnonKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: session.refresh_token }),
+    });
+    if (!res.ok) {
+      return false;
+    }
+    const data = await res.json();
+    saveSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: data.expires_at,
+      email: (data.user && data.user.email) || session.email,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Executa uma requisição para a API REST do Supabase.
- * Lança erro com a mensagem da API em caso de falha.
+ * Em caso de 401, tenta renovar o token automaticamente (uma vez) antes de
+ * redirecionar ao login. Lança erro com a mensagem da API em caso de falha.
  * @param {string} path - Caminho (ex.: "/rest/v1/orders?select=*").
  * @param {Object} [opts] - { method, body, auth, headers }.
  * @returns {Promise<Object|null>} JSON da resposta (ou null se 204).
  */
-async function request(path, { method = 'GET', body, auth = false, headers: extraHeaders = {} } = {}) {
+async function request(path, { method = 'GET', body, auth = false, headers: extraHeaders = {}, _isRetry = false } = {}) {
   const headers = { apikey: CONFIG.supabaseAnonKey };
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
@@ -97,8 +133,21 @@ async function request(path, { method = 'GET', body, auth = false, headers: extr
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401 && path.startsWith('/auth/')) {
-    // Sessão expirada/inválida em chamada de autenticação: encerra e volta ao login
+  if (res.status === 401) {
+    // Se já é uma retentativa ou chamada de login/refresh: não tenta renovar de novo
+    if (_isRetry || path.startsWith('/auth/')) {
+      clearSession();
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.replace('login.html');
+      }
+      throw new Error('Sessão expirada');
+    }
+    // Primeira vez: tenta renovar o token e repetir a requisição
+    const renewed = await tryRefreshSession();
+    if (renewed) {
+      return request(path, { method, body, auth, headers: extraHeaders, _isRetry: true });
+    }
+    // Renovação falhou (refresh expirado): encerra e volta ao login
     clearSession();
     if (typeof window !== 'undefined' && window.location) {
       window.location.replace('login.html');

@@ -16,7 +16,7 @@
    são enviados automaticamente (migração única).
    ============================================================ */
 
-import * as supabase from './supabase.js?v=13';
+import * as supabase from './supabase.js?v=14';
 
 /** Chaves do LocalStorage (usadas offline e para a configuração). */
 const PEDIDOS_KEY = 'punkbolos.pedidos';

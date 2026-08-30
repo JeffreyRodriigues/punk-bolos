@@ -12,7 +12,7 @@
    para o login.
    ============================================================ */
 
-import * as supabase from './supabase.js?v=13';
+import * as supabase from './supabase.js?v=14';
 
 /**
  * Indica se há sessão ativa neste dispositivo.
