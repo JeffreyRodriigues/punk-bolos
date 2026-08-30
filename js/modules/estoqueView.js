@@ -141,7 +141,11 @@ function renderTable() {
 
   const { produtos } = getSaldoVisivel();
   const lista = [...produtos]
-    .sort((a, b) => sortKey(estoque.nomeProduto(a)).localeCompare(sortKey(estoque.nomeProduto(b))));
+    .sort((a, b) => {
+      const dispA = estoque.totalProduzido(a.id) - estoque.totalReservado(a.id) - estoque.totalVendido(a.id);
+      const dispB = estoque.totalProduzido(b.id) - estoque.totalReservado(b.id) - estoque.totalVendido(b.id);
+      return dispB - dispA;
+    });
 
   tbody.innerHTML = '';
   lista.forEach((p) => {
@@ -329,7 +333,10 @@ function handleRegister(event) {
   if (obsEl) obsEl.value = '';
   showAviso('Produção registrada!', true);
   showToast('Produção registrada!');
+  const tipoAtual = document.getElementById('estoqueFormTipo').value;
   onChange();
+  populateTipoSelect(tipoAtual);
+  populateProductSelect(produtoId);
   return true;
 }
 
