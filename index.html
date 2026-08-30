@@ -19,6 +19,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1652,6 +1653,214 @@ body.modal-open {
   line-height: 1.35;
 }
 
+/* ============================================================
+   DASHBOARD — ABAS POR TIPO DE PRODUTO (Ideia 1)
+   ============================================================ */
+
+.dash-type-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.dash-type-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease,
+              background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dash-type-tab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+.dash-type-tab.active {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.35);
+}
+
+.dash-type-tab-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* ============================================================
+   DASHBOARD — CARDS DE RESUMO POR TIPO (Ideia 2)
+   ============================================================ */
+
+.type-summary-section {
+  margin-bottom: 24px;
+}
+
+.type-summary-section h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.type-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.type-summary-card {
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.type-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(28, 32, 48, 0.12);
+}
+
+.type-summary-card.type-fatia    { border-top: 3px solid #e91e63; }
+.type-summary-card.type-punkitos { border-top: 3px solid #7e57c2; }
+.type-summary-card.type-bolo     { border-top: 3px solid #f59e0b; }
+
+html.dark .type-summary-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.type-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.type-summary-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.type-summary-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.type-summary-qty {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.type-summary-qty span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.type-summary-revenue {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.type-summary-top {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ============================================================
+   DASHBOARD — RANKINGS POR TIPO (Ideia 3)
+   ============================================================ */
+
+.type-rankings-section {
+  margin-top: 4px;
+}
+
+.type-rankings-section h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.type-rankings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.type-rank-col {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.type-rank-col h3 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.type-rank-col.fatia-col    h3 { color: #e91e63; }
+.type-rank-col.punkitos-col h3 { color: #7e57c2; }
+.type-rank-col.bolo-col     h3 { color: #f59e0b; }
+
+/* ============================================================
+   RESPONSIVO — type summaries e rankings em mobile
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .type-summary-grid,
+  .type-rankings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .type-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .type-rankings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 </style>
 
 <style>
@@ -1872,6 +2081,7 @@ body.modal-open {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2048,6 +2258,9 @@ body.modal-open {
       <h1>Resumo de Vendas</h1>
     </div>
 
+    <!-- Abas de filtro por tipo de produto (Ideia 1) -->
+    <div id="dash-type-tabs" class="dash-type-tabs" role="tablist" aria-label="Filtrar por tipo de produto"></div>
+
     <section class="dashboard" aria-label="Resumo de vendas">
       <div class="stat-card stat-money" id="stat-receita">
         <span class="stat-icon">💰</span>
@@ -2120,6 +2333,12 @@ body.modal-open {
       * Lucro bruto = receita − custos. Como os custos ainda não são cadastrados, hoje o valor exibido é igual à receita.
     </p>
 
+    <!-- Cards de resumo por tipo (Ideia 2) -->
+    <section class="type-summary-section" aria-label="Resumo por tipo de produto">
+      <h2>Por tipo de produto</h2>
+      <div id="type-summary-grid" class="type-summary-grid"></div>
+    </section>
+
     <!-- ============================================================
          GRÁFICOS E RANKINGS (Chart.js) — renderizados por dashboard.js
          ============================================================ -->
@@ -2153,6 +2372,25 @@ body.modal-open {
       <div class="chart-card">
         <h2>Ranking de Produtos</h2>
         <div id="ranking-produtos" class="ranking"></div>
+      </div>
+    </section>
+
+    <!-- Rankings por tipo (Ideia 3) -->
+    <section class="type-rankings-section dashboard-charts" aria-label="Rankings por tipo de produto">
+      <h2>Ranking de sabores por tipo</h2>
+      <div class="type-rankings-grid">
+        <div class="type-rank-col fatia-col">
+          <h3><span>🍰</span> Fatias</h3>
+          <div id="ranking-fatias" class="ranking"></div>
+        </div>
+        <div class="type-rank-col punkitos-col">
+          <h3><span>🧁</span> Punkitos</h3>
+          <div id="ranking-punkitos" class="ranking"></div>
+        </div>
+        <div class="type-rank-col bolo-col">
+          <h3><span>🎂</span> Bolos</h3>
+          <div id="ranking-bolos" class="ranking"></div>
+        </div>
       </div>
     </section>
   </main>

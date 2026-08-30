@@ -13,6 +13,15 @@ Mesmo quando o usuário pede uma funcionalidade, confirme o escopo/abordagem ant
 executar. A única exceção é a manutenção deste próprio `AGENTS.md` quando o usuário
 solicita a regra.
 
+**Funcionalidades existentes são intocáveis por padrão.** Nunca altere algo que já
+funciona (fluxo, lógica, comportamento de UI) a menos que o usuário solicite
+explicitamente. Quando solicitado, pergunte o motivo da mudança e, se houver uma
+abordagem melhor, apresente-a como sugestão antes de executar o que foi pedido.
+
+**Deploy (git push) exige confirmação prévia.** Antes de executar `git push`, informe
+ao usuário quais arquivos serão enviados e a mensagem do commit, e aguarde aprovação
+explícita. Nunca faça push sem essa confirmação.
+
 ## Comandos essenciais
 
 - `node tools/build-css.js` — compila `css/themes.css` + `css/styles.css` +

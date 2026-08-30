@@ -286,3 +286,67 @@ function roundMap(map) {
   });
   return map;
 }
+
+/* ---------- Filtro e agregações por tipo de produto ---------- */
+
+/**
+ * Projeta os pedidos mantendo apenas os itens do tipo informado.
+ * O valorTotal é recalculado a partir dos itens filtrados.
+ * Pedidos sem nenhum item do tipo são excluídos.
+ * @param {Array<Object>} orders - Pedidos.
+ * @param {string} type - Tipo de produto ('Fatia' | 'Punkitos' | 'Bolo Inteiro').
+ * @returns {Array<Object>} Pedidos projetados para o tipo.
+ */
+export function filterByType(orders, type) {
+  if (!type || type === 'all') return orders || [];
+  return (orders || [])
+    .map((o) => {
+      const itens = (Array.isArray(o.itens) ? o.itens : []).filter(
+        (item) => item.tipoProduto === type
+      );
+      if (itens.length === 0) return null;
+      const valorTotal = round2(
+        itens.reduce((s, item) => s + (Number(item.quantidade) || 0) * (Number(item.valorUnitario) || 0), 0)
+      );
+      return { ...o, itens, valorTotal };
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Retorna um resumo compacto por tipo de produto: quantidade vendida,
+ * receita e sabor mais vendido do período.
+ * @param {Array<Object>} orders - Pedidos (já filtrados por período se necessário).
+ * @returns {Object} Mapa tipo -> { quantidade, receita, topSabor }.
+ */
+export function summaryByType(orders) {
+  const tipos = ['Fatia', 'Punkitos', 'Bolo Inteiro'];
+  const result = {};
+  tipos.forEach((tipo) => {
+    const filtered = filterByType(activeOrders(orders), tipo);
+    const flavors = quantityByFlavor(filtered);
+    const top = Object.entries(flavors).sort((a, b) => b[1] - a[1])[0];
+    result[tipo] = {
+      quantidade: totalQuantitySold(filtered),
+      receita: revenue(filtered),
+      topSabor: top ? top[0] : '—',
+    };
+  });
+  return result;
+}
+
+/**
+ * Rankings de sabores separados por tipo de produto.
+ * @param {Array<Object>} orders - Pedidos do período.
+ * @param {number} [limit=5] - Quantidade de itens por ranking.
+ * @returns {Object} Mapa tipo -> Array<{ sabor, quantidade }>.
+ */
+export function rankingsByType(orders, limit = 5) {
+  const tipos = ['Fatia', 'Punkitos', 'Bolo Inteiro'];
+  const result = {};
+  tipos.forEach((tipo) => {
+    const filtered = filterByType(activeOrders(orders), tipo);
+    result[tipo] = rankingSabores(filtered, limit);
+  });
+  return result;
+}

@@ -15,7 +15,7 @@
 
 import * as order from './order.js?v=16';
 import * as dateFilter from './dateFilter.js?v=13';
-import * as service from './dashboardService.js?v=12';
+import * as service from './dashboardService.js?v=13';
 import { formatCurrency, formatDate } from '../utils/money.js?v=12';
 
 /** Paleta da identidade Punk Bolos (rosa + complementos). */
@@ -35,6 +35,12 @@ const STATUS_COLORS = {
 
 /** Instâncias dos gráficos (para destruir antes de recriar). */
 const charts = {};
+
+/**
+ * Tipo de produto ativo no filtro de abas do dashboard.
+ * 'all' = visão geral; demais valores = tipo específico.
+ */
+let activeType = 'all';
 
 /* ---------- Helpers de tema ---------- */
 
@@ -353,6 +359,104 @@ function renderRankings(orders) {
   fillRanking('ranking-produtos', service.rankingProdutos(orders, 3), 'un');
 }
 
+/* ---------- Abas de tipo de produto (Ideia 1) ---------- */
+
+const TYPE_TABS = [
+  { value: 'all',          label: 'Geral',    icon: '📊' },
+  { value: 'Fatia',        label: 'Fatias',   icon: '🍰' },
+  { value: 'Punkitos',     label: 'Punkitos', icon: '🧁' },
+  { value: 'Bolo Inteiro', label: 'Bolos',    icon: '🎂' },
+];
+
+/**
+ * Renderiza as abas de filtro por tipo no topo do dashboard.
+ */
+function renderTypeTabs() {
+  const container = document.getElementById('dash-type-tabs');
+  if (!container) return;
+  container.innerHTML = '';
+  TYPE_TABS.forEach(({ value, label, icon }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `dash-type-tab${activeType === value ? ' active' : ''}`;
+    btn.dataset.type = value;
+    btn.innerHTML = `<span class="dash-type-tab-icon">${icon}</span> ${label}`;
+    btn.addEventListener('click', () => {
+      activeType = value;
+      render();
+    });
+    container.appendChild(btn);
+  });
+}
+
+/* ---------- Cards de resumo por tipo (Ideia 2) ---------- */
+
+const TYPE_CONFIG = {
+  'Fatia':        { icon: '🍰', label: 'Fatias',   color: 'type-fatia' },
+  'Punkitos':     { icon: '🧁', label: 'Punkitos', color: 'type-punkitos' },
+  'Bolo Inteiro': { icon: '🎂', label: 'Bolos',    color: 'type-bolo' },
+};
+
+/**
+ * Renderiza os 3 cards de resumo rápido por tipo (sempre visíveis).
+ * @param {Array<Object>} orders - Pedidos do período (sem filtro de tipo).
+ */
+function renderTypeSummaryCards(orders) {
+  const container = document.getElementById('type-summary-grid');
+  if (!container) return;
+  const summary = service.summaryByType(orders);
+  container.innerHTML = '';
+  Object.entries(summary).forEach(([tipo, data]) => {
+    const cfg = TYPE_CONFIG[tipo] || { icon: '📦', label: tipo, color: '' };
+    const card = document.createElement('div');
+    card.className = `type-summary-card ${cfg.color}`;
+    card.innerHTML = `
+      <div class="type-summary-header">
+        <span class="type-summary-icon">${cfg.icon}</span>
+        <span class="type-summary-label">${cfg.label}</span>
+      </div>
+      <div class="type-summary-qty">${data.quantidade} <span>un</span></div>
+      <div class="type-summary-revenue">${formatCurrency(data.receita)}</div>
+      <div class="type-summary-top">⭐ ${data.topSabor}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+/* ---------- Rankings por tipo (Ideia 3) ---------- */
+
+/**
+ * Renderiza um bloco de ranking para um tipo específico.
+ * @param {string} containerId - Id do container no HTML.
+ * @param {Array} data - Dados do ranking.
+ */
+function fillTypeRanking(containerId, data) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  if (!data || data.length === 0) {
+    container.innerHTML = '<p class="rank-empty">Sem dados no período.</p>';
+    return;
+  }
+  const max = data[0].quantidade || 1;
+  data.forEach((item, index) => {
+    container.appendChild(
+      rankItem(index + 1, item.sabor, `${item.quantidade} un`, (item.quantidade / max) * 100)
+    );
+  });
+}
+
+/**
+ * Renderiza os 3 rankings de sabores, um por tipo.
+ * @param {Array<Object>} orders - Pedidos do período.
+ */
+function renderTypeRankings(orders) {
+  const byType = service.rankingsByType(orders, 5);
+  fillTypeRanking('ranking-fatias',    byType['Fatia']);
+  fillTypeRanking('ranking-punkitos',  byType['Punkitos']);
+  fillTypeRanking('ranking-bolos',     byType['Bolo Inteiro']);
+}
+
 /* ---------- Render principal ---------- */
 
 /**
@@ -360,14 +464,17 @@ function renderRankings(orders) {
  */
 export function render() {
   const all = order.getOrders();
-  const orders = service.filterByRange(all, dateFilter.getRange());
-  const hasData = orders.length > 0;
+  const periodFiltered = service.filterByRange(all, dateFilter.getRange());
+  // Aplica o filtro de tipo quando uma aba específica está ativa
+  const orders = service.filterByType(periodFiltered, activeType === 'all' ? null : activeType);
+  const hasData = periodFiltered.length > 0;
 
   const emptyEl = document.getElementById('charts-empty');
   if (emptyEl) {
     emptyEl.hidden = hasData;
   }
 
+  renderTypeTabs();
   renderStats(orders);
 
   const theme = chartTheme();
@@ -377,6 +484,10 @@ export function render() {
   renderFlavorChart(orders, theme);
   renderStatusChart(orders, theme);
   renderRankings(orders);
+
+  // Seções por tipo usam sempre os dados completos do período (sem filtro de aba)
+  renderTypeSummaryCards(periodFiltered);
+  renderTypeRankings(periodFiltered);
 }
 
 /**
