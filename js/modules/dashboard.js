@@ -356,7 +356,6 @@ function fillRanking(containerId, data, unitLabel) {
  */
 function renderRankings(orders) {
   fillRanking('ranking-sabores', service.rankingSabores(orders, 5), 'un');
-  fillRanking('ranking-produtos', service.rankingProdutos(orders, 3), 'un');
 }
 
 /* ---------- Abas de tipo de produto (Ideia 1) ---------- */
@@ -480,8 +479,6 @@ export function render() {
   const theme = chartTheme();
   applyChartDefaults(theme);
   renderDailyRevenue(orders, theme);
-  renderProductChart(orders, theme);
-  renderFlavorChart(orders, theme);
   renderStatusChart(orders, theme);
   renderRankings(orders);
 
