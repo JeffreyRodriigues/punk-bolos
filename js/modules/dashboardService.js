@@ -150,6 +150,15 @@ export function countByStatus(orders) {
   return counts;
 }
 
+/**
+ * Conta pedidos não cancelados com pagamento Cortesia.
+ * @param {Array<Object>} orders - Pedidos.
+ * @returns {number} Quantidade de pedidos cortesia.
+ */
+export function countCortesia(orders) {
+  return activeOrders(orders).filter((o) => o.pagamento === 'Cortesia').length;
+}
+
 /* ---------- Agregações por data / produto / sabor ---------- */
 
 /**
