@@ -151,12 +151,18 @@ export function countByStatus(orders) {
 }
 
 /**
- * Conta pedidos não cancelados com pagamento Cortesia.
+ * Soma a quantidade de itens em pedidos não cancelados com pagamento Cortesia.
  * @param {Array<Object>} orders - Pedidos.
- * @returns {number} Quantidade de pedidos cortesia.
+ * @returns {number} Total de itens cortesia.
  */
 export function countCortesia(orders) {
-  return activeOrders(orders).filter((o) => o.pagamento === 'Cortesia').length;
+  return activeOrders(orders)
+    .filter((o) => o.pagamento === 'Cortesia')
+    .reduce((total, o) => {
+      const qtd = (Array.isArray(o.itens) ? o.itens : [])
+        .reduce((s, item) => s + (Number(item.quantidade) || 0), 0);
+      return total + qtd;
+    }, 0);
 }
 
 /* ---------- Agregações por data / produto / sabor ---------- */
