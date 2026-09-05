@@ -15,13 +15,13 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as order from './order.js?v=16';
+import * as order from './order.js?v=17';
 import * as product from './product.js?v=17';
 
 const HEADER = [
   'numero', 'data', 'cliente', 'contato', 'status', 'pagamento',
   'entrega', 'observacoes', 'tipo', 'tamanho', 'sabor', 'quantidade',
-  'valor_unitario',
+  'valor_unitario', 'cortesia',
 ];
 
 /* ---------- CSV: montagem (export) ---------- */
@@ -50,6 +50,7 @@ export function buildCsv(orders) {
           item.tipoProduto || '', item.tamanho || '', item.sabor || '',
           item.quantidade != null ? item.quantidade : '',
           item.valorUnitario != null ? item.valorUnitario : '',
+          item.cortesia ? 'Sim' : '',
         ].map(esc).join(';'));
       });
     });
@@ -112,7 +113,8 @@ const COLUMN_ALIASES = {
   tamanho: ['tamanho', 'tamanho(bolo)', 'tam'],
   sabor: ['sabor', 'produto', 'titulo', 'nomeproduto', 'bolo'],
   quantidade: ['quantidade', 'qtd', 'qtde', 'qty', 'unidades', 'un', 'quant'],
-  valor_unitario: ['valor_unitario', 'valorunitario', 'valorunit', 'precounitario', 'preco', 'valor', 'precounit'],
+      valor_unitario: ['valor_unitario', 'valorunitario', 'valorunit', 'precounitario', 'preco', 'valor', 'precounit'],
+  cortesia: ['cortesia', 'cortesiaitem', 'itemcortesia', 'gratuito'],
 };
 
 /** Mapeia o cabeçalho do arquivo para as chaves canônicas. */
@@ -365,6 +367,7 @@ export function importCsv(text, options = {}) {
       sabor: readCell(r, 'sabor'),
       quantidade: Math.max(1, Math.round(parseNumber(readCell(r, 'quantidade')) || 1)),
       valorUnitario: parseNumber(readCell(r, 'valor_unitario')),
+      cortesia: (readCell(r, 'cortesia') || '').toLowerCase() === 'sim',
     };
 
     if (!row.data) {
@@ -408,6 +411,7 @@ export function importCsv(text, options = {}) {
         sabor: prod.titulo,
         quantidade: row.quantidade,
         valorUnitario: Number.isFinite(row.valorUnitario) ? row.valorUnitario : Number(prod.valor) || 0,
+        cortesia: row.cortesia || false,
       };
     });
 

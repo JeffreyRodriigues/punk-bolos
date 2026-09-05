@@ -23,6 +23,11 @@
 
 
 
+
+
+
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -849,6 +854,46 @@ body.modal-open {
   padding: 8px;
 }
 
+.item-row.item-cortesia-checked {
+  opacity: 0.6;
+}
+
+.item-row.item-cortesia-checked .item-price {
+  text-decoration: line-through;
+}
+
+.item-cortesia-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-warn);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  position: relative;
+  z-index: 2;
+}
+
+.item-cortesia-label:hover {
+  border-color: var(--color-warn);
+  background: var(--color-warn-soft);
+}
+
+.item-cortesia-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  accent-color: var(--color-warn);
+}
+
 .item-row input,
 .item-row select {
   min-width: 0;
@@ -931,6 +976,11 @@ body.modal-open {
 
 .items-container.invalid .item-row {
   border-color: var(--color-danger);
+}
+
+.badge.cortesia-badge {
+  background: var(--color-warn-soft);
+  color: var(--color-warn);
 }
 
 .items-total {
@@ -2079,6 +2129,11 @@ html.dark .type-summary-card:hover {
 
 </style>
 <!-- CSS_INLINE:END -->
+
+
+
+
+
 
 
 

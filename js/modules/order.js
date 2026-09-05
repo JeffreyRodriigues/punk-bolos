@@ -101,16 +101,17 @@ export function normalizeItems(rawItems) {
     return [];
   }
 
-  return rawItems
-    .map((item) => ({
-      produtoId: item.produtoId ? String(item.produtoId) : '',
-      tipoProduto: String(item.tipoProduto || '').trim(),
-      tamanho: (item.tamanho || '').trim(),
-      sabor: (item.sabor || '').trim(),
-      quantidade: Number(item.quantidade) || 0,
-      valorUnitario: Number(item.valorUnitario) || 0,
-    }))
-    .filter((item) => item.tipoProduto !== '' || item.sabor !== '');
+    return rawItems
+      .map((item) => ({
+        produtoId: item.produtoId ? String(item.produtoId) : '',
+        tipoProduto: String(item.tipoProduto || '').trim(),
+        tamanho: (item.tamanho || '').trim(),
+        sabor: (item.sabor || '').trim(),
+        quantidade: Number(item.quantidade) || 0,
+        valorUnitario: Number(item.valorUnitario) || 0,
+        cortesia: Boolean(item.cortesia) || false,
+      }))
+      .filter((item) => item.tipoProduto !== '' || item.sabor !== '');
 }
 
 /**
@@ -129,7 +130,7 @@ export function totalQuantity(items) {
  */
 export function totalValue(items) {
   const sum = (items || []).reduce(
-    (acc, item) => acc + calculateTotal(item.quantidade, item.valorUnitario),
+    (acc, item) => acc + (item.cortesia ? 0 : calculateTotal(item.quantidade, item.valorUnitario)),
     0
   );
   return Math.round(sum * 100) / 100;

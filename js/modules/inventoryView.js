@@ -15,7 +15,7 @@ import * as base from './base.js?v=1';
 import { showToast } from './toast.js?v=12';
 import { formatCurrency, formatPrecise } from '../utils/money.js?v=12';
 import { formatDate } from '../utils/money.js?v=12';
-import { sortKey } from '../utils/describe.js?v=1';
+import { sortKey } from '../utils/describe.js?v=2';
 
 /** Callback disparado após criar/editar/excluir insumo (setado por app.js). */
 let onChange = () => {};

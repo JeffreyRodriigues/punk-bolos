@@ -12,11 +12,11 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as order from './order.js?v=16';
+import * as order from './order.js?v=17';
 import * as product from './product.js?v=17';
 import * as estoque from './estoque.js?v=4';
 import { formatCurrency } from '../utils/money.js?v=12';
-import { defaultItemType } from '../utils/describe.js?v=1';
+import { defaultItemType } from '../utils/describe.js?v=2';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
 const modal = document.getElementById('orderModal');
@@ -208,6 +208,23 @@ function createItemRow(item = {}) {
     }
   }
 
+  const cortesiaLabel = document.createElement('label');
+  cortesiaLabel.className = 'item-cortesia-label';
+  cortesiaLabel.title = 'Item cortesia (gratuito)';
+  const cortesiaCheckbox = document.createElement('input');
+  cortesiaCheckbox.type = 'checkbox';
+  cortesiaCheckbox.className = 'item-cortesia';
+  cortesiaCheckbox.checked = item.cortesia || false;
+  if (item.cortesia) row.classList.add('item-cortesia-checked');
+  cortesiaCheckbox.addEventListener('change', () => {
+    row.classList.toggle('item-cortesia-checked', cortesiaCheckbox.checked);
+    recalcTotal();
+  });
+  const cortesiaText = document.createElement('span');
+  cortesiaText.textContent = 'Cortesia';
+  cortesiaLabel.appendChild(cortesiaCheckbox);
+  cortesiaLabel.appendChild(cortesiaText);
+
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
   removeBtn.className = 'item-remove';
@@ -243,7 +260,7 @@ function createItemRow(item = {}) {
     recalcTotal();
   });
 
-  row.append(tipoSelect, saborSelect, qtdInput, priceEl, stockEl, removeBtn);
+  row.append(tipoSelect, saborSelect, qtdInput, priceEl, stockEl, cortesiaLabel, removeBtn);
   return row;
 }
 
@@ -268,6 +285,7 @@ function readItems() {
     .map((row) => {
       const saborSelect = row.querySelector('.item-sabor');
       const qtdInput = row.querySelector('.item-qtd');
+      const cortesiaCheckbox = row.querySelector('.item-cortesia');
       const produtoId = saborSelect ? saborSelect.value : '';
       const chosen = produtoId ? byId.get(produtoId) : null;
       if (!chosen) return null;
@@ -278,6 +296,7 @@ function readItems() {
         sabor: chosen.titulo,
         quantidade: qtdInput ? qtdInput.value : 1,
         valorUnitario: chosen.valor,
+        cortesia: !!cortesiaCheckbox.checked,
       };
     })
     .filter(Boolean);

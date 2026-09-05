@@ -18,7 +18,7 @@ import * as base from './base.js?v=1';
 import * as inventory from './inventory.js?v=2';
 import { showToast } from './toast.js?v=12';
 import { formatCurrency } from '../utils/money.js?v=12';
-import { sortKey } from '../utils/describe.js?v=1';
+import { sortKey } from '../utils/describe.js?v=2';
 
 /** Callback disparado após salvar/alterar precificação (setado por app.js). */
 let onChange = () => {};

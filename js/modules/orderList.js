@@ -10,11 +10,11 @@
    ============================================================ */
 
 import * as storage from './storage.js?v=13';
-import * as order from './order.js?v=16';
+import * as order from './order.js?v=17';
 import * as dateFilter from './dateFilter.js?v=13';
 import { showToast } from './toast.js?v=12';
 import { formatCurrency, formatDate } from '../utils/money.js?v=12';
-import { describeItens } from '../utils/describe.js?v=1';
+import { describeItens } from '../utils/describe.js?v=2';
 
 /* ---------- Elementos do DOM ---------- */
 const listEl = document.getElementById('orderList');
@@ -140,19 +140,28 @@ function createCard(o) {
 
   detail.append(itemsLine);
 
-  /* Valor + status */
-  const footer = document.createElement('div');
-  footer.className = 'order-card-header';
+    /* Valor + status */
+    const footer = document.createElement('div');
+    footer.className = 'order-card-header';
 
-  const value = document.createElement('span');
-  value.className = 'order-value';
-  value.textContent = formatCurrency(o.valorTotal);
+    const value = document.createElement('span');
+    value.className = 'order-value';
+    value.textContent = formatCurrency(o.valorTotal);
 
-  const badge = document.createElement('span');
-  badge.className = `badge ${o.status.replace(/\s+/g, '-')}`;
-  badge.textContent = o.status;
+    const badge = document.createElement('span');
+    badge.className = `badge ${o.status.replace(/\s+/g, '-')}`;
+    badge.textContent = o.status;
 
-  footer.append(value, badge);
+    const itens = Array.isArray(o.itens) ? o.itens : [];
+    const hasCortesia = itens.some((item) => item.cortesia);
+    let cortesiaBadge;
+    if (hasCortesia) {
+      cortesiaBadge = document.createElement('span');
+      cortesiaBadge.className = 'badge cortesia-badge';
+      cortesiaBadge.textContent = 'Cortesia';
+    }
+
+    footer.append(value, badge, ...(hasCortesia ? [cortesiaBadge] : []));
 
   /* Ações */
   const actions = document.createElement('div');

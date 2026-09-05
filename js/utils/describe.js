@@ -23,7 +23,8 @@ export function describeItens(order) {
       const qty = Number(item.quantidade) || 0;
       const type = item.tipoProduto || 'Fatia';
       const label = item.sabor || type;
-      return `${qty}× ${label}`;
+      const cortesia = item.cortesia ? ' (Cortesia)' : '';
+      return `${qty}× ${label}${cortesia}`;
     })
     .join(' · ');
 }

@@ -98,7 +98,9 @@ export function orderCount(orders) {
 export function totalQuantitySold(orders) {
   let total = 0;
   activeOrders(orders).forEach((o) => {
-    total += Number(o.quantidade) || 0;
+    (Array.isArray(o.itens) ? o.itens : []).forEach((item) => {
+      if (!item.cortesia) total += Number(item.quantidade) || 0;
+    });
   });
   return total;
 }
@@ -156,13 +158,13 @@ export function countByStatus(orders) {
  * @returns {number} Total de itens cortesia.
  */
 export function countCortesia(orders) {
-  return activeOrders(orders)
-    .filter((o) => o.pagamento === 'Cortesia')
-    .reduce((total, o) => {
-      const qtd = (Array.isArray(o.itens) ? o.itens : [])
-        .reduce((s, item) => s + (Number(item.quantidade) || 0), 0);
-      return total + qtd;
+  return activeOrders(orders).reduce((total, o) => {
+    const qtd = (Array.isArray(o.itens) ? o.itens : []).reduce((s, item) => {
+      const isCortesiaItem = item.cortesia || o.pagamento === 'Cortesia';
+      return s + (isCortesiaItem ? (Number(item.quantidade) || 0) : 0);
     }, 0);
+    return total + qtd;
+  }, 0);
 }
 
 /* ---------- Agregações por data / produto / sabor ---------- */
@@ -192,6 +194,7 @@ export function dailyRevenue(orders) {
 export function revenueByProduct(orders) {
   const map = {};
   forEachItem(orders, (item) => {
+    if (item.cortesia) return;
     const type = item.tipoProduto || 'Fatia';
     map[type] = (map[type] || 0) + (Number(item.quantidade) || 0) * (Number(item.valorUnitario) || 0);
   });
@@ -206,6 +209,7 @@ export function revenueByProduct(orders) {
 export function quantityByProduct(orders) {
   const map = {};
   forEachItem(orders, (item) => {
+    if (item.cortesia) return;
     const type = item.tipoProduto || 'Fatia';
     map[type] = (map[type] || 0) + (Number(item.quantidade) || 0);
   });
@@ -220,6 +224,7 @@ export function quantityByProduct(orders) {
 export function quantityByFlavor(orders) {
   const map = {};
   forEachItem(orders, (item) => {
+    if (item.cortesia) return;
     const sabor = (item.sabor || '').trim();
     if (!sabor) return;
     map[sabor] = (map[sabor] || 0) + (Number(item.quantidade) || 0);
@@ -235,6 +240,7 @@ export function quantityByFlavor(orders) {
 export function revenueByFlavor(orders) {
   const map = {};
   forEachItem(orders, (item) => {
+    if (item.cortesia) return;
     const sabor = (item.sabor || '').trim();
     if (!sabor) return;
     map[sabor] = (map[sabor] || 0) + (Number(item.quantidade) || 0) * (Number(item.valorUnitario) || 0);
@@ -317,7 +323,7 @@ export function filterByType(orders, type) {
   return (orders || [])
     .map((o) => {
       const itens = (Array.isArray(o.itens) ? o.itens : []).filter(
-        (item) => item.tipoProduto === type
+        (item) => item.tipoProduto === type && !item.cortesia
       );
       if (itens.length === 0) return null;
       const valorTotal = round2(

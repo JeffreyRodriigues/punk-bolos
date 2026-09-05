@@ -13,9 +13,9 @@
    chamado novamente.
    ============================================================ */
 
-import * as order from './order.js?v=16';
+import * as order from './order.js?v=17';
 import * as dateFilter from './dateFilter.js?v=13';
-import * as service from './dashboardService.js?v=15';
+import * as service from './dashboardService.js?v=16';
 import { formatCurrency, formatDate } from '../utils/money.js?v=12';
 
 /** Paleta da identidade Punk Bolos (rosa + complementos). */
