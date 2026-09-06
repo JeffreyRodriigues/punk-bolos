@@ -59,7 +59,7 @@ test('resolveProduct: item inválido devolve undefined', () => {
   assert.equal(estoque.resolveProduct(null), undefined);
 });
 
-// --- totalProduzido ---
+// --- totalProduzido / produzidoNoPeriodo ---
 test('totalProduzido: soma produções por produto', () => {
   const producoes = [
     { produtoId: 'f1', quantidade: 10 },
@@ -74,6 +74,29 @@ test('totalProduzido: soma produções por produto', () => {
       assert.equal(esp.totalProduzido('b1'), 2);
       assert.equal(esp.totalProduzido('nao-existe'), 0);
     });
+});
+
+test('produzidoNoPeriodo: filtra produções por data e soma apenas no intervalo', async () => {
+  const producoes = [
+    { produtoId: 'f1', quantidade: 5, data: '2026-09-01' },
+    { produtoId: 'f1', quantidade: 8, data: '2026-09-05' },
+    { produtoId: 'f1', quantidade: 4, data: '2026-09-06' },
+  ];
+  await setDb(seed({ productions: producoes }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+
+  // Sem range: retorna tudo
+  assert.equal(esp.produzidoNoPeriodo('f1'), 17);
+  assert.equal(esp.produzidoNoPeriodo('f1', {}), 17);
+
+  // Apenas data de hoje (06/09)
+  assert.equal(esp.produzidoNoPeriodo('f1', { from: '2026-09-06', to: '2026-09-06' }), 4);
+
+  // Intervalo 01/09 a 05/09
+  assert.equal(esp.produzidoNoPeriodo('f1', { from: '2026-09-01', to: '2026-09-05' }), 13);
+
+  // Data sem produções
+  assert.equal(esp.produzidoNoPeriodo('f1', { from: '2026-09-10', to: '2026-09-10' }), 0);
 });
 
 // --- totalVendido / disponivel ---

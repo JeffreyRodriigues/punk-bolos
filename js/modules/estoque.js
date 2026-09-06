@@ -56,6 +56,29 @@ export function totalProduzido(produtoId) {
 }
 
 /**
+ * Total de unidades produzidas de um produto em um intervalo de datas.
+ * Se nenhuma faixa for informada, retorna o total geral.
+ * @param {string} produtoId - Id do produto.
+ * @param {{ from?: string, to?: string }} [range] - Faixa de datas { from, to }.
+ * @returns {number} Soma das quantidades produzidas no período.
+ */
+export function produzidoNoPeriodo(produtoId, range = {}) {
+  const from = range && range.from ? range.from : '';
+  const to = range && range.to ? range.to : '';
+
+  return storage
+    .getAllProductions()
+    .filter((pr) => {
+      if (pr.produtoId !== produtoId) return false;
+      const data = String(pr.data || '');
+      if (from && data < from) return false;
+      if (to && data > to) return false;
+      return true;
+    })
+    .reduce((sum, pr) => sum + (Number(pr.quantidade) || 0), 0);
+}
+
+/**
  * Total de unidades vendidas (pedidos Concluídos que consomem estoque).
  * @param {string} produtoId - Id do produto.
  * @param {string} [excludeOrderId] - Id de pedido a ignorar (o que está sendo editado).

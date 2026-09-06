@@ -28,8 +28,8 @@ import * as dateFilter from './modules/dateFilter.js?v=13';
 import * as productForm from './modules/productForm.js?v=17';
 import * as productList from './modules/productList.js?v=16';
 import * as importExport from './modules/importExport.js?v=17';
-import * as estoque from './modules/estoque.js?v=4';
-import * as estoqueView from './modules/estoqueView.js?v=7';
+import * as estoque from './modules/estoque.js?v=5';
+import * as estoqueView from './modules/estoqueView.js?v=9';
 import * as inventoryView from './modules/inventoryView.js?v=2';
 import * as pricingView from './modules/pricingView.js?v=1';
 import { showToast } from './modules/toast.js?v=12';
@@ -53,8 +53,8 @@ function navigate(target) {
     tab.classList.toggle('active', tab.dataset.viewTarget === target);
   });
 
-  // Filtro de período e botão flutuante só fazem sentido em Dashboard/Pedidos
-  const hasPeriodFilter = target === 'dashboard' || target === 'orders';
+  // Filtro de período só faz sentido em Dashboard/Pedidos/Produção
+  const hasPeriodFilter = target === 'dashboard' || target === 'orders' || target === 'estoque';
   document.querySelector('.date-filter').hidden = !hasPeriodFilter;
   document.getElementById('fabNewOrder').hidden = target !== 'orders';
 
@@ -120,11 +120,12 @@ function init() {
   // Erros de sincronização com a nuvem ficam visíveis ao usuário
   storage.setErrorHandler((message) => showToast(message, 'error'));
 
-  // Filtro por período (Dashboard + Pedidos)
+  // Filtro por período (Dashboard + Pedidos + Produção)
   dateFilter.init();
   dateFilter.subscribe(() => {
     dashboard.render();
     orderList.render();
+    estoqueView.render();
   });
 
   // Alternância do tema pelo botão do header

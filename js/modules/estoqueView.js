@@ -10,7 +10,8 @@
 import * as storage from './storage.js?v=13';
 import * as product from './product.js?v=17';
 import * as order from './order.js?v=17';
-import * as estoque from './estoque.js?v=4';
+import * as estoque from './estoque.js?v=5';
+import * as dateFilter from './dateFilter.js?v=13';
 import { showToast } from './toast.js?v=12';
 import { formatDate } from '../utils/money.js?v=12';
 import { sortKey } from '../utils/describe.js?v=2';
@@ -121,25 +122,33 @@ function populateProductSelect(selectedId = '') {
 
 /**
  * Retorna os produtos a exibir no saldo, filtrados pela categoria
- * selecionada no formulário (vazio = todos os produtos).
- * @returns {{ tipo: string, list: Array<object> }}
+ * selecionada no formulário e pelo período de data ativo.
+ * Quando há filtro de data ativo, exibe apenas os produtos que tiveram produção no período.
+ * @returns {{ tipo: string, produtos: Array<object>, hasRange: boolean }}
  */
 function getSaldoVisivel() {
   const tipoSelect = document.getElementById('estoqueFormTipo');
   const tipo = tipoSelect ? tipoSelect.value : '';
-  const produtos = product.getProducts().filter((p) => !tipo || p.tipoProduto === tipo);
-  return { tipo, produtos };
+  const range = dateFilter.getRange();
+  const hasRange = Boolean(range.from || range.to);
+
+  let produtos = product.getProducts().filter((p) => !tipo || p.tipoProduto === tipo);
+  if (hasRange) {
+    produtos = produtos.filter((p) => estoque.produzidoNoPeriodo(p.id, range) > 0);
+  }
+  return { tipo, produtos, hasRange };
 }
 
 /**
  * Renderiza a tabela de estoque atual (produzido/vendido/disponível),
- * considerando o filtro de categoria selecionado no formulário.
+ * considerando o filtro de categoria e o filtro de período.
  */
 function renderTable() {
   const tbody = document.getElementById('estoqueTableBody');
   if (!tbody) return;
 
-  const { produtos } = getSaldoVisivel();
+  const { produtos, hasRange } = getSaldoVisivel();
+  const range = dateFilter.getRange();
   const lista = [...produtos]
     .sort((a, b) => {
       const dispA = estoque.totalProduzido(a.id) - estoque.totalReservado(a.id) - estoque.totalVendido(a.id);
@@ -149,10 +158,10 @@ function renderTable() {
 
   tbody.innerHTML = '';
   lista.forEach((p) => {
-    const produzido = estoque.totalProduzido(p.id);
+    const produzido = hasRange ? estoque.produzidoNoPeriodo(p.id, range) : estoque.totalProduzido(p.id);
     const reservado = estoque.totalReservado(p.id);
     const vendido = estoque.totalVendido(p.id);
-    const disp = produzido - reservado - vendido;
+    const disp = estoque.disponivel(p);
 
     const tr = document.createElement('tr');
 
@@ -216,19 +225,29 @@ function prepararProducao(produtoId) {
 }
 
 /**
- * Renderiza o histórico de produções (mais recentes primeiro).
+ * Renderiza o histórico de produções (mais recentes primeiro),
+ * respeitando o filtro de data ativo.
  */
 function renderHistory() {
   const historyEl = document.getElementById('estoqueHistory');
   if (!historyEl) return;
 
-  const list = storage.getAllProductions();
+  const range = dateFilter.getRange();
+  const hasRange = Boolean(range.from || range.to);
+
+  let list = storage.getAllProductions();
+  if (hasRange) {
+    list = dateFilter.applyFilter(list);
+  }
+
   historyEl.innerHTML = '';
 
   if (list.length === 0) {
     const li = document.createElement('li');
     li.className = 'estoque-history-empty';
-    li.textContent = 'Nenhuma produção registrada ainda.';
+    li.textContent = hasRange
+      ? 'Nenhuma produção registrada no período selecionado.'
+      : 'Nenhuma produção registrada ainda.';
     historyEl.appendChild(li);
     return;
   }
@@ -345,7 +364,7 @@ function handleRegister(event) {
  * selecionado no formulário.
  */
 function updateSaldo() {
-  const { tipo, produtos } = getSaldoVisivel();
+  const { tipo, produtos, hasRange } = getSaldoVisivel();
 
   const countEl = document.getElementById('estoqueCount');
   if (countEl) countEl.textContent = produtos.length;
@@ -357,8 +376,14 @@ function updateSaldo() {
   if (tableWrap) tableWrap.hidden = vazio;
   if (emptyEl) {
     const msg = emptyEl.querySelector('p');
-    if (msg && tipo) {
-      msg.innerHTML = `Nenhum produto da categoria <strong>${tipo}</strong>.<br>Cadastre em <strong>Produtos</strong> para começar a registrar produção.`;
+    if (msg) {
+      if (vazio && hasRange) {
+        msg.innerHTML = `Nenhuma produção registrada no período selecionado.<br>Altere o filtro de datas ou registre uma produção no formulário acima.`;
+      } else if (tipo) {
+        msg.innerHTML = `Nenhum produto da categoria <strong>${tipo}</strong>.<br>Cadastre em <strong>Produtos</strong> para começar a registrar produção.`;
+      } else {
+        msg.innerHTML = `Nenhum produto cadastrado ainda.<br>Cadastre em <strong>Produtos</strong> para começar a registrar produção.`;
+      }
     }
     emptyEl.hidden = !vazio;
   }
