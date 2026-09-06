@@ -134,7 +134,9 @@ function getSaldoVisivel() {
 
   let produtos = product.getProducts().filter((p) => !tipo || p.tipoProduto === tipo);
   if (hasRange) {
-    produtos = produtos.filter((p) => estoque.produzidoNoPeriodo(p.id, range) > 0);
+    produtos = produtos.filter(
+      (p) => estoque.produzidoNoPeriodo(p.id, range) > 0 || estoque.vendidoNoPeriodo(p.id, range) > 0
+    );
   }
   return { tipo, produtos, hasRange };
 }
@@ -160,7 +162,7 @@ function renderTable() {
   lista.forEach((p) => {
     const produzido = hasRange ? estoque.produzidoNoPeriodo(p.id, range) : estoque.totalProduzido(p.id);
     const reservado = estoque.totalReservado(p.id);
-    const vendido = estoque.totalVendido(p.id);
+    const vendido = hasRange ? estoque.vendidoNoPeriodo(p.id, range) : estoque.totalVendido(p.id);
     const disp = estoque.disponivel(p);
 
     const tr = document.createElement('tr');
@@ -378,7 +380,7 @@ function updateSaldo() {
     const msg = emptyEl.querySelector('p');
     if (msg) {
       if (vazio && hasRange) {
-        msg.innerHTML = `Nenhuma produção registrada no período selecionado.<br>Altere o filtro de datas ou registre uma produção no formulário acima.`;
+        msg.innerHTML = `Nenhuma produção ou venda registrada no período selecionado.<br>Altere o filtro de datas ou registre uma produção no formulário acima.`;
       } else if (tipo) {
         msg.innerHTML = `Nenhum produto da categoria <strong>${tipo}</strong>.<br>Cadastre em <strong>Produtos</strong> para começar a registrar produção.`;
       } else {

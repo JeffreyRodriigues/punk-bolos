@@ -106,6 +106,63 @@ test('totalVendido: só conta Concluído com consomeEstoque', async () => {
   assert.equal(esp.totalVendido('f1'), 2);
 });
 
+test('vendidoNoPeriodo: filtra vendas por data e soma apenas no intervalo', async () => {
+  const orders = [
+    {
+      id: 'o-1',
+      numero: 2001,
+      cliente: 'Cli 1',
+      data: '2026-09-01',
+      status: 'Concluído',
+      consomeEstoque: true,
+      itens: [{ produtoId: 'f1', quantidade: 3, valorUnitario: 5 }],
+    },
+    {
+      id: 'o-2',
+      numero: 2002,
+      cliente: 'Cli 2',
+      data: '2026-09-06',
+      status: 'Concluído',
+      consomeEstoque: true,
+      itens: [{ produtoId: 'f1', quantidade: 4, valorUnitario: 5 }],
+    },
+    {
+      id: 'o-3',
+      numero: 2003,
+      cliente: 'Cli 3',
+      data: '2026-09-06',
+      status: 'Pendente', // não concluído
+      consomeEstoque: true,
+      itens: [{ produtoId: 'f1', quantidade: 10, valorUnitario: 5 }],
+    },
+    {
+      id: 'o-4',
+      numero: 2004,
+      cliente: 'Cli 4',
+      data: '2026-09-06',
+      status: 'Concluído',
+      consomeEstoque: false, // não consome estoque
+      itens: [{ produtoId: 'f1', quantidade: 7, valorUnitario: 5 }],
+    },
+  ];
+
+  await setDb(seed({ orders }));
+  const esp = await import('../js/modules/estoque.js?v=17');
+
+  // Sem range: soma todos os concluídos com consomeEstoque (2 do seed + 3 do o-1 + 4 do o-2 = 9)
+  assert.equal(esp.vendidoNoPeriodo('f1'), 9);
+  assert.equal(esp.vendidoNoPeriodo('f1', {}), 9);
+
+  // Apenas data de hoje (06/09): apenas o-2 (4)
+  assert.equal(esp.vendidoNoPeriodo('f1', { from: '2026-09-06', to: '2026-09-06' }), 4);
+
+  // Data 01/09: apenas o-1 (3)
+  assert.equal(esp.vendidoNoPeriodo('f1', { from: '2026-09-01', to: '2026-09-01' }), 3);
+
+  // Data sem vendas
+  assert.equal(esp.vendidoNoPeriodo('f1', { from: '2026-09-10', to: '2026-09-10' }), 0);
+});
+
 test('disponivel: produzido - vendido', async () => {
   const produ = [{ produtoId: 'f1', quantidade: 10 }];
   await setDb(seed({ productions: produ }));

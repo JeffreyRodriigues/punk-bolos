@@ -100,6 +100,35 @@ export function totalVendido(produtoId, excludeOrderId = '') {
 }
 
 /**
+ * Total de unidades vendidas (pedidos Concluídos que consomem estoque) dentro de um intervalo de datas.
+ * Se nenhuma faixa for informada, retorna o total geral vendido.
+ * @param {string} produtoId - Id do produto.
+ * @param {{ from?: string, to?: string }} [range] - Faixa de datas { from, to }.
+ * @param {string} [excludeOrderId] - Id de pedido a ignorar.
+ * @returns {number} Soma das quantidades vendidas no período.
+ */
+export function vendidoNoPeriodo(produtoId, range = {}, excludeOrderId = '') {
+  const from = range && range.from ? range.from : '';
+  const to = range && range.to ? range.to : '';
+
+  let total = 0;
+  storage.getAll().forEach((o) => {
+    if (o.id === excludeOrderId) return;
+    if (!o.consomeEstoque || o.status !== 'Concluído') return;
+    const data = String(o.data || '');
+    if (from && data < from) return false;
+    if (to && data > to) return false;
+    (Array.isArray(o.itens) ? o.itens : []).forEach((item) => {
+      const p = resolveProduct(item);
+      if (p && p.id === produtoId) {
+        total += Number(item.quantidade) || 0;
+      }
+    });
+  });
+  return total;
+}
+
+/**
  * Status de pedido em andamento que RESERVAM estoque (ainda não vendidos).
  * @type {string[]}
  */
