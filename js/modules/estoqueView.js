@@ -226,12 +226,20 @@ function prepararProducao(produtoId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/** Página atual do histórico de produções. */
+let historyPage = 1;
+const HISTORY_PAGE_SIZE = 10;
+
 /**
  * Renderiza o histórico de produções (mais recentes primeiro),
- * respeitando o filtro de data ativo.
+ * respeitando o filtro de data ativo e a paginação.
  */
 function renderHistory() {
   const historyEl = document.getElementById('estoqueHistory');
+  const paginationEl = document.getElementById('estoquePagination');
+  const prevBtn = document.getElementById('btnEstoquePrevPage');
+  const nextBtn = document.getElementById('btnEstoqueNextPage');
+  const pageInfo = document.getElementById('estoquePageInfo');
   if (!historyEl) return;
 
   const range = dateFilter.getRange();
@@ -245,6 +253,7 @@ function renderHistory() {
   historyEl.innerHTML = '';
 
   if (list.length === 0) {
+    if (paginationEl) paginationEl.hidden = true;
     const li = document.createElement('li');
     li.className = 'estoque-history-empty';
     li.textContent = hasRange
@@ -254,44 +263,68 @@ function renderHistory() {
     return;
   }
 
+  const sorted = [...list].sort(
+    (a, b) =>
+      String(b.data || '').localeCompare(String(a.data || '')) ||
+      String(b.id || '').localeCompare(String(a.id || ''))
+  );
+
+  const totalPages = Math.ceil(sorted.length / HISTORY_PAGE_SIZE) || 1;
+  if (historyPage > totalPages) {
+    historyPage = totalPages;
+  }
+  if (historyPage < 1) {
+    historyPage = 1;
+  }
+
+  const start = (historyPage - 1) * HISTORY_PAGE_SIZE;
+  const pageItems = sorted.slice(start, start + HISTORY_PAGE_SIZE);
+
   const productsById = new Map(product.getProducts().map((p) => [p.id, p]));
 
-  [...list]
-    .sort(
-      (a, b) =>
-        String(b.data || '').localeCompare(String(a.data || '')) ||
-        String(b.id || '').localeCompare(String(a.id || ''))
-    )
-    .slice(0, 20)
-    .forEach((pr) => {
-      const prod = productsById.get(pr.produtoId);
+  pageItems.forEach((pr) => {
+    const prod = productsById.get(pr.produtoId);
 
-      const li = document.createElement('li');
-      li.className = 'estoque-history-item';
+    const li = document.createElement('li');
+    li.className = 'estoque-history-item';
 
-      const info = document.createElement('div');
-      info.className = 'estoque-history-info';
+    const info = document.createElement('div');
+    info.className = 'estoque-history-info';
 
-      const title = document.createElement('strong');
-      title.textContent = `+${Number(pr.quantidade) || 0} ${prod ? estoque.nomeProduto(prod) : 'produto removido'}`;
+    const title = document.createElement('strong');
+    title.textContent = `+${Number(pr.quantidade) || 0} ${prod ? estoque.nomeProduto(prod) : 'produto removido'}`;
 
-      const meta = document.createElement('span');
-      meta.className = 'estoque-history-meta';
-      meta.textContent = formatDate(pr.data) + (pr.observacao ? ` · ${pr.observacao}` : '');
+    const meta = document.createElement('span');
+    meta.className = 'estoque-history-meta';
+    meta.textContent = formatDate(pr.data) + (pr.observacao ? ` · ${pr.observacao}` : '');
 
-      info.append(title, meta);
+    info.append(title, meta);
 
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'icon-btn danger';
-      del.textContent = '🗑️';
-      del.title = 'Excluir produção';
-      del.setAttribute('aria-label', 'Excluir produção');
-      del.addEventListener('click', () => removeProduction(pr));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'icon-btn danger';
+    del.textContent = '🗑️';
+    del.title = 'Excluir produção';
+    del.setAttribute('aria-label', 'Excluir produção');
+    del.addEventListener('click', () => removeProduction(pr));
 
-      li.append(info, del);
-      historyEl.appendChild(li);
-    });
+    li.append(info, del);
+    historyEl.appendChild(li);
+  });
+
+  // Atualiza a barra de paginação
+  if (paginationEl) {
+    paginationEl.hidden = totalPages <= 1;
+    if (pageInfo) {
+      pageInfo.textContent = `Página ${historyPage} de ${totalPages} (${sorted.length} produções)`;
+    }
+    if (prevBtn) {
+      prevBtn.disabled = historyPage <= 1;
+    }
+    if (nextBtn) {
+      nextBtn.disabled = historyPage >= totalPages;
+    }
+  }
 }
 
 /**
@@ -355,6 +388,7 @@ function handleRegister(event) {
   showAviso('Produção registrada!', true);
   showToast('Produção registrada!');
   const tipoAtual = document.getElementById('estoqueFormTipo').value;
+  historyPage = 1;
   onChange();
   populateTipoSelect(tipoAtual);
   populateProductSelect(produtoId);
@@ -417,5 +451,24 @@ if (tipoSelect) {
   tipoSelect.addEventListener('change', () => {
     populateProductSelect();
     updateSaldo();
+  });
+}
+
+// Paginação do histórico
+const prevBtn = document.getElementById('btnEstoquePrevPage');
+if (prevBtn) {
+  prevBtn.addEventListener('click', () => {
+    if (historyPage > 1) {
+      historyPage--;
+      renderHistory();
+    }
+  });
+}
+
+const nextBtn = document.getElementById('btnEstoqueNextPage');
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    historyPage++;
+    renderHistory();
   });
 }
