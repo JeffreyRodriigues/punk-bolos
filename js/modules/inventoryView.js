@@ -9,13 +9,13 @@
    As regras de cálculo ficam em inventory.js (módulo de negócio).
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
-import * as inventory from './inventory.js?v=2';
-import * as base from './base.js?v=1';
-import { showToast } from './toast.js?v=12';
-import { formatCurrency, formatPrecise } from '../utils/money.js?v=12';
-import { formatDate } from '../utils/money.js?v=12';
-import { sortKey } from '../utils/describe.js?v=2';
+import * as storage from './storage.js';
+import * as inventory from './inventory.js';
+import * as base from './base.js';
+import { showToast } from './toast.js';
+import { formatCurrency, formatPrecise } from '../utils/money.js';
+import { formatDate } from '../utils/money.js';
+import { sortKey } from '../utils/describe.js';
 
 /** Callback disparado após criar/editar/excluir insumo (setado por app.js). */
 let onChange = () => {};

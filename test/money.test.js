@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCurrency, parseMoney, formatDate, formatPrecise } from '../js/utils/money.js?v=13';
+import { formatCurrency, parseMoney, formatDate, formatPrecise } from '../js/utils/money.js';
 
 const brl = (value) => formatCurrency(value).replace(/\u00A0/g, ' ');
 

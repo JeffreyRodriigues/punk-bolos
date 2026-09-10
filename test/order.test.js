@@ -4,7 +4,7 @@ import { setDb, resetStorageBetweenTests } from './helpers/storageMock.js';
 
 let order;
 before(() => {
-  return setDb().then(() => import('../js/modules/order.js?v=15')).then((m) => { order = m; });
+  return setDb().then(() => import('../js/modules/order.js')).then((m) => { order = m; });
 });
 resetStorageBetweenTests();
 

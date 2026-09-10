@@ -11,12 +11,12 @@
    - oferecer atalho para cadastrar produtos que não existem
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
-import * as order from './order.js?v=17';
-import * as product from './product.js?v=17';
-import * as estoque from './estoque.js?v=4';
-import { formatCurrency } from '../utils/money.js?v=12';
-import { defaultItemType } from '../utils/describe.js?v=2';
+import * as storage from './storage.js';
+import * as order from './order.js';
+import * as product from './product.js';
+import * as estoque from './estoque.js';
+import { formatCurrency } from '../utils/money.js';
+import { defaultItemType } from '../utils/describe.js';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
 const modal = document.getElementById('orderModal');

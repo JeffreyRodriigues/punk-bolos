@@ -21,7 +21,7 @@
    convertidos (×1000) para preservar o histórico de custos.
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
+import * as storage from './storage.js';
 
 /** Unidades aceitas no cadastro do insumo. */
 export const INSUMO_UNITS = ['g', 'ml', 'unidade'];

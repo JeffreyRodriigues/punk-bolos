@@ -14,9 +14,9 @@
      tipo;tamanho;sabor;quantidade;valor_unitario
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
-import * as order from './order.js?v=17';
-import * as product from './product.js?v=17';
+import * as storage from './storage.js';
+import * as order from './order.js';
+import * as product from './product.js';
 
 const HEADER = [
   'numero', 'data', 'cliente', 'contato', 'status', 'pagamento',

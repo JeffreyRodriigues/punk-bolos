@@ -18,21 +18,21 @@
    - re-render global após qualquer mudança de dados
    ============================================================ */
 
-import * as theme from './utils/theme.js?v=13';
-import * as storage from './modules/storage.js?v=15';
-import * as auth from './modules/auth.js?v=13';
-import * as orderForm from './modules/orderForm.js?v=22';
-import * as orderList from './modules/orderList.js?v=17';
-import * as dashboard from './modules/dashboard.js?v=15';
-import * as dateFilter from './modules/dateFilter.js?v=13';
-import * as productForm from './modules/productForm.js?v=17';
-import * as productList from './modules/productList.js?v=17';
-import * as importExport from './modules/importExport.js?v=17';
-import * as estoque from './modules/estoque.js?v=6';
-import * as estoqueView from './modules/estoqueView.js?v=13';
-import * as inventoryView from './modules/inventoryView.js?v=3';
-import * as pricingView from './modules/pricingView.js?v=1';
-import { showToast } from './modules/toast.js?v=12';
+import * as theme from './utils/theme.js';
+import * as storage from './modules/storage.js';
+import * as auth from './modules/auth.js';
+import * as orderForm from './modules/orderForm.js';
+import * as orderList from './modules/orderList.js';
+import * as dashboard from './modules/dashboard.js';
+import * as dateFilter from './modules/dateFilter.js';
+import * as productForm from './modules/productForm.js';
+import * as productList from './modules/productList.js';
+import * as importExport from './modules/importExport.js';
+import * as estoque from './modules/estoque.js';
+import * as estoqueView from './modules/estoqueView.js';
+import * as inventoryView from './modules/inventoryView.js';
+import * as pricingView from './modules/pricingView.js';
+import { showToast } from './modules/toast.js';
 
 /* ---------- Navegação entre telas ---------- */
 

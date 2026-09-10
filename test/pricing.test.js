@@ -4,8 +4,8 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import * as inventory from '../js/modules/inventory.js?v=2';
-import * as pricing from '../js/modules/pricing.js?v=1';
+import * as inventory from '../js/modules/inventory.js';
+import * as pricing from '../js/modules/pricing.js';
 
 /* ---------- Fixtures (exemplo real da spec) ---------- */
 

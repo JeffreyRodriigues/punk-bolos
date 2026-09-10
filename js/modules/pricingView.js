@@ -11,14 +11,14 @@
    As regras de cálculo ficam em pricing.js (módulo de negócio).
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
-import * as product from './product.js?v=17';
-import * as pricing from './pricing.js?v=1';
-import * as base from './base.js?v=1';
-import * as inventory from './inventory.js?v=2';
-import { showToast } from './toast.js?v=12';
-import { formatCurrency } from '../utils/money.js?v=12';
-import { sortKey } from '../utils/describe.js?v=2';
+import * as storage from './storage.js';
+import * as product from './product.js';
+import * as pricing from './pricing.js';
+import * as base from './base.js';
+import * as inventory from './inventory.js';
+import { showToast } from './toast.js';
+import { formatCurrency } from '../utils/money.js';
+import { sortKey } from '../utils/describe.js';
 
 /** Callback disparado após salvar/alterar precificação (setado por app.js). */
 let onChange = () => {};

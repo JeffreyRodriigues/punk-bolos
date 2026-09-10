@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const ROOT = process.cwd();
-const storageSpec = pathToFileURL(path.join(ROOT, 'js/modules/storage.js')).href + '?v=13';
+const storageSpec = pathToFileURL(path.join(ROOT, 'js/modules/storage.js')).href;
 
 /** Stub mínimo de localStorage (global para o test runner). */
 export function installLocalStorage() {

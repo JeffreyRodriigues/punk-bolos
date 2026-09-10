@@ -11,7 +11,7 @@
    js/utils/dateRange.js (testável sem DOM); aqui fica só o binding.
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
+import * as storage from './storage.js';
 import { presetRange as computePresetRange, filterByRange as pureFilter } from '../utils/dateRange.js';
 
 /* ---------- Elementos do DOM ---------- */

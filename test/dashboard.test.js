@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import * as s from '../js/modules/dashboardService.js?v=16';
+import * as s from '../js/modules/dashboardService.js';
 
 const completed = (obj) => ({ status: 'Concluído', valorTotal: 100, itens: [], ...obj });
 const O = {

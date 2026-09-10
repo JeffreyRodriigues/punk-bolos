@@ -20,7 +20,7 @@
    }
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
+import * as storage from './storage.js';
 
 /** Tipos de produto aceitos pelo sistema. */
 export const PRODUCT_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro'];

@@ -7,9 +7,9 @@
    um link de recuperação por e-mail (Supabase Auth).
    ============================================================ */
 
-import * as auth from './auth.js?v=13';
-import * as supabase from './supabase.js?v=14';
-import * as theme from '../utils/theme.js?v=13';
+import * as auth from './auth.js';
+import * as supabase from './supabase.js';
+import * as theme from '../utils/theme.js';
 
 const loginSection = document.getElementById('loginSection');
 const loginForm = document.getElementById('loginForm');

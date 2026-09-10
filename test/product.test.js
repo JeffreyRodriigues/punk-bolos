@@ -13,7 +13,7 @@ const seed = () => ({
 
 before(async () => {
   await setDb(seed());
-  product = await import('../js/modules/product.js?v=17');
+  product = await import('../js/modules/product.js');
 });
 resetStorageBetweenTests();
 

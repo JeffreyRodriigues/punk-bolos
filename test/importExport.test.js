@@ -11,7 +11,7 @@ const produtos = [
 
 before(async () => {
   await setDb({ products: produtos });
-  ie = await import('../js/modules/importExport.js?v=16');
+  ie = await import('../js/modules/importExport.js');
 });
 resetStorageBetweenTests();
 
@@ -77,7 +77,7 @@ test('importCsv: traduz rótulos de planilha (Bolo, Bento, Uber pelo cliente)', 
   const res = await setDb({ products: produtos }).then(() => ie.importCsv(csv, { dryRun: true }));
   assert.equal(res.ok, true);
   assert.equal(res.produtos[0], 'Bento de morango (Bolo Inteiro M)');
-  const storage = (await import('../js/modules/storage.js?v=13'));
+  const storage = (await import('../js/modules/storage.js'));
   assert.equal(storage.getAll().length, 0); // dryRun não persistiu
 });
 

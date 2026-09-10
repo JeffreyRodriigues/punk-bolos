@@ -43,7 +43,7 @@ const OVOS = (compras = [
 
 before(async () => {
   await setDb(seed());
-  inventory = await import('../js/modules/inventory.js?v=1');
+  inventory = await import('../js/modules/inventory.js');
 });
 resetStorageBetweenTests();
 
@@ -236,7 +236,7 @@ test('findDuplicate: unidade diferente não duplica', () => {
 // --- getInsumos (via storage) ---
 test('getInsumos: lê os insumos da camada de dados', async () => {
   await setDb(seed({ insumos: [FARINHA(), LEITE()] }));
-  const inv = await import('../js/modules/inventory.js?v=1');
+  const inv = await import('../js/modules/inventory.js');
   assert.equal(inv.getInsumos().length, 2);
   assert.equal(inv.getInsumos()[0].nome, 'Farinha de trigo');
 });

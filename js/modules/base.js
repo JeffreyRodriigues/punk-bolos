@@ -15,9 +15,9 @@
    }
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
-import * as inventory from './inventory.js?v=2';
-import { round2 } from './inventory.js?v=2';
+import * as storage from './storage.js';
+import * as inventory from './inventory.js';
+import { round2 } from './inventory.js';
 
 /** Unidades aceitas para o rendimento da base. */
 export const BASE_REND_UNITS = ['g', 'ml', 'unidade'];

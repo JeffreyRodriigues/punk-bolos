@@ -7,9 +7,9 @@
    - notificar o restante do app (onChange) após cada mudança
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
-import * as product from './product.js?v=17';
-import { showToast } from './toast.js?v=12';
+import * as storage from './storage.js';
+import * as product from './product.js';
+import { showToast } from './toast.js';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
 const modal = document.getElementById('productModal');

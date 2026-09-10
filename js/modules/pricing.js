@@ -19,8 +19,8 @@
    ARREDONDAMENTO: 2 casas em TODAS as etapas.
    ============================================================ */
 
-import * as inventory from './inventory.js?v=2';
-import * as base from './base.js?v=1';
+import * as inventory from './inventory.js';
+import * as base from './base.js';
 
 /** Valores padrão de uma receita (definidos na spec). */
 export const PRICING_DEFAULTS = {

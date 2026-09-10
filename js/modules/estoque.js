@@ -23,8 +23,8 @@
    obrigatória para qualquer produto do catálogo.
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
-import * as product from './product.js?v=17';
+import * as storage from './storage.js';
+import * as product from './product.js';
 
 /**
  * Resolve o produto do catálogo correspondente a um item de pedido.

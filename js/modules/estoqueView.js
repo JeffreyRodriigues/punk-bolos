@@ -7,14 +7,14 @@
    As regras de cálculo ficam em estoque.js (módulo de negócio).
    ============================================================ */
 
-import * as storage from './storage.js?v=13';
-import * as product from './product.js?v=17';
-import * as order from './order.js?v=17';
-import * as estoque from './estoque.js?v=5';
-import * as dateFilter from './dateFilter.js?v=13';
-import { showToast } from './toast.js?v=12';
-import { formatDate } from '../utils/money.js?v=12';
-import { sortKey } from '../utils/describe.js?v=2';
+import * as storage from './storage.js';
+import * as product from './product.js';
+import * as order from './order.js';
+import * as estoque from './estoque.js';
+import * as dateFilter from './dateFilter.js';
+import { showToast } from './toast.js';
+import { formatDate } from '../utils/money.js';
+import { sortKey } from '../utils/describe.js';
 
 /** Callback disparado após registrar/excluir produção (setado por app.js). */
 let onChange = () => {};
