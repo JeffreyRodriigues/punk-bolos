@@ -327,6 +327,13 @@ input[type="number"] {
   font-weight: 800;
 }
 
+.stat-sub {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  line-height: 1.2;
+}
+
 /* Variações de destaque dos cards */
 .stat-money .stat-value { color: var(--color-primary); }
 .stat-ok .stat-value    { color: var(--color-ok); }

@@ -36,6 +36,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -454,6 +455,13 @@ input[type="number"] {
 .stat-value {
   font-size: 1.4rem;
   font-weight: 800;
+}
+
+.stat-sub {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  line-height: 1.2;
 }
 
 /* Variações de destaque dos cards */
@@ -2177,6 +2185,7 @@ html.dark .type-summary-card:hover {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2415,7 +2424,7 @@ html.dark .type-summary-card:hover {
     </section>
 
     <p class="dashboard-note">
-      * Lucro bruto = receita − custos. Como os custos ainda não são cadastrados, hoje o valor exibido é igual à receita.
+      * Lucro bruto = receita − custo dos produtos vendidos (calculado a partir das receitas cadastradas na aba Precificação).
     </p>
 
     <!-- Cards de resumo por tipo (Ideia 2) -->
@@ -3053,6 +3062,6 @@ html.dark .type-summary-card:hover {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=37"></script>
+  <script type="module" src="js/app.js?v=38"></script>
 </body>
 </html>

@@ -49,9 +49,53 @@ test('ticketMedio: 0 sem pedidos ativos', () => {
   assert.equal(s.ticketMedio([]), 0);
   assert.equal(s.ticketMedio([O.cancelado]), 0);
 });
-test('lucroBruto: custo 0 → lucro = receita', () => {
+test('lucroBruto: custo 0 quando sem receitas cadastradas', () => {
   const r = s.lucroBruto([O.ativo, O.cancelado]);
-  assert.deepEqual(r, { receita: 100, custo: 0, lucro: 100 });
+  assert.deepEqual(r, { receita: 100, custo: 0, lucro: 100, margem: 100 });
+});
+
+test('lucroBruto: calcula CMV real e margem % a partir das receitas cadastradas', () => {
+  const products = [
+    { id: 'p-fatia-choc', titulo: 'Chocolate', tipoProduto: 'Fatia', tamanho: '', valor: 10 },
+    { id: 'p-bolo-red', titulo: 'Red Velvet', tipoProduto: 'Bolo Inteiro', tamanho: 'M', valor: 80 },
+  ];
+  const precificacoes = [
+    { produtoId: 'p-fatia-choc', custoPorUnidade: 4.20 },
+    { produtoId: 'p-bolo-red', custoPorUnidade: 35.00 },
+  ];
+  const orders = [
+    {
+      status: 'Concluído',
+      valorTotal: 100,
+      pagamento: 'PIX',
+      itens: [
+        { produtoId: 'p-fatia-choc', tipoProduto: 'Fatia', quantidade: 2, valorUnitario: 10 }, // custo: 2 * 4.20 = 8.40
+        { produtoId: 'p-bolo-red', tipoProduto: 'Bolo Inteiro', quantidade: 1, valorUnitario: 80 }, // custo: 1 * 35.00 = 35.00
+      ],
+    },
+    {
+      status: 'Cancelado', // cancelado não conta
+      valorTotal: 50,
+      pagamento: 'PIX',
+      itens: [
+        { produtoId: 'p-fatia-choc', tipoProduto: 'Fatia', quantidade: 5, valorUnitario: 10 },
+      ],
+    },
+    {
+      status: 'Concluído',
+      valorTotal: 0,
+      pagamento: 'Cortesia', // cortesia não entra na receita nem infla custo
+      itens: [
+        { produtoId: 'p-fatia-choc', tipoProduto: 'Fatia', quantidade: 1, valorUnitario: 10 },
+      ],
+    },
+  ];
+
+  const res = s.lucroBruto(orders, precificacoes, products);
+  assert.equal(res.receita, 100);
+  assert.equal(res.custo, 43.40); // 8.40 + 35.00
+  assert.equal(res.lucro, 56.60); // 100 - 43.40
+  assert.equal(res.margem, 56.60); // (56.60 / 100) * 100
 });
 
 // --- Distribuição por status ---

@@ -13,6 +13,7 @@
    chamado novamente.
    ============================================================ */
 
+import * as storage from './storage.js';
 import * as order from './order.js';
 import * as dateFilter from './dateFilter.js';
 import * as service from './dashboardService.js';
@@ -117,12 +118,36 @@ function setStat(id, text) {
 }
 
 /**
+ * Atualiza o subtítulo/detalhe de um card (ex: Margem e CMV no lucro).
+ * @param {string} id - Id do card.
+ * @param {string} text - Texto complementar.
+ */
+function setStatSub(id, text) {
+  let subEl = document.querySelector(`#${id} .stat-sub`);
+  if (!subEl && text) {
+    const card = document.getElementById(id);
+    if (card) {
+      subEl = document.createElement('span');
+      subEl.className = 'stat-sub';
+      card.appendChild(subEl);
+    }
+  }
+  if (subEl) {
+    subEl.textContent = text;
+    subEl.hidden = !text;
+  }
+}
+
+/**
  * Renderiza os cards de resumo a partir dos pedidos filtrados.
  * @param {Array<Object>} orders - Pedidos do período.
  */
 function renderStats(orders) {
   const byStatus = service.countByStatus(orders);
   const byProduct = service.quantityByProduct(orders);
+  const precificacoes = storage.getAllPrecificacoes();
+  const products = storage.getAllProducts();
+  const lucroInfo = service.lucroBruto(orders, precificacoes, products);
 
   setStat('stat-receita', formatCurrency(service.revenue(orders)));
   setStat('stat-pedidos', service.orderCount(orders));
@@ -133,7 +158,11 @@ function renderStats(orders) {
   setStat('stat-bolos', byProduct['Bolo Inteiro'] || 0);
   setStat('stat-punkitos', byProduct['Punkitos'] || 0);
   setStat('stat-quantidade', service.totalQuantitySold(orders));
-  setStat('stat-lucro', formatCurrency(service.lucroBruto(orders).lucro));
+  setStat('stat-lucro', formatCurrency(lucroInfo.lucro));
+  setStatSub(
+    'stat-lucro',
+    lucroInfo.custo > 0 ? `Margem: ${lucroInfo.margem}% · CMV: ${formatCurrency(lucroInfo.custo)}` : ''
+  );
   setStat('stat-ticket', formatCurrency(service.ticketMedio(orders)));
   setStat('stat-cortesia', service.countCortesia(orders));
 }

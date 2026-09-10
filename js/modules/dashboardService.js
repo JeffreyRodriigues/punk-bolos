@@ -123,20 +123,59 @@ export function ticketMedio(orders) {
 }
 
 /**
- * Lucro bruto no período. Preparado para cálculo futuro:
- * quando houver custos cadastrados, subtrair aqui.
- * Hoje: custo = 0 → lucro = receita.
+ * Lucro bruto no período: receita − custo dos produtos vendidos
+ * (calculado a partir das receitas cadastradas na aba Precificação).
  * @param {Array<Object>} orders - Pedidos.
- * @returns {{ receita: number, custo: number, lucro: number }}
+ * @param {Array<Object>} [precificacoes] - Receitas de precificação.
+ * @param {Array<Object>} [products] - Catálogo de produtos.
+ * @returns {{ receita: number, custo: number, lucro: number, margem: number }}
  */
-export function lucroBruto(orders) {
+export function lucroBruto(orders, precificacoes = [], products = []) {
   const receita = revenue(orders);
-  const custo = 0; // FUTURO: somar custo por produto/item quando existir
+  const recByProd = new Map((precificacoes || []).map((r) => [String(r.produtoId || ''), r]));
+
+  let custoTotal = 0;
+  activeOrders(orders).forEach((o) => {
+    if (o.pagamento === 'Cortesia') return;
+    const itens = Array.isArray(o.itens) ? o.itens : [];
+    itens.forEach((item) => {
+      if (item.cortesia) return;
+      const prodId = resolveItemProductId(item, products);
+      const r = recByProd.get(prodId);
+      const custoUnit = r ? Number(r.custoPorUnidade) || 0 : 0;
+      custoTotal += (Number(item.quantidade) || 0) * custoUnit;
+    });
+  });
+
+  const custo = round2(custoTotal);
+  const lucro = round2(receita - custo);
+  const margem = receita > 0 ? round2((lucro / receita) * 100) : 0;
+
   return {
     receita: round2(receita),
-    custo: round2(custo),
-    lucro: round2(receita - custo),
+    custo,
+    lucro,
+    margem,
   };
+}
+
+/**
+ * Identifica o ID do produto para um item de pedido.
+ */
+function resolveItemProductId(item, products = []) {
+  if (item && item.produtoId) return String(item.produtoId);
+  const sabor = String(item && item.sabor ? item.sabor : '').trim().toLowerCase();
+  const match = (products || []).find((p) =>
+    p.tipoProduto === item.tipoProduto &&
+    (p.tamanho || '') === (item.tamanho || '') &&
+    Number(p.valor) === Number(item.valorUnitario) &&
+    (!sabor || String(p.titulo || '').trim().toLowerCase() === sabor)
+  ) || (products || []).find((p) =>
+    p.tipoProduto === item.tipoProduto &&
+    (p.tamanho || '') === (item.tamanho || '') &&
+    Number(p.valor) === Number(item.valorUnitario)
+  );
+  return match ? String(match.id) : '';
 }
 
 /**
