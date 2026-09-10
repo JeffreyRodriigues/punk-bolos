@@ -125,3 +125,45 @@ test('rankingProdutos: ordena e limita', () => {
     { produto: 'Bolo Inteiro', quantidade: 3 },
   ]);
 });
+
+test('summaryByType: soma das receitas por tipo bate exatamente com revenue geral e ignora cortesias', () => {
+  const orders = [
+    {
+      status: 'Concluído',
+      valorTotal: 100,
+      pagamento: 'PIX',
+      itens: [
+        { tipoProduto: 'Fatia', quantidade: 10, valorUnitario: 5, sabor: 'Choc' },
+        { tipoProduto: 'Punkitos', quantidade: 5, valorUnitario: 10, sabor: 'Leite' },
+      ],
+    },
+    {
+      status: 'Concluído',
+      valorTotal: 0,
+      pagamento: 'Cortesia', // pedido inteiro cortesia
+      itens: [
+        { tipoProduto: 'Bolo Inteiro', quantidade: 2, valorUnitario: 50, sabor: 'Red' },
+      ],
+    },
+    {
+      status: 'Concluído',
+      valorTotal: 30,
+      pagamento: 'Dinheiro',
+      itens: [
+        { tipoProduto: 'Fatia', quantidade: 6, valorUnitario: 5, sabor: 'Choc' },
+        { tipoProduto: 'Fatia', quantidade: 2, valorUnitario: 5, sabor: 'Choc', cortesia: true }, // item cortesia
+      ],
+    },
+  ];
+
+  const totalRev = s.revenue(orders);
+  assert.equal(totalRev, 130);
+
+  const summary = s.summaryByType(orders);
+  assert.equal(summary['Fatia'].receita, 80); // 50 + 30
+  assert.equal(summary['Punkitos'].receita, 50); // 50
+  assert.equal(summary['Bolo Inteiro'].receita, 0); // cortesia
+
+  const somaTipos = summary['Fatia'].receita + summary['Punkitos'].receita + summary['Bolo Inteiro'].receita;
+  assert.equal(somaTipos, totalRev);
+});

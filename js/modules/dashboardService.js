@@ -98,6 +98,7 @@ export function orderCount(orders) {
 export function totalQuantitySold(orders) {
   let total = 0;
   activeOrders(orders).forEach((o) => {
+    if (o.pagamento === 'Cortesia') return;
     const itens = Array.isArray(o.itens) ? o.itens : [];
     if (itens.length > 0) {
       itens.forEach((item) => {
@@ -198,8 +199,8 @@ export function dailyRevenue(orders) {
  */
 export function revenueByProduct(orders) {
   const map = {};
-  forEachItem(orders, (item) => {
-    if (item.cortesia) return;
+  forEachItem(orders, (item, o) => {
+    if (item.cortesia || o.pagamento === 'Cortesia') return;
     const type = item.tipoProduto || 'Fatia';
     map[type] = (map[type] || 0) + (Number(item.quantidade) || 0) * (Number(item.valorUnitario) || 0);
   });
@@ -213,8 +214,8 @@ export function revenueByProduct(orders) {
  */
 export function quantityByProduct(orders) {
   const map = {};
-  forEachItem(orders, (item) => {
-    if (item.cortesia) return;
+  forEachItem(orders, (item, o) => {
+    if (item.cortesia || o.pagamento === 'Cortesia') return;
     const type = item.tipoProduto || 'Fatia';
     map[type] = (map[type] || 0) + (Number(item.quantidade) || 0);
   });
@@ -228,8 +229,8 @@ export function quantityByProduct(orders) {
  */
 export function quantityByFlavor(orders) {
   const map = {};
-  forEachItem(orders, (item) => {
-    if (item.cortesia) return;
+  forEachItem(orders, (item, o) => {
+    if (item.cortesia || o.pagamento === 'Cortesia') return;
     const sabor = (item.sabor || '').trim();
     if (!sabor) return;
     map[sabor] = (map[sabor] || 0) + (Number(item.quantidade) || 0);
@@ -244,8 +245,8 @@ export function quantityByFlavor(orders) {
  */
 export function revenueByFlavor(orders) {
   const map = {};
-  forEachItem(orders, (item) => {
-    if (item.cortesia) return;
+  forEachItem(orders, (item, o) => {
+    if (item.cortesia || o.pagamento === 'Cortesia') return;
     const sabor = (item.sabor || '').trim();
     if (!sabor) return;
     map[sabor] = (map[sabor] || 0) + (Number(item.quantidade) || 0) * (Number(item.valorUnitario) || 0);
@@ -282,7 +283,7 @@ export function rankingProdutos(orders, limit = 3) {
  */
 function forEachItem(orders, cb) {
   activeOrders(orders).forEach((o) => {
-    (Array.isArray(o.itens) ? o.itens : []).forEach(cb);
+    (Array.isArray(o.itens) ? o.itens : []).forEach((item) => cb(item, o));
   });
 }
 
@@ -327,13 +328,20 @@ export function filterByType(orders, type) {
   if (!type || type === 'all') return orders || [];
   return (orders || [])
     .map((o) => {
+      const isCortesiaOrder = o.pagamento === 'Cortesia';
       const itens = (Array.isArray(o.itens) ? o.itens : []).filter(
-        (item) => item.tipoProduto === type && !item.cortesia
+        (item) => item.tipoProduto === type
       );
       if (itens.length === 0) return null;
-      const valorTotal = round2(
-        itens.reduce((s, item) => s + (Number(item.quantidade) || 0) * (Number(item.valorUnitario) || 0), 0)
-      );
+      const valorTotal = isCortesiaOrder
+        ? 0
+        : round2(
+            itens.reduce(
+              (s, item) =>
+                s + (item.cortesia ? 0 : (Number(item.quantidade) || 0) * (Number(item.valorUnitario) || 0)),
+              0
+            )
+          );
       return { ...o, itens, valorTotal };
     })
     .filter(Boolean);
