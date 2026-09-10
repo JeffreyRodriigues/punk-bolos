@@ -27,7 +27,7 @@ test('buildCsv: gera CSV com cabeçalho e uma linha por item', () => {
   const csv = ie.buildCsv(orders);
   assert.ok(csv.startsWith('\uFEFF'));
   const lines = csv.slice(1).split('\r\n');
-  assert.equal(lines[0], 'numero;data;cliente;contato;status;pagamento;entrega;observacoes;tipo;tamanho;sabor;quantidade;valor_unitario');
+  assert.equal(lines[0], 'numero;data;cliente;contato;status;pagamento;entrega;observacoes;tipo;tamanho;sabor;quantidade;valor_unitario;cortesia');
   assert.equal(lines.length, 3); // header + 2 itens
   assert.ok(lines[1].includes('Maria'));
   assert.ok(lines[2].includes('Bolo Inteiro;P;Red Velvet'));

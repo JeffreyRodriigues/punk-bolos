@@ -162,15 +162,18 @@ function createIconBtn(icon, label, onClick, modifier = '') {
  * Exclui um produto com confirmação e notifica o app.
  * @param {Object} p - Produto a excluir.
  */
-function remove(p) {
+async function remove(p) {
   const confirmed = window.confirm(`Excluir o produto "${p.titulo}"?`);
   if (!confirmed) return;
 
-  const products = storage.getAllProducts();
-  storage.saveProducts(products.filter((item) => item.id !== p.id));
-  showToast('Produto excluído!');
-  render();
-  onChange();
+  try {
+    await storage.deleteProduct(p.id);
+    showToast('Produto excluído!');
+    render();
+    onChange();
+  } catch (err) {
+    showToast(`Erro ao excluir produto: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+  }
 }
 
 /**

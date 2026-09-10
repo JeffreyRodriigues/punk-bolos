@@ -234,15 +234,18 @@ function duplicate(o) {
  * Exclui um pedido com confirmação.
  * @param {Object} o - Pedido a excluir.
  */
-function remove(o) {
+async function remove(o) {
   const confirmed = window.confirm(`Excluir o pedido #${o.numero} (${o.cliente})?`);
   if (!confirmed) return;
 
-  const orders = order.getOrders().filter((item) => item.id !== o.id);
-  storage.save(orders);
-  render();
-  onChange();
-  showToast(`Pedido #${o.numero} excluído`);
+  try {
+    await storage.deleteOrder(o.id);
+    render();
+    onChange();
+    showToast(`Pedido #${o.numero} excluído`);
+  } catch (err) {
+    showToast(`Erro ao excluir pedido: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+  }
 }
 
 /* ---------- Eventos ---------- */

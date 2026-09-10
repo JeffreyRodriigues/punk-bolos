@@ -656,7 +656,102 @@ export async function init() {
   }
 }
 
-/* ---------- Escrita (diferencial quando online) ---------- */
+/* ---------- Escrita e Exclusão Direta (sincronizada com Supabase) ---------- */
+
+/**
+ * Exclui um pedido pelo id, atualiza o cache local e persiste na nuvem (com await).
+ * @param {string} id - Id do pedido a excluir.
+ */
+export async function deleteOrder(id) {
+  ordersCache = (ordersCache || readLocalOrders()).filter((o) => o.id !== id);
+  localStorage.setItem(PEDIDOS_KEY, JSON.stringify(ordersCache));
+  ordersSynced = ordersSynced.filter((o) => o.id !== id);
+
+  if (online && supabase.isConfigured()) {
+    try {
+      await supabase.deleteOrder(id);
+    } catch (e) {
+      reportError('Falha ao excluir pedido no servidor', e && e.message ? e.message : 'erro');
+      throw e;
+    }
+  }
+}
+
+/**
+ * Exclui uma produção pelo id, atualiza o cache local e persiste na nuvem (com await).
+ * @param {string} id - Id da produção a excluir.
+ */
+export async function deleteProduction(id) {
+  productionsCache = (productionsCache || readLocalProductions()).filter((pr) => pr.id !== id);
+  localStorage.setItem(PRODUCOES_KEY, JSON.stringify(productionsCache));
+  productionsSynced = productionsSynced.filter((pr) => pr.id !== id);
+
+  if (online && supabase.isConfigured()) {
+    try {
+      await supabase.deleteProduction(id);
+    } catch (e) {
+      reportError('Falha ao excluir produção no servidor', e && e.message ? e.message : 'erro');
+      throw e;
+    }
+  }
+}
+
+/**
+ * Exclui um produto pelo id, atualiza o cache local e persiste na nuvem (com await).
+ * @param {string} id - Id do produto a excluir.
+ */
+export async function deleteProduct(id) {
+  productsCache = (productsCache || readLocalProducts()).filter((p) => p.id !== id);
+  localStorage.setItem(PRODUTOS_KEY, JSON.stringify(productsCache));
+  productsSynced = productsSynced.filter((p) => p.id !== id);
+
+  if (online && supabase.isConfigured()) {
+    try {
+      await supabase.deleteProduct(id);
+    } catch (e) {
+      reportError('Falha ao excluir produto no servidor', e && e.message ? e.message : 'erro');
+      throw e;
+    }
+  }
+}
+
+/**
+ * Exclui um insumo pelo id, atualiza o cache local e persiste na nuvem (com await).
+ * @param {string} id - Id do insumo a excluir.
+ */
+export async function deleteInsumo(id) {
+  insumosCache = (insumosCache || readLocalInsumos()).filter((i) => i.id !== id);
+  localStorage.setItem(INSUMOS_KEY, JSON.stringify(insumosCache));
+  insumosSynced = insumosSynced.filter((i) => i.id !== id);
+
+  if (online && supabase.isConfigured()) {
+    try {
+      await supabase.deleteInsumo(id);
+    } catch (e) {
+      reportError('Falha ao excluir insumo no servidor', e && e.message ? e.message : 'erro');
+      throw e;
+    }
+  }
+}
+
+/**
+ * Exclui uma precificação pelo id, atualiza o cache local e persiste na nuvem (com await).
+ * @param {string} id - Id da precificação a excluir.
+ */
+export async function deletePrecificacao(id) {
+  precificacoesCache = (precificacoesCache || readLocalPrecificacoes()).filter((r) => r.id !== id);
+  localStorage.setItem(PRECIFICACOES_KEY, JSON.stringify(precificacoesCache));
+  precificacoesSynced = precificacoesSynced.filter((r) => r.id !== id);
+
+  if (online && supabase.isConfigured()) {
+    try {
+      await supabase.deletePrecificacao(id);
+    } catch (e) {
+      reportError('Falha ao excluir precificação no servidor', e && e.message ? e.message : 'erro');
+      throw e;
+    }
+  }
+}
 
 /**
  * Persiste a lista de pedidos. Aplica ao cache na hora (UI imediata)

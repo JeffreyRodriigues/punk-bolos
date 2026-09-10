@@ -98,9 +98,14 @@ export function orderCount(orders) {
 export function totalQuantitySold(orders) {
   let total = 0;
   activeOrders(orders).forEach((o) => {
-    (Array.isArray(o.itens) ? o.itens : []).forEach((item) => {
-      if (!item.cortesia) total += Number(item.quantidade) || 0;
-    });
+    const itens = Array.isArray(o.itens) ? o.itens : [];
+    if (itens.length > 0) {
+      itens.forEach((item) => {
+        if (!item.cortesia) total += Number(item.quantidade) || 0;
+      });
+    } else {
+      total += Number(o.quantidade) || 0;
+    }
   });
   return total;
 }

@@ -19,18 +19,18 @@
    ============================================================ */
 
 import * as theme from './utils/theme.js?v=13';
-import * as storage from './modules/storage.js?v=14';
+import * as storage from './modules/storage.js?v=15';
 import * as auth from './modules/auth.js?v=13';
 import * as orderForm from './modules/orderForm.js?v=22';
-import * as orderList from './modules/orderList.js?v=16';
-import * as dashboard from './modules/dashboard.js?v=14';
+import * as orderList from './modules/orderList.js?v=17';
+import * as dashboard from './modules/dashboard.js?v=15';
 import * as dateFilter from './modules/dateFilter.js?v=13';
 import * as productForm from './modules/productForm.js?v=17';
-import * as productList from './modules/productList.js?v=16';
+import * as productList from './modules/productList.js?v=17';
 import * as importExport from './modules/importExport.js?v=17';
 import * as estoque from './modules/estoque.js?v=6';
-import * as estoqueView from './modules/estoqueView.js?v=12';
-import * as inventoryView from './modules/inventoryView.js?v=2';
+import * as estoqueView from './modules/estoqueView.js?v=13';
+import * as inventoryView from './modules/inventoryView.js?v=3';
 import * as pricingView from './modules/pricingView.js?v=1';
 import { showToast } from './modules/toast.js?v=12';
 
@@ -290,9 +290,18 @@ function init() {
     }
   });
 
-  // Carrega os dados (Supabase na nuvem ou LocalStorage offline)
-  // antes do primeiro render
-  storage.init().finally(() => {
+  // 1. Render inicial INSTANTÂNEO (0ms) a partir do cache local
+  dashboard.render();
+  orderList.render();
+  productList.render();
+  estoqueView.render();
+  if (!isMobile()) {
+    inventoryView.render();
+    pricingView.render();
+  }
+
+  // 2. Em segundo plano, busca os dados atualizados da nuvem (Supabase) e sincroniza a UI
+  storage.init().then(() => {
     dashboard.render();
     orderList.render();
     productList.render();
@@ -301,6 +310,8 @@ function init() {
       inventoryView.render();
       pricingView.render();
     }
+  }).catch(() => {
+    // Erros de conexão são notificados pelo errorHandler do storage
   });
 }
 

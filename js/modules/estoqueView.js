@@ -331,17 +331,21 @@ function renderHistory() {
  * Exclui uma produção com confirmação.
  * @param {Object} production - Produção a excluir.
  */
-function removeProduction(production) {
+async function removeProduction(production) {
   const confirmed = window.confirm(
     `Excluir esta produção de ${Number(production.quantidade) || 0} unidade(s)?`
   );
   if (!confirmed) return;
 
-  storage.saveProductions(
-    storage.getAllProductions().filter((pr) => pr.id !== production.id)
-  );
-  showToast('Produção excluída.');
-  onChange();
+  try {
+    await storage.deleteProduction(production.id);
+    showToast('Produção excluída.');
+    renderHistory();
+    updateSaldo();
+    onChange();
+  } catch (err) {
+    showToast(`Erro ao excluir produção: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+  }
 }
 
 /**

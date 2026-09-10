@@ -181,7 +181,7 @@ export function validateReceita(receita, insumos = [], bases = []) {
   if (!receita.produtoId) return 'Selecione o produto da receita.';
 
   const itens = Array.isArray(receita.itens) ? receita.itens : [];
-  if (itens.length === 0) return 'Adicione ao menos um item à receita.';
+  if (itens.length === 0) return 'Adicione ao menos um insumo ou base à receita.';
 
   const inById = new Map((insumos || []).map((i) => [i.id, i]));
   const baseById = new Map((bases || []).map((b) => [b.id, b]));

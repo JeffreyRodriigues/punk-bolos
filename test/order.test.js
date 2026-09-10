@@ -168,7 +168,7 @@ test('duplicateOrder: reseta status para Pendente e gera novos id/número', () =
   assert.equal(copia.status, 'Pendente');
   assert.notEqual(copia.id, 'orig');
   assert.deepEqual(copia.itens, [
-    { produtoId: '', tipoProduto: 'Fatia', tamanho: '', sabor: 'x', quantidade: 1, valorUnitario: 5 },
+    { produtoId: '', tipoProduto: 'Fatia', tamanho: '', sabor: 'x', quantidade: 1, valorUnitario: 5, cortesia: false },
   ]);
   assert.equal(copia.cliente, 'Ana');
   assert.equal(copia.pagamento, 'Crédito');

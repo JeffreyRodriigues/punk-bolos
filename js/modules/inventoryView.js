@@ -646,14 +646,18 @@ function saveInsumo() {
  * Exclui um insumo com confirmação.
  * @param {Object} insumo - Insumo a excluir.
  */
-function removeInsumo(insumo) {
+async function removeInsumo(insumo) {
   const confirmado = window.confirm(`Excluir o insumo "${insumo.nome || ''}"?`);
   if (!confirmado) return;
 
-  const lista = storage.getAllInsumos().filter((i) => i.id !== insumo.id);
-  storage.saveInsumos(lista);
-  showToast('Insumo excluído.');
-  onChange();
+  try {
+    await storage.deleteInsumo(insumo.id);
+    showToast('Insumo excluído.');
+    render();
+    onChange();
+  } catch (err) {
+    showToast(`Erro ao excluir insumo: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+  }
 }
 
 /* ============================================================
