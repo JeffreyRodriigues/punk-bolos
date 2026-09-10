@@ -554,70 +554,90 @@ export async function init() {
       supabase.listPrecificacoes(),
     ]);
 
-    const localOrders = readLocalOrders();
-    const localProducts = readLocalProducts();
-    const localProductions = readLocalProductions();
-    const localInsumos = readLocalInsumos();
-    const localPrecificacoes = readLocalPrecificacoes();
+    // Migração inicial única: apenas se o banco Supabase estiver 100% vazio e este dispositivo ainda não migrou
+    const isInitialEmptyDb =
+      remoteOrders.length === 0 &&
+      remoteProducts.length === 0 &&
+      remoteProductions.length === 0 &&
+      remoteInsumos.length === 0 &&
+      remotePrecificacoes.length === 0;
 
-    // Reconciliação: envia para a nuvem o que existe apenas no
-    // dispositivo (criado offline ou com escrita que falhou). Isso
-    // garante que nenhum pedido/produto/produção/insumo se perca ao voltar online.
-    const remoteOrderIds = new Set(remoteOrders.map((o) => o.id));
-    const remoteProductIds = new Set(remoteProducts.map((p) => p.id));
-    const remoteProductionIds = new Set(remoteProductions.map((pr) => pr.id));
-    const remoteInsumoIds = new Set(remoteInsumos.map((i) => i.id));
-    const remotePrecificacaoIds = new Set(remotePrecificacoes.map((r) => r.id));
+    const hasMigrated = localStorage.getItem('punkbolos.migrated') === 'true';
 
-    for (const order of localOrders.filter((o) => !remoteOrderIds.has(o.id))) {
-      try {
-        await supabase.insertOrder(toOrderRow(order));
-      } catch (e) {
-        reportError('Falha ao reenviar pedido', e && e.message ? e.message : 'sem conexão');
+    if (isInitialEmptyDb && !hasMigrated) {
+      const localOrders = readLocalOrders();
+      const localProducts = readLocalProducts();
+      const localProductions = readLocalProductions();
+      const localInsumos = readLocalInsumos();
+      const localPrecificacoes = readLocalPrecificacoes();
+
+      for (const order of localOrders) {
+        try {
+          await supabase.insertOrder(toOrderRow(order));
+        } catch (e) {
+          reportError('Falha ao migrar pedido', e && e.message ? e.message : 'sem conexão');
+        }
       }
-    }
-    for (const product of localProducts.filter((p) => !remoteProductIds.has(p.id))) {
-      try {
-        await supabase.insertProduct(toProductRow(product));
-      } catch (e) {
-        reportError('Falha ao reenviar produto', e && e.message ? e.message : 'sem conexão');
+      for (const product of localProducts) {
+        try {
+          await supabase.insertProduct(toProductRow(product));
+        } catch (e) {
+          reportError('Falha ao migrar produto', e && e.message ? e.message : 'sem conexão');
+        }
       }
-    }
-    for (const production of localProductions.filter((pr) => !remoteProductionIds.has(pr.id))) {
-      try {
-        await supabase.insertProduction(toProductionRow(production));
-      } catch (e) {
-        reportError('Falha ao reenviar produção', e && e.message ? e.message : 'sem conexão');
+      for (const production of localProductions) {
+        try {
+          await supabase.insertProduction(toProductionRow(production));
+        } catch (e) {
+          reportError('Falha ao migrar produção', e && e.message ? e.message : 'sem conexão');
+        }
       }
-    }
-    for (const insumo of localInsumos.filter((i) => !remoteInsumoIds.has(i.id))) {
-      try {
-        await supabase.insertInsumo(toInsumoRow(insumo));
-      } catch (e) {
-        reportError('Falha ao reenviar insumo', e && e.message ? e.message : 'sem conexão');
+      for (const insumo of localInsumos) {
+        try {
+          await supabase.insertInsumo(toInsumoRow(insumo));
+        } catch (e) {
+          reportError('Falha ao migrar insumo', e && e.message ? e.message : 'sem conexão');
+        }
       }
-    }
-    for (const receita of localPrecificacoes.filter((r) => !remotePrecificacaoIds.has(r.id))) {
-      try {
-        await supabase.insertPrecificacao(toPrecificacaoRow(receita));
-      } catch (e) {
-        reportError('Falha ao reenviar precificação', e && e.message ? e.message : 'sem conexão');
+      for (const receita of localPrecificacoes) {
+        try {
+          await supabase.insertPrecificacao(toPrecificacaoRow(receita));
+        } catch (e) {
+          reportError('Falha ao migrar precificação', e && e.message ? e.message : 'sem conexão');
+        }
       }
+      localStorage.setItem('punkbolos.migrated', 'true');
+
+      // Refetch após migração inicial
+      const [o2, p2, pr2, i2, prc2] = await Promise.all([
+        supabase.listOrders(),
+        supabase.listProducts(),
+        supabase.listProductions(),
+        supabase.listInsumos(),
+        supabase.listPrecificacoes(),
+      ]);
+      ordersCache = o2.map(fromOrderRow);
+      productsCache = p2.map(fromProductRow);
+      productionsCache = pr2.map(fromProductionRow);
+      insumosCache = i2.map(fromInsumoRow);
+      precificacoesCache = prc2.map(fromPrecificacaoRow);
+    } else {
+      localStorage.setItem('punkbolos.migrated', 'true');
+      // Fonte de verdade = Nuvem (Supabase)
+      ordersCache = remoteOrders.map(fromOrderRow);
+      productsCache = remoteProducts.map(fromProductRow);
+      productionsCache = remoteProductions.map(fromProductionRow);
+      insumosCache = remoteInsumos.map(fromInsumoRow);
+      precificacoesCache = remotePrecificacoes.map(fromPrecificacaoRow);
     }
 
-    // Fonte de verdade = nuvem (após o merge), atualizada via refetch
-    const [o2, p2, pr2, i2, prc2] = await Promise.all([
-      supabase.listOrders(),
-      supabase.listProducts(),
-      supabase.listProductions(),
-      supabase.listInsumos(),
-      supabase.listPrecificacoes(),
-    ]);
-    ordersCache = o2.map(fromOrderRow);
-    productsCache = p2.map(fromProductRow);
-    productionsCache = pr2.map(fromProductionRow);
-    insumosCache = i2.map(fromInsumoRow);
-    precificacoesCache = prc2.map(fromPrecificacaoRow);
+    // Atualiza o LocalStorage local com os dados da nuvem para manter o cache sincronizado
+    localStorage.setItem(PEDIDOS_KEY, JSON.stringify(ordersCache));
+    localStorage.setItem(PRODUTOS_KEY, JSON.stringify(productsCache));
+    localStorage.setItem(PRODUCOES_KEY, JSON.stringify(productionsCache));
+    localStorage.setItem(INSUMOS_KEY, JSON.stringify(insumosCache));
+    localStorage.setItem(PRECIFICACOES_KEY, JSON.stringify(precificacoesCache));
+
     ordersSynced = JSON.parse(JSON.stringify(ordersCache));
     productsSynced = JSON.parse(JSON.stringify(productsCache));
     productionsSynced = JSON.parse(JSON.stringify(productionsCache));

@@ -27,6 +27,15 @@ const filterStatus = document.getElementById('filter-status');
 
 /** Callback de ação (setado por app.js): editar / concluir / cancelar */
 let onAction = { edit: () => {}, complete: () => {}, cancel: () => {} };
+let onChange = () => {};
+
+/**
+ * Registra o callback de notificação de mudanças (ex.: exclusão/duplicação).
+ * @param {Function} cb - Função chamada após alterar a lista de pedidos.
+ */
+export function setChangeListener(cb) {
+  onChange = cb;
+}
 
 /**
  * Registra os callbacks de ações disparadas pelos cards.
@@ -217,6 +226,7 @@ function duplicate(o) {
   orders.push(order.duplicateOrder(o, newNumber));
   storage.save(orders);
   render();
+  onChange();
   showToast(`Pedido #${o.numero} duplicado como #${newNumber}`);
 }
 
@@ -231,6 +241,7 @@ function remove(o) {
   const orders = order.getOrders().filter((item) => item.id !== o.id);
   storage.save(orders);
   render();
+  onChange();
   showToast(`Pedido #${o.numero} excluído`);
 }
 
