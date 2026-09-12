@@ -112,12 +112,42 @@ test('metricasClientes — calcula indicadores gerais do dashboard', () => {
   assert.equal(dashboard.ticketMedioLtv, 175); // (300 + 50) / 2
 });
 
-test('gerarMensagemAniversario — cria texto amigável citando último sabor quando disponível', () => {
-  const msgComSabor = customerService.gerarMensagemAniversario({ nome: 'Ana' }, 'Bolo de Morango');
-  assert.ok(msgComSabor.includes('Ana'));
-  assert.ok(msgComSabor.includes('Bolo de Morango'));
+test('gerarMensagemAniversario — cria texto amigável citando último sabor e preferências quando disponíveis', () => {
+  const msgComSaborEObs = customerService.gerarMensagemAniversario(
+    { nome: 'Priscila', observacoes: 'Gosto de bolo bem molhadinho e frutado' },
+    'Bolo de Morango'
+  );
+  assert.ok(msgComSaborEObs.includes('Priscila'));
+  assert.ok(msgComSaborEObs.includes('Bolo de Morango'));
+  assert.ok(msgComSaborEObs.includes('Gosto de bolo bem molhadinho e frutado'));
 
   const msgSemSabor = customerService.gerarMensagemAniversario({ nome: 'Carlos' }, null);
   assert.ok(msgSemSabor.includes('Carlos'));
   assert.ok(!msgSemSabor.includes('undefined'));
 });
+
+test('gerarMensagemPedido — gera resumo completo de itens, valor total e pedido de confirmação', () => {
+  const order = {
+    numero: 1092,
+    cliente: 'Jeffrey Rodrigues',
+    contato: '11999998888',
+    valorTotal: 145.5,
+    pagamento: 'PIX',
+    entrega: 'Retirada',
+    itens: [
+      { tipoProduto: 'Fatia', sabor: 'Red Velvet', quantidade: 2, valorUnitario: 20 },
+      { tipoProduto: 'Bolo Inteiro', tamanho: 'M', sabor: 'Chocolate Belga', quantidade: 1, valorUnitario: 105.5 },
+    ],
+  };
+
+  const msg = customerService.gerarMensagemPedido(order);
+  assert.ok(msg.includes('Jeffrey'));
+  assert.ok(msg.includes('#1092'));
+  assert.ok(msg.includes('2x Fatia - Red Velvet'));
+  assert.ok(msg.includes('1x Bolo Inteiro (M) - Chocolate Belga'));
+  assert.ok(msg.includes('R$'));
+  assert.ok(msg.includes('Retirada'));
+  assert.ok(msg.includes('PIX'));
+  assert.ok(msg.includes('Você confirma os itens do seu pedido?'));
+});
+

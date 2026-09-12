@@ -15,6 +15,7 @@ import * as dateFilter from './dateFilter.js';
 import { showToast } from './toast.js';
 import { formatCurrency, formatDate } from '../utils/money.js';
 import { describeItens } from '../utils/describe.js';
+import { formatarWhatsappLink, gerarMensagemPedido } from './customerService.js';
 
 /* ---------- Elementos do DOM ---------- */
 const listEl = document.getElementById('orderList');
@@ -144,16 +145,15 @@ function createCard(o) {
   customer.appendChild(customerName);
 
   if (o.contato) {
-    let digits = String(o.contato).replace(/\D/g, '');
-    if (digits.startsWith('55') && digits.length >= 12) digits = digits.slice(2);
-    if (digits.length >= 10) {
+    const msg = gerarMensagemPedido(o);
+    const waLink = formatarWhatsappLink(o.contato, msg);
+    if (waLink) {
       const waBtn = document.createElement('a');
-      const msg = `Olá ${o.cliente}! Tudo bem? Sobre o seu pedido #${o.numero} da Punk Bolos:`;
-      waBtn.href = `https://wa.me/55${digits}?text=${encodeURIComponent(msg)}`;
+      waBtn.href = waLink;
       waBtn.target = '_blank';
       waBtn.rel = 'noopener';
       waBtn.className = 'btn-icon-wa order-wa-btn';
-      waBtn.title = `Conversar com ${o.cliente} no WhatsApp`;
+      waBtn.title = `Conversar com ${o.cliente || 'Cliente'} no WhatsApp`;
       waBtn.textContent = '💬';
       customer.appendChild(waBtn);
     }
