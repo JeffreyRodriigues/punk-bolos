@@ -150,6 +150,7 @@ function init() {
         if (!isMobile()) {
           inventoryView.render();
           pricingView.render();
+          customerView.render();
         }
         showToast('Dados atualizados!');
       })
@@ -163,6 +164,22 @@ function init() {
     auth.logout();
     location.replace('login.html');
   });
+
+  // Controle da Barra Lateral (Sidebar no Desktop)
+  const SIDEBAR_STORAGE_KEY = 'punkbolos.sidebar.collapsed';
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const isSidebarCollapsed = localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
+
+  if (isSidebarCollapsed && !isMobile()) {
+    document.body.classList.add('sidebar-collapsed');
+  }
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      const collapsed = document.body.classList.toggle('sidebar-collapsed');
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
+    });
+  }
 
   // Navegação pelas abas
   document.querySelectorAll('.nav-tab').forEach((tab) => {

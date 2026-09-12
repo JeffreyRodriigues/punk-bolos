@@ -54,11 +54,11 @@ input[type="number"] {
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: 10px 20px;
   background-color: var(--color-primary);
   color: #fff;
   box-shadow: var(--shadow-card);
@@ -67,7 +67,31 @@ input[type="number"] {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+}
+
+.sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1.2rem;
+  width: 36px;
+  height: 36px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.sidebar-toggle:active {
+  transform: scale(0.92);
 }
 
 .logo {
@@ -152,32 +176,83 @@ input[type="number"] {
   transform: rotate(180deg);
 }
 
-/* ---------- Navegação por abas ---------- */
+/* ---------- Layout Principal com Sidebar (Desktop) ---------- */
+.app-layout {
+  display: flex;
+  flex: 1;
+  min-height: calc(100dvh - 58px);
+  position: relative;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+  transition: width 0.25s ease;
+}
+
+/* ---------- Navegação / Sidebar (Desktop) ---------- */
 .app-nav {
   position: sticky;
-  top: 64px;
-  z-index: 10;
+  top: 58px;
+  height: calc(100dvh - 58px);
+  width: 210px;
+  flex-shrink: 0;
+  z-index: 20;
   display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 10px;
   background-color: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: var(--shadow-card);
+  border-right: 1px solid var(--color-border);
+  box-shadow: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.25s ease,
+              opacity 0.2s ease,
+              visibility 0.25s;
 }
 
 .nav-tab {
-  flex: 1;
-  padding: 14px 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
   background: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
+  border-left: 4px solid transparent;
+  border-radius: 8px;
   font-weight: 600;
+  font-size: 0.95rem;
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-tab:hover {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
 }
 
 .nav-tab.active {
+  background-color: var(--color-primary-soft);
   color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  border-left-color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* Estado da Sidebar Oculta/Recolhida no Desktop */
+body.sidebar-collapsed .app-nav {
+  width: 0;
+  padding: 16px 0;
+  border-right-color: transparent;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* ---------- Views (troca de tela via JS) ---------- */

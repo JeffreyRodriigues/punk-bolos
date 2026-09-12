@@ -5,15 +5,62 @@
    tablet (<= 768px) e celular (<= 480px).
    ============================================================ */
 
-/* ---------- Tablet (<= 768px) ---------- */
+/* ---------- Tablet e Celular (<= 768px) ---------- */
 @media (max-width: 768px) {
-  .app-nav {
-    top: 60px;
+  .sidebar-toggle {
+    display: none !important;
   }
 
-  /* Oculta Inventário e Precificação no mobile (abaixo da dobra) */
+  .app-layout {
+    display: block;
+    min-height: auto;
+  }
+
+  .app-nav {
+    position: sticky;
+    top: 60px;
+    height: auto;
+    width: 100%;
+    flex-direction: row;
+    padding: 0;
+    gap: 0;
+    background-color: var(--color-surface);
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: var(--shadow-card);
+    overflow-x: auto;
+    overflow-y: hidden;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .nav-tab {
+    flex: 1;
+    text-align: center;
+    padding: 14px 12px;
+    background: transparent;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .nav-tab:hover {
+    background-color: transparent;
+  }
+
+  .nav-tab.active {
+    background-color: transparent;
+    color: var(--color-primary);
+    border-left-color: transparent;
+    border-bottom-color: var(--color-primary);
+  }
+
+  /* Oculta Clientes, Inventário e Precificação no mobile */
   .nav-tab--mobile-hidden {
-    display: none;
+    display: none !important;
   }
 
   /* Tabela de Produção vira cards no mobile (evita overflow no portrait).
