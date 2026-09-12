@@ -32,14 +32,16 @@ import * as estoque from './modules/estoque.js';
 import * as estoqueView from './modules/estoqueView.js';
 import * as inventoryView from './modules/inventoryView.js';
 import * as pricingView from './modules/pricingView.js';
+import * as customerForm from './modules/customerForm.js';
+import * as customerView from './modules/customerView.js';
 import { showToast } from './modules/toast.js';
 
 /* ---------- Navegação entre telas ---------- */
 
 /**
- * Alterna a tela visível (Dashboard / Produtos / Produção / Pedidos) e
+ * Alterna a tela visível (Dashboard / Produtos / Produção / Pedidos / Clientes) e
  * atualiza a aba ativa.
- * @param {string} target - Id da view ("dashboard" | "orders" | "produtos" | "estoque").
+ * @param {string} target - Id da view ("dashboard" | "orders" | "produtos" | "estoque" | "clientes").
  */
 /* Telas Inventário/Precificação ficam ocultas no mobile (abaixo de 768px):
    evitamos renderizar/carregar dados dessas views nesses dispositivos. */
@@ -65,6 +67,8 @@ function navigate(target) {
     productList.render();
   } else if (target === 'estoque') {
     estoqueView.render();
+  } else if (target === 'clientes') {
+    customerView.render();
   } else if (target === 'inventario') {
     if (!isMobile()) inventoryView.render();
   } else if (target === 'precificacao') {
@@ -254,6 +258,23 @@ function init() {
     dashboard.render();
   });
 
+  // Clientes: inicializa modais e ações
+  customerForm.init();
+  customerView.init();
+  customerView.setChangeListener(() => {
+    customerView.render();
+    orderForm.updateCustomersDatalist();
+  });
+
+  // Após salvar pedido, atualiza também a view de clientes
+  orderForm.setChangeListener(() => {
+    orderList.render();
+    dashboard.render();
+    estoqueView.render();
+    productList.render();
+    customerView.render();
+  });
+
   // Importar / exportar planilha (CSV)
   document.getElementById('btnModeloCsv').addEventListener('click', () => {
     importExport.downloadTemplate();
@@ -272,6 +293,7 @@ function init() {
       if (result.ok) {
         orderList.render();
         dashboard.render();
+        customerView.render();
         const aviso = result.erros.length > 0 ? ` (${result.erros.length} linha(s) ignorada(s))` : '';
         showToast(`Importados ${result.pedidos} pedido(s) e ${result.itens} item(ns).${aviso}`);
         if (result.produtosCriados > 0) {
@@ -295,6 +317,7 @@ function init() {
   orderList.render();
   productList.render();
   estoqueView.render();
+  customerView.render();
   if (!isMobile()) {
     inventoryView.render();
     pricingView.render();
@@ -306,6 +329,8 @@ function init() {
     orderList.render();
     productList.render();
     estoqueView.render();
+    customerView.render();
+    orderForm.updateCustomersDatalist();
     if (!isMobile()) {
       inventoryView.render();
       pricingView.render();

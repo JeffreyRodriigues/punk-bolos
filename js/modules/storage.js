@@ -25,6 +25,7 @@ const PRODUCOES_KEY = 'punkbolos.producao';
 const INSUMOS_KEY = 'punkbolos.insumos';
 const PRECIFICACOES_KEY = 'punkbolos.precificacoes';
 const BASES_KEY = 'punkbolos.bases';
+const CUSTOMERS_KEY = 'punkbolos.clientes';
 const CONFIG_KEY = 'punkbolos.config';
 
 /** Caches em memória (null = ainda não carregado). */
@@ -34,6 +35,7 @@ let productionsCache = null;
 let insumosCache = null;
 let precificacoesCache = null;
 let basesCache = null;
+let customersCache = null;
 
 /**
  * Snapshots do ÚLTIMO estado sincronizado com a nuvem.
@@ -46,6 +48,7 @@ let productsSynced = [];
 let productionsSynced = [];
 let insumosSynced = [];
 let precificacoesSynced = [];
+let customersSynced = [];
 
 /** true quando conectado ao Supabase (escritas vão para a nuvem). */
 let online = false;
@@ -327,6 +330,32 @@ function readLocalPrecificacoes() {
   }
 }
 
+/** Normaliza um cliente carregado. */
+function normalizeCustomer(customer) {
+  if (!customer || typeof customer !== 'object') {
+    return customer;
+  }
+  return {
+    id: customer.id,
+    nome: String(customer.nome || '').trim(),
+    contato: String(customer.contato || '').trim(),
+    dataNascimento: customer.dataNascimento || customer.data_nascimento || '',
+    endereco: String(customer.endereco || '').trim(),
+    observacoes: String(customer.observacoes || '').trim(),
+  };
+}
+
+/** Lê os clientes do LocalStorage. */
+function readLocalCustomers() {
+  try {
+    const raw = localStorage.getItem(CUSTOMERS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.map(normalizeCustomer) : [];
+  } catch {
+    return [];
+  }
+}
+
 /* ---------- Mapeamento para o banco (snake_case) ---------- */
 
 /** Pedido (app) → linha do banco. */
@@ -473,6 +502,30 @@ function fromPrecificacaoRow(row) {
   };
 }
 
+/** Cliente (app) → linha do banco. */
+function toCustomerRow(customer) {
+  return {
+    id: customer.id,
+    nome: customer.nome || '',
+    contato: customer.contato || '',
+    data_nascimento: customer.dataNascimento || null,
+    endereco: customer.endereco || '',
+    observacoes: customer.observacoes || '',
+  };
+}
+
+/** Linha do banco → cliente (app). */
+function fromCustomerRow(row) {
+  return {
+    id: row.id,
+    nome: row.nome || '',
+    contato: row.contato || '',
+    dataNascimento: row.data_nascimento || '',
+    endereco: row.endereco || '',
+    observacoes: row.observacoes || '',
+  };
+}
+
 /* ---------- Leitura síncrona (cache) ---------- */
 
 /**
@@ -530,6 +583,26 @@ export function getAllPrecificacoes() {
   return precificacoesCache;
 }
 
+/**
+ * Lê todos os clientes cadastrados.
+ * @returns {Array<Object>} Lista de clientes.
+ */
+export function getAllCustomers() {
+  if (customersCache === null) {
+    customersCache = readLocalCustomers();
+  }
+  return customersCache;
+}
+
+/**
+ * Busca um cliente pelo id.
+ * @param {string} id - Id do cliente.
+ * @returns {Object|undefined} Cliente ou undefined.
+ */
+export function getCustomerById(id) {
+  return getAllCustomers().find((c) => c.id === id);
+}
+
 /* ---------- Inicialização / sincronização ---------- */
 
 /**
@@ -546,12 +619,13 @@ export async function init() {
   }
 
   try {
-    const [remoteOrders, remoteProducts, remoteProductions, remoteInsumos, remotePrecificacoes] = await Promise.all([
+    const [remoteOrders, remoteProducts, remoteProductions, remoteInsumos, remotePrecificacoes, remoteCustomers] = await Promise.all([
       supabase.listOrders(),
       supabase.listProducts(),
       supabase.listProductions(),
       supabase.listInsumos(),
       supabase.listPrecificacoes(),
+      supabase.listCustomers().catch(() => []),
     ]);
 
     // Migração inicial única: apenas se o banco Supabase estiver 100% vazio e este dispositivo ainda não migrou
@@ -560,7 +634,8 @@ export async function init() {
       remoteProducts.length === 0 &&
       remoteProductions.length === 0 &&
       remoteInsumos.length === 0 &&
-      remotePrecificacoes.length === 0;
+      remotePrecificacoes.length === 0 &&
+      remoteCustomers.length === 0;
 
     const hasMigrated = localStorage.getItem('punkbolos.migrated') === 'true';
 
@@ -570,6 +645,7 @@ export async function init() {
       const localProductions = readLocalProductions();
       const localInsumos = readLocalInsumos();
       const localPrecificacoes = readLocalPrecificacoes();
+      const localCustomers = readLocalCustomers();
 
       for (const order of localOrders) {
         try {
@@ -606,21 +682,30 @@ export async function init() {
           reportError('Falha ao migrar precificação', e && e.message ? e.message : 'sem conexão');
         }
       }
+      for (const customer of localCustomers) {
+        try {
+          await supabase.insertCustomer(toCustomerRow(customer));
+        } catch (e) {
+          reportError('Falha ao migrar cliente', e && e.message ? e.message : 'sem conexão');
+        }
+      }
       localStorage.setItem('punkbolos.migrated', 'true');
 
       // Refetch após migração inicial
-      const [o2, p2, pr2, i2, prc2] = await Promise.all([
+      const [o2, p2, pr2, i2, prc2, c2] = await Promise.all([
         supabase.listOrders(),
         supabase.listProducts(),
         supabase.listProductions(),
         supabase.listInsumos(),
         supabase.listPrecificacoes(),
+        supabase.listCustomers().catch(() => []),
       ]);
       ordersCache = o2.map(fromOrderRow);
       productsCache = p2.map(fromProductRow);
       productionsCache = pr2.map(fromProductionRow);
       insumosCache = i2.map(fromInsumoRow);
       precificacoesCache = prc2.map(fromPrecificacaoRow);
+      customersCache = c2.map(fromCustomerRow);
     } else {
       localStorage.setItem('punkbolos.migrated', 'true');
       // Fonte de verdade = Nuvem (Supabase)
@@ -629,6 +714,7 @@ export async function init() {
       productionsCache = remoteProductions.map(fromProductionRow);
       insumosCache = remoteInsumos.map(fromInsumoRow);
       precificacoesCache = remotePrecificacoes.map(fromPrecificacaoRow);
+      customersCache = remoteCustomers.map(fromCustomerRow);
     }
 
     // Atualiza o LocalStorage local com os dados da nuvem para manter o cache sincronizado
@@ -637,12 +723,14 @@ export async function init() {
     localStorage.setItem(PRODUCOES_KEY, JSON.stringify(productionsCache));
     localStorage.setItem(INSUMOS_KEY, JSON.stringify(insumosCache));
     localStorage.setItem(PRECIFICACOES_KEY, JSON.stringify(precificacoesCache));
+    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customersCache));
 
     ordersSynced = JSON.parse(JSON.stringify(ordersCache));
     productsSynced = JSON.parse(JSON.stringify(productsCache));
     productionsSynced = JSON.parse(JSON.stringify(productionsCache));
     insumosSynced = JSON.parse(JSON.stringify(insumosCache));
     precificacoesSynced = JSON.parse(JSON.stringify(precificacoesCache));
+    customersSynced = JSON.parse(JSON.stringify(customersCache));
     online = true;
   } catch (error) {
     if (error && error.message === 'Sessão expirada') {
@@ -947,6 +1035,65 @@ function diffPrecificacoes(previous, next) {
   byId.forEach((_, id) => supabase.deletePrecificacao(id).catch((e) => reportError('Falha ao excluir precificação', e.message)));
 }
 
+/* ---------- Clientes (CRM) ---------- */
+
+/**
+ * Salva ou atualiza um cliente individual no cache e no Supabase.
+ * @param {Object} customer - Cliente normalizado.
+ */
+export function saveCustomer(customer) {
+  const current = getAllCustomers();
+  const normalized = normalizeCustomer(customer);
+  const index = current.findIndex((c) => c.id === normalized.id);
+  const next = index >= 0
+    ? [...current.slice(0, index), normalized, ...current.slice(index + 1)]
+    : [...current, normalized];
+
+  saveCustomers(next);
+}
+
+/**
+ * Remove um cliente pelo id.
+ * @param {string} id - Id do cliente a excluir.
+ */
+export function deleteCustomer(id) {
+  const current = getAllCustomers();
+  const next = current.filter((c) => c.id !== id);
+  saveCustomers(next);
+}
+
+/**
+ * Persiste a lista de clientes.
+ * @param {Array<Object>} customers - Nova lista de clientes.
+ */
+export function saveCustomers(customers) {
+  customersCache = customers.map(normalizeCustomer);
+  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customersCache));
+
+  if (!online) {
+    return;
+  }
+  diffCustomers(customersSynced, customersCache);
+  customersSynced = JSON.parse(JSON.stringify(customersCache));
+}
+
+/** Envia ao banco os clientes criados/alterados/removidos. */
+function diffCustomers(previous, next) {
+  const byId = new Map(previous.map((c) => [c.id, c]));
+
+  next.forEach((c) => {
+    const old = byId.get(c.id);
+    if (!old) {
+      supabase.insertCustomer(toCustomerRow(c)).catch((e) => reportError('Falha ao criar cliente', e.message));
+    } else if (JSON.stringify(old) !== JSON.stringify(c)) {
+      supabase.updateCustomer(c.id, toCustomerRow(c)).catch((e) => reportError('Falha ao atualizar cliente', e.message));
+    }
+    byId.delete(c.id);
+  });
+
+  byId.forEach((_, id) => supabase.deleteCustomer(id).catch((e) => reportError('Falha ao excluir cliente', e.message)));
+}
+
 /* ---------- Manutenção ---------- */
 
 /**
@@ -960,11 +1107,13 @@ export function clearAll() {
   insumosCache = null;
   precificacoesCache = null;
   basesCache = null;
+  customersCache = null;
   ordersSynced = [];
   productsSynced = [];
   productionsSynced = [];
   insumosSynced = [];
   precificacoesSynced = [];
+  customersSynced = [];
   online = false;
   localStorage.removeItem(PEDIDOS_KEY);
   localStorage.removeItem(PRODUTOS_KEY);
@@ -972,6 +1121,7 @@ export function clearAll() {
   localStorage.removeItem(INSUMOS_KEY);
   localStorage.removeItem(PRECIFICACOES_KEY);
   localStorage.removeItem(BASES_KEY);
+  localStorage.removeItem(CUSTOMERS_KEY);
   localStorage.removeItem(CONFIG_KEY);
   localStorage.removeItem('punkbolos.session');
 }
@@ -987,10 +1137,13 @@ export function reset() {
   insumosCache = null;
   precificacoesCache = null;
   basesCache = null;
+  customersCache = null;
   ordersSynced = [];
   productsSynced = [];
   productionsSynced = [];
   insumosSynced = [];
   precificacoesSynced = [];
+  customersSynced = [];
   online = false;
 }
+

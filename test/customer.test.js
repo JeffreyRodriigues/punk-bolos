@@ -1,0 +1,123 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as customerService from '../js/modules/customerService.js';
+
+test('sanitizarTelefone — remove caracteres não numéricos e formata', () => {
+  assert.equal(customerService.sanitizarTelefone('(11) 98765-4321'), '11987654321');
+  assert.equal(customerService.sanitizarTelefone('+55 11 98765-4321'), '11987654321');
+  assert.equal(customerService.sanitizarTelefone(''), '');
+  assert.equal(customerService.sanitizarTelefone(null), '');
+});
+
+test('formatarWhatsappLink — gera URL wa.me com DDD e mensagem codificada', () => {
+  const link = customerService.formatarWhatsappLink('(11) 98765-4321', 'Olá Maria!');
+  assert.ok(link.startsWith('https://wa.me/5511987654321?text='));
+  assert.ok(link.includes('Ol%C3%A1%20Maria!'));
+
+  // Retorna vazio se telefone for inválido
+  assert.equal(customerService.formatarWhatsappLink('', 'Olá'), '');
+});
+
+test('diasParaAniversario — calcula dias restantes considerando mesmo ano e virada de ano', () => {
+  // Mesmo dia
+  const ref = new Date(2026, 8, 15); // 15 de Setembro de 2026
+  assert.equal(customerService.diasParaAniversario('1990-09-15', ref), 0);
+
+  // 5 dias no futuro
+  assert.equal(customerService.diasParaAniversario('1995-09-20', ref), 5);
+
+  // Já passou neste ano (10 de Setembro) -> calcula para o próximo ano (360 dias)
+  const passou = customerService.diasParaAniversario('1992-09-10', ref);
+  assert.ok(passou > 300);
+
+  // Virada de ano: ref em 20 de Dezembro, aniversário em 5 de Janeiro -> 16 dias
+  const refDez = new Date(2026, 11, 20); // 20 de Dezembro
+  assert.equal(customerService.diasParaAniversario('1988-01-05', refDez), 16);
+
+  // Data inválida
+  assert.equal(customerService.diasParaAniversario('', ref), null);
+  assert.equal(customerService.diasParaAniversario(null, ref), null);
+});
+
+test('aniversariantesProximos — filtra e ordena clientes na janela de dias', () => {
+  const ref = new Date(2026, 8, 10); // 10 de Setembro
+  const customers = [
+    { id: 'c1', nome: 'Ana', dataNascimento: '1992-09-12' }, // 2 dias
+    { id: 'c2', nome: 'Bruno', dataNascimento: '1985-09-22' }, // 12 dias
+    { id: 'c3', nome: 'Carlos', dataNascimento: '1990-10-15' }, // 35 dias (fora da janela de 15)
+    { id: 'c4', nome: 'Diana', dataNascimento: '' }, // sem aniversário
+  ];
+  const orders = [
+    {
+      cliente: 'Ana',
+      status: 'Concluído',
+      itens: [{ tipoProduto: 'Bolo Inteiro', sabor: 'Cenoura com Chocolate', quantidade: 1 }],
+    },
+  ];
+
+  const proximos = customerService.aniversariantesProximos(customers, orders, 15, ref);
+  assert.equal(proximos.length, 2);
+  assert.equal(proximos[0].id, 'c1');
+  assert.equal(proximos[0].diasRestantes, 2);
+  assert.equal(proximos[0].ultimoSabor, 'Cenoura com Chocolate');
+  assert.equal(proximos[1].id, 'c2');
+  assert.equal(proximos[1].diasRestantes, 12);
+});
+
+test('clientesComMetricas — calcula LTV, contagem de pedidos, último pedido e status VIP', () => {
+  const customers = [
+    { id: 'c1', nome: 'Maria Silva', contato: '11999991111' },
+    { id: 'c2', nome: 'João Souza', contato: '11999992222' },
+  ];
+  const orders = [
+    { cliente: 'Maria Silva', status: 'Concluído', valorTotal: 120, data: '2026-08-01', itens: [{ sabor: 'Ninho' }] },
+    { cliente: 'Maria Silva', status: 'Concluído', valorTotal: 150, data: '2026-09-01', itens: [{ sabor: 'Nutella' }] },
+    { cliente: 'Maria Silva', status: 'Cancelado', valorTotal: 200, data: '2026-09-05', itens: [] }, // não deve somar
+    { cliente: 'João Souza', status: 'Concluído', valorTotal: 60, data: '2026-05-01', itens: [{ sabor: 'Cenoura' }] },
+  ];
+
+  const metricas = customerService.clientesComMetricas(customers, orders, new Date(2026, 8, 11));
+  const maria = metricas.find((c) => c.id === 'c1');
+  const joao = metricas.find((c) => c.id === 'c2');
+
+  assert.equal(maria.totalGasto, 270);
+  assert.equal(maria.totalPedidos, 2);
+  assert.equal(maria.ultimoPedidoData, '2026-09-01');
+  assert.equal(maria.isVIP, true); // >= 250 ou >= 3 pedidos
+  assert.equal(maria.isInativo, false);
+
+  assert.equal(joao.totalGasto, 60);
+  assert.equal(joao.totalPedidos, 1);
+  assert.equal(joao.isVIP, false);
+  assert.equal(joao.isInativo, true); // mais de 60 dias desde maio até setembro
+});
+
+test('metricasClientes — calcula indicadores gerais do dashboard', () => {
+  const customers = [
+    { id: 'c1', nome: 'Maria', dataNascimento: '1990-09-12' },
+    { id: 'c2', nome: 'João', dataNascimento: '1985-05-20' },
+  ];
+  const orders = [
+    { cliente: 'Maria', status: 'Concluído', valorTotal: 300, data: '2026-09-01' },
+    { cliente: 'João', status: 'Concluído', valorTotal: 50, data: '2026-06-01' },
+  ];
+
+  const ref = new Date(2026, 8, 10);
+  const dashboard = customerService.metricasClientes(customers, orders, ref);
+
+  assert.equal(dashboard.totalClientes, 2);
+  assert.equal(dashboard.aniversariantesProximos, 1);
+  assert.equal(dashboard.totalVips, 1);
+  assert.equal(dashboard.totalInativos, 1);
+  assert.equal(dashboard.ticketMedioLtv, 175); // (300 + 50) / 2
+});
+
+test('gerarMensagemAniversario — cria texto amigável citando último sabor quando disponível', () => {
+  const msgComSabor = customerService.gerarMensagemAniversario({ nome: 'Ana' }, 'Bolo de Morango');
+  assert.ok(msgComSabor.includes('Ana'));
+  assert.ok(msgComSabor.includes('Bolo de Morango'));
+
+  const msgSemSabor = customerService.gerarMensagemAniversario({ nome: 'Carlos' }, null);
+  assert.ok(msgSemSabor.includes('Carlos'));
+  assert.ok(!msgSemSabor.includes('undefined'));
+});

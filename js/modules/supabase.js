@@ -474,3 +474,38 @@ export async function deletePrecificacao(id) {
     auth: true,
   });
 }
+
+/* ---------- Clientes (CRM) ---------- */
+
+/** Lista todos os clientes (linhas cruas do banco). */
+export async function listCustomers() {
+  return request('/rest/v1/customers?select=*', { auth: true });
+}
+
+/** Insere um cliente. @param {Object} row - Linha com colunas snake_case. */
+export async function insertCustomer(row) {
+  return request('/rest/v1/customers', {
+    method: 'POST',
+    auth: true,
+    headers: { Prefer: 'return=representation' },
+    body: row,
+  });
+}
+
+/** Atualiza um cliente pelo id. */
+export async function updateCustomer(id, row) {
+  return request(`/rest/v1/customers?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    auth: true,
+    body: row,
+  });
+}
+
+/** Exclui um cliente pelo id. */
+export async function deleteCustomer(id) {
+  return request(`/rest/v1/customers?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}
+

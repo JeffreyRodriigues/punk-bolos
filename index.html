@@ -37,6 +37,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1947,6 +1949,297 @@ html.dark .type-summary-card:hover {
   }
 }
 
+/* ============================================================
+   CLIENTES & CRM
+   ============================================================ */
+
+.page-title-with-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.customer-dashboard {
+  margin-bottom: 20px;
+}
+
+/* Painel de Aniversariantes */
+.customer-birthdays-section {
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.08), rgba(245, 158, 11, 0.08));
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.section-heading h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.section-desc {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  display: block;
+  margin-bottom: 12px;
+}
+
+.customer-birthdays-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.customer-birthday-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.customer-birthday-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.birthday-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.birthday-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.birthday-name {
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.birthday-date {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.birthday-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.birthday-badge-today {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.birthday-badge-soon {
+  background-color: var(--color-warn-soft);
+  color: var(--color-warn);
+}
+
+.birthday-card-body {
+  font-size: 0.83rem;
+  color: var(--color-text-muted);
+  line-height: 1.3;
+}
+
+.birthday-flavor {
+  display: block;
+}
+
+.birthday-card-actions {
+  margin-top: auto;
+}
+
+/* Botões de WhatsApp */
+.btn-whatsapp {
+  background-color: #25d366;
+  color: #ffffff !important;
+  font-weight: 700;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background-color var(--transition);
+}
+
+.btn-whatsapp:hover {
+  background-color: #1ebe5b;
+}
+
+.btn-icon-wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #25d366;
+  color: #fff;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 0.85rem;
+  text-decoration: none;
+  margin-left: 6px;
+  transition: transform var(--transition);
+}
+
+.btn-icon-wa:hover {
+  transform: scale(1.1);
+}
+
+.order-wa-btn {
+  width: 22px;
+  height: 22px;
+  font-size: 0.75rem;
+  vertical-align: middle;
+}
+
+/* Toolbar & Filtros de Clientes */
+.customer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.customer-search-wrap {
+  flex: 1;
+  min-width: 250px;
+}
+
+.customer-search-wrap input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.customer-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.customer-filter-pill {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.customer-filter-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.customer-filter-pill.active {
+  background-color: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+/* Tabela de Clientes */
+.customers-table td {
+  vertical-align: middle;
+  padding: 12px 14px;
+}
+
+.customer-nome-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.customer-nome {
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.customer-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.badge-vip {
+  background-color: #fff3cd;
+  color: #856404;
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.badge-inativo {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.badge-niver {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.customer-contato-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.customer-pedidos-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customer-ultimo-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+
 
 </style>
 
@@ -2186,6 +2479,8 @@ html.dark .type-summary-card:hover {
 
 
 
+
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2325,6 +2620,7 @@ html.dark .type-summary-card:hover {
     <button class="nav-tab active" type="button" data-view-target="dashboard">Dashboard</button>
     <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
     <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
+    <button class="nav-tab" type="button" data-view-target="clientes">Clientes</button>
     <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="inventario">Inventário</button>
     <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="precificacao">Precificação</button>
     <button class="nav-tab" type="button" data-view-target="orders">Pedidos</button>
@@ -2738,6 +3034,98 @@ html.dark .type-summary-card:hover {
   </main>
 
   <!-- ============================================================
+       VIEW — Clientes & CRM
+       Controlada por js/modules/customerView.js
+       ============================================================ -->
+  <main id="view-clientes" class="view">
+    <div class="page-title page-title-with-actions">
+      <div>
+        <h1>Clientes & CRM</h1>
+        <p class="view-subtitle">Controle de contatos, histórico de compras (LTV) e lembrete de aniversários.</p>
+      </div>
+      <button type="button" id="btnNewCustomer" class="btn btn-primary">＋ Novo Cliente</button>
+    </div>
+
+    <!-- Cards de indicadores gerais -->
+    <section class="dashboard customer-dashboard" aria-label="Resumo de clientes">
+      <div class="stat-card">
+        <span class="stat-icon">👥</span>
+        <span class="stat-label">Total de Clientes</span>
+        <span class="stat-value" id="cust-stat-total">0</span>
+      </div>
+
+      <div class="stat-card stat-warn">
+        <span class="stat-icon">🎂</span>
+        <span class="stat-label">Aniversários (15 dias)</span>
+        <span class="stat-value" id="cust-stat-aniversarios">0</span>
+      </div>
+
+      <div class="stat-card stat-ok">
+        <span class="stat-icon">👑</span>
+        <span class="stat-label">Clientes VIPs</span>
+        <span class="stat-value" id="cust-stat-vips">0</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-icon">💤</span>
+        <span class="stat-label">Inativos (> 60 dias)</span>
+        <span class="stat-value" id="cust-stat-inativos">0</span>
+      </div>
+
+      <div class="stat-card stat-money">
+        <span class="stat-icon">💵</span>
+        <span class="stat-label">LTV Médio</span>
+        <span class="stat-value" id="cust-stat-ltv">R$ 0,00</span>
+      </div>
+    </section>
+
+    <!-- Painel de Ação Rápida de Aniversariantes -->
+    <section id="customerBirthdaysSection" class="customer-birthdays-section" hidden>
+      <div class="section-heading">
+        <h2>🎂 Aniversariantes Próximos (Sugira um Bolo!)</h2>
+        <span class="section-desc">Clientes que comemoram aniversário nos próximos 15 dias:</span>
+      </div>
+      <div id="customerBirthdaysContainer" class="customer-birthdays-grid"></div>
+    </section>
+
+    <!-- Tabela de Clientes com busca e filtros -->
+    <section class="customer-list-section">
+      <div class="customer-toolbar">
+        <div class="customer-search-wrap">
+          <input type="search" id="customerSearch" placeholder="🔍 Buscar por nome, WhatsApp ou endereço..." autocomplete="off">
+        </div>
+        <div class="customer-filters" role="group" aria-label="Filtros rápidos de clientes">
+          <button type="button" class="customer-filter-pill active" data-filter="todos">Todos</button>
+          <button type="button" class="customer-filter-pill" data-filter="aniversariantes">🎂 Aniversariantes (30d)</button>
+          <button type="button" class="customer-filter-pill" data-filter="vips">👑 VIPs</button>
+          <button type="button" class="customer-filter-pill" data-filter="inativos">💤 Inativos</button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table customers-table" aria-label="Lista de clientes">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Contato</th>
+              <th>Aniversário</th>
+              <th>Pedidos (LTV)</th>
+              <th>Último Pedido</th>
+              <th class="text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="customersTableBody"></tbody>
+        </table>
+      </div>
+
+      <div id="customersEmptyState" class="empty-state" hidden>
+        <span class="empty-icon" aria-hidden="true">👥</span>
+        <p>Nenhum cliente cadastrado ainda.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================
        BOTÃO FLUTUANTE — novo pedido (FAB)
        ============================================================ -->
   <button id="fabNewOrder" class="fab" type="button" aria-label="Novo pedido">＋</button>
@@ -2772,7 +3160,8 @@ html.dark .type-summary-card:hover {
 
             <div class="form-field form-field-full">
               <label for="field-cliente">Nome do Cliente</label>
-              <input type="text" id="field-cliente" placeholder="Ex.: Maria Silva" required>
+              <input type="text" id="field-cliente" placeholder="Ex.: Maria Silva" list="customersDatalist" autocomplete="off" required>
+              <datalist id="customersDatalist"></datalist>
               <span class="error-hint"></span>
             </div>
 
@@ -3043,18 +3432,51 @@ html.dark .type-summary-card:hover {
   <!-- Container de notificações (toasts) -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <div id="categoriaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="categoriaModalTitle">
-    <div class="modal-backdrop" data-close-categoria></div>
-    <div class="modal-card modal-card-sm">
+  <!-- ============================================================
+       MODAL — Cadastro e Edição de Cliente
+       Controlado por js/modules/customerForm.js
+       ============================================================ -->
+  <div id="modalCustomer" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalCustomerTitle">
+    <div class="modal-backdrop" id="backdropCustomer"></div>
+    <div class="modal-card">
       <div class="modal-header">
-        <h2 id="categoriaModalTitle">Criar como</h2>
-        <button type="button" class="modal-close" data-close-categoria aria-label="Fechar">✕</button>
+        <h2 id="modalCustomerTitle">Novo Cliente</h2>
+        <button type="button" class="modal-close" id="btnCloseModalCustomer" aria-label="Fechar">✕</button>
       </div>
-      <div class="modal-body categoria-chooser">
-        <p class="view-subtitle">Selecione o tipo de item que deseja cadastrar no inventário:</p>
-        <button type="button" id="btnEscolherIngrediente" class="btn btn-primary btn-block">Ingrediente</button>
-        <button type="button" id="btnEscolherBase" class="btn btn-primary btn-block">Base (receita de insumos)</button>
-      </div>
+      <form id="formCustomer" novalidate>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-field form-field-full">
+              <label for="customerNome">Nome do Cliente *</label>
+              <input type="text" id="customerNome" placeholder="Ex.: Maria Silva" required autocomplete="off">
+            </div>
+
+            <div class="form-field">
+              <label for="customerContato">WhatsApp / Telefone</label>
+              <input type="tel" id="customerContato" placeholder="(11) 98765-4321" autocomplete="off">
+            </div>
+
+            <div class="form-field">
+              <label for="customerNascimento">Data de Aniversário 🎂</label>
+              <input type="date" id="customerNascimento" aria-label="Data de nascimento ou aniversário">
+            </div>
+
+            <div class="form-field form-field-full">
+              <label for="customerEndereco">Endereço / Bairro (para entregas)</label>
+              <input type="text" id="customerEndereco" placeholder="Ex.: Rua das Flores, 123 - Centro" autocomplete="off">
+            </div>
+
+            <div class="form-field form-field-full">
+              <label for="customerObservacoes">Preferências / Observações</label>
+              <input type="text" id="customerObservacoes" placeholder="Ex.: Gosta de bolo bem molhado, alérgica a nozes" autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnCancelCustomer" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" id="btnSaveCustomer" class="btn btn-primary">Salvar Cliente</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -3062,6 +3484,6 @@ html.dark .type-summary-card:hover {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=38"></script>
+  <script type="module" src="js/app.js?v=39"></script>
 </body>
 </html>

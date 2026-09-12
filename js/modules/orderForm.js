@@ -315,6 +315,22 @@ function updateCatalogStatus() {
   }
 }
 
+/** Atualiza o datalist de clientes para sugestão no campo de cliente. */
+export function updateCustomersDatalist() {
+  const datalist = document.getElementById('customersDatalist');
+  if (!datalist) return;
+  datalist.innerHTML = '';
+  const customers = storage.getAllCustomers();
+  customers.forEach((c) => {
+    const opt = document.createElement('option');
+    opt.value = c.nome;
+    if (c.contato) {
+      opt.label = c.contato;
+    }
+    datalist.appendChild(opt);
+  });
+}
+
 /**
  * Abre o modal para criar um novo pedido.
  */
@@ -323,6 +339,7 @@ export function openNew() {
   form.reset();
   clearErrors();
   updateCatalogStatus();
+  updateCustomersDatalist();
 
   const orders = order.getOrders();
   const nextNumber = order.nextOrderNumber(orders);
@@ -354,6 +371,7 @@ export function openEdit(orderToEdit) {
   form.reset();
   clearErrors();
   updateCatalogStatus();
+  updateCustomersDatalist();
 
   document.getElementById('field-id').value = orderToEdit.id;
   document.getElementById('field-numero').value = orderToEdit.numero;
@@ -581,6 +599,29 @@ function handleSubmit(event) {
     orders.push(order.createOrder(data, numero));
   }
 
+  // Sincroniza cliente com a base de clientes se for novo ou se tiver contato
+  if (data.cliente) {
+    const nomeTrim = data.cliente.trim();
+    const existingCustomer = storage.getAllCustomers().find(
+      (c) => c.nome.trim().toLowerCase() === nomeTrim.toLowerCase()
+    );
+    if (!existingCustomer) {
+      storage.saveCustomer({
+        id: `cli_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        nome: nomeTrim,
+        contato: (data.contato || '').trim(),
+        dataNascimento: '',
+        endereco: '',
+        observacoes: '',
+      });
+    } else if (data.contato && !existingCustomer.contato) {
+      storage.saveCustomer({
+        ...existingCustomer,
+        contato: data.contato.trim(),
+      });
+    }
+  }
+
   storage.save(orders);
   closeModal();
   onChange();
@@ -588,6 +629,22 @@ function handleSubmit(event) {
 }
 
 /* ---------- Eventos ---------- */
+
+// Autopreenchimento do contato ao selecionar/digitar cliente cadastrado
+const clienteInput = document.getElementById('field-cliente');
+if (clienteInput) {
+  clienteInput.addEventListener('input', () => {
+    const val = clienteInput.value.trim().toLowerCase();
+    if (!val) return;
+    const match = storage.getAllCustomers().find((c) => c.nome.trim().toLowerCase() === val);
+    if (match) {
+      const contatoInput = document.getElementById('field-contato');
+      if (contatoInput && match.contato && !contatoInput.value) {
+        contatoInput.value = match.contato;
+      }
+    }
+  });
+}
 
 // Botão "Adicionar item"
 addItemBtn.addEventListener('click', () => addItemRow({ tipoProduto: defaultItemType(product.getProducts(), order.PRODUCT_TYPES) }));
@@ -617,3 +674,4 @@ document.addEventListener('keydown', (event) => {
     closeModal();
   }
 });
+

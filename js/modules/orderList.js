@@ -138,7 +138,26 @@ function createCard(o) {
   /* Cliente */
   const customer = document.createElement('div');
   customer.className = 'order-customer';
-  customer.textContent = o.cliente || '—';
+
+  const customerName = document.createElement('span');
+  customerName.textContent = o.cliente || '—';
+  customer.appendChild(customerName);
+
+  if (o.contato) {
+    let digits = String(o.contato).replace(/\D/g, '');
+    if (digits.startsWith('55') && digits.length >= 12) digits = digits.slice(2);
+    if (digits.length >= 10) {
+      const waBtn = document.createElement('a');
+      const msg = `Olá ${o.cliente}! Tudo bem? Sobre o seu pedido #${o.numero} da Punk Bolos:`;
+      waBtn.href = `https://wa.me/55${digits}?text=${encodeURIComponent(msg)}`;
+      waBtn.target = '_blank';
+      waBtn.rel = 'noopener';
+      waBtn.className = 'btn-icon-wa order-wa-btn';
+      waBtn.title = `Conversar com ${o.cliente} no WhatsApp`;
+      waBtn.textContent = '💬';
+      customer.appendChild(waBtn);
+    }
+  }
 
   /* Detalhes: itens (tipo + tamanho + sabor + quantidade) */
   const detail = document.createElement('div');
