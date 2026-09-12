@@ -143,11 +143,12 @@ test('gerarMensagemPedido — gera resumo completo de itens, valor total e pedid
   const msg = customerService.gerarMensagemPedido(order);
   assert.ok(msg.includes('Jeffrey'));
   assert.ok(msg.includes('#1092'));
-  assert.ok(msg.includes('2x Fatia - Red Velvet'));
-  assert.ok(msg.includes('1x Bolo Inteiro (M) - Chocolate Belga'));
-  assert.ok(msg.includes('R$'));
+  assert.ok(msg.includes('2 x Fatias Red Velvet - 40,00'));
+  assert.ok(msg.includes('1 x Bolo Inteiro(M) Chocolate Belga - 105,50'));
+  assert.ok(msg.includes('Total 145,50'));
   assert.ok(msg.includes('Retirada'));
   assert.ok(msg.includes('PIX'));
   assert.ok(msg.includes('Você confirma os itens do seu pedido?'));
 });
+
 

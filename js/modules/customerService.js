@@ -258,13 +258,13 @@ export function gerarMensagemAniversario(customer, ultimoSabor = null) {
 
   let msg = '';
   if (ultimoSabor) {
-    msg = `Oi ${nome}, tudo bem? 🎂 Passando para lembrar que seu aniversário está chegando! 🎉 Que tal já garantir a sua comemoração com a Punk Bolos? Da última vez você pediu nosso ${ultimoSabor}, podemos preparar um especial para o seu dia!`;
+    msg = `Oi ${nome}, tudo bem? Passando para lembrar que seu aniversário está chegando! Que tal já garantir a sua comemoração com a Punk Bolos? Da última vez você pediu nosso ${ultimoSabor}, podemos preparar um especial para o seu dia!`;
   } else {
-    msg = `Oi ${nome}, tudo bem? 🎂 Passando para lembrar que seu aniversário está chegando! 🎉 Que tal já garantir a sua data e encomendar seu bolo com a Punk Bolos? Posso te mandar o nosso cardápio atualizado?`;
+    msg = `Oi ${nome}, tudo bem? Passando para lembrar que seu aniversário está chegando! Que tal já garantir a sua data e encomendar seu bolo com a Punk Bolos? Posso te mandar o nosso cardápio atualizado?`;
   }
 
   if (obs) {
-    msg += ` Já deixei anotado aqui o seu gosto/preferência: "${obs}" 🥰`;
+    msg += ` Já deixei anotado aqui o seu gosto/preferência: "${obs}".`;
   }
 
   return msg;
@@ -283,18 +283,27 @@ export function gerarMensagemPedido(order) {
 
   const itensList = itens.map((item) => {
     const qtd = item.quantidade || 1;
-    const tipo = item.tipoProduto || 'Produto';
-    const tam = item.tamanho ? ` (${item.tamanho})` : '';
-    const sabor = item.sabor ? ` - ${item.sabor}` : '';
+    let tipo = item.tipoProduto || 'Produto';
+    if (tipo.toLowerCase() === 'fatia' && qtd > 1) {
+      tipo = 'Fatias';
+    }
+    const tam = item.tamanho ? `(${item.tamanho})` : '';
+    const sabor = item.sabor ? ` ${item.sabor}` : '';
     const totalItem = (Number(item.quantidade) || 1) * (Number(item.valorUnitario) || 0);
-    const valorStr = item.cortesia ? 'Cortesia' : formatCurrency(totalItem);
-    return `• ${qtd}x ${tipo}${tam}${sabor} (${valorStr})`;
+    const valorStr = item.cortesia
+      ? 'Cortesia'
+      : (Number(totalItem) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    return `${qtd} x ${tipo}${tam}${sabor} - ${valorStr}`;
   }).join('\n');
 
-  const valorFormatado = formatCurrency(order.valorTotal);
-  const formaPagamento = order.pagamento ? ` (${order.pagamento})` : '';
-  const entregaStr = order.entrega ? `\n🛵 Entrega: ${order.entrega}` : '';
+  const valorTotalStr = (Number(order.valorTotal) || 0).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const formaPagamento = order.pagamento ? ` (está marcado como ${order.pagamento})` : '';
+  const entregaStr = order.entrega ? `\nEntrega: ${order.entrega}` : '';
 
-  return `Olá ${cliente}! Tudo bem? 🍰\n\nSobre o seu pedido #${order.numero} da Punk Bolos:\n\n${itensList || '• 1x Pedido Especial'}\n\n💰 Total: ${valorFormatado}${entregaStr}\n\nVocê confirma os itens do seu pedido? Qual seria a melhor forma de pagamento para você${formaPagamento ? ` (está marcado como ${order.pagamento})` : ''}?`;
+  return `Olá ${cliente}! Tudo bem?\n\nSobre o seu pedido #${order.numero} da Punk Bolos:\n\n${itensList || '1 x Pedido Especial'}\n\nTotal ${valorTotalStr}${entregaStr}\n\nVocê confirma os itens do seu pedido? Qual seria a melhor forma de pagamento para você${formaPagamento}?`;
 }
 
