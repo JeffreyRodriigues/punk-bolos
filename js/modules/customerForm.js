@@ -3,7 +3,7 @@
    ------------------------------------------------------------
    Gerencia o modal #modalCustomer:
    - Validações (nome obrigatório)
-   - Máscara / formatação de telefone
+   - Abertura e fechamento de modal (compatível com classes do app)
    - Inserção / atualização via storage.saveCustomer
    - Notifica ouvintes após salvar/excluir
    ============================================================ */
@@ -57,8 +57,9 @@ export function openNew(prefill = {}) {
   if (enderecoEl) enderecoEl.value = prefill.endereco || '';
   if (obsEl) obsEl.value = prefill.observacoes || '';
 
-  modal.classList.add('active');
-  if (nomeEl) nomeEl.focus();
+  modal.classList.add('open');
+  document.body.classList.add('modal-open');
+  if (nomeEl) setTimeout(() => nomeEl.focus(), 200);
 }
 
 /**
@@ -90,14 +91,16 @@ export function openEdit(customer) {
   if (enderecoEl) enderecoEl.value = customer.endereco || '';
   if (obsEl) obsEl.value = customer.observacoes || '';
 
-  modal.classList.add('active');
-  if (nomeEl) nomeEl.focus();
+  modal.classList.add('open');
+  document.body.classList.add('modal-open');
+  if (nomeEl) setTimeout(() => nomeEl.focus(), 200);
 }
 
 /** Fecha o modal de cliente. */
 export function close() {
   const modal = document.getElementById('modalCustomer');
-  if (modal) modal.classList.remove('active');
+  if (modal) modal.classList.remove('open');
+  document.body.classList.remove('modal-open');
   currentCustomerId = null;
 }
 
@@ -157,8 +160,13 @@ export function init() {
 
   const modal = document.getElementById('modalCustomer');
   if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) close();
-    });
+    const backdrop = modal.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', close);
   }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && modal && modal.classList.contains('open')) {
+      close();
+    }
+  });
 }

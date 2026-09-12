@@ -29,6 +29,21 @@ function notifyChange() {
   }
 }
 
+/** Cria um botão de ícone padronizado do app Punk Bolos. */
+function createIconBtn(icon, label, onClick, modifier = '') {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = `icon-btn${modifier ? ` ${modifier}` : ''}`;
+  btn.textContent = icon;
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    onClick(e);
+  });
+  return btn;
+}
+
 /** Renderiza os cards de métricas no topo da tela. */
 function renderStats(metrics) {
   const setVal = (id, val) => {
@@ -89,14 +104,14 @@ function renderAniversariantes(aniversariantes) {
       <div class="birthday-card-body">
         ${
           c.ultimoSabor
-            ? `<span class="birthday-flavor">🍰 Último pedido: <strong>${escapeHtml(c.ultimoSabor)}</strong></span>`
-            : `<span class="birthday-flavor">🍰 Nenhum bolo registrado anteriormente</span>`
+            ? `<span class="birthday-flavor">🍰 Último bolo: <strong>${escapeHtml(c.ultimoSabor)}</strong></span>`
+            : `<span class="birthday-flavor">🍰 Nenhum bolo registrado ainda</span>`
         }
       </div>
       <div class="birthday-card-actions">
         ${
           waLink
-            ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn btn-sm btn-whatsapp" title="Enviar sugestão no WhatsApp">
+            ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-whatsapp" title="Enviar sugestão no WhatsApp">
                 <span class="whatsapp-icon">💬</span> Sugerir Bolo no WhatsApp
               </a>`
             : `<span class="text-muted text-sm">Sem WhatsApp cadastrado</span>`
@@ -142,7 +157,7 @@ function renderTable(clientesEnriquecidos) {
   }
   if (emptyState) emptyState.hidden = true;
 
-  // Ordena por nome
+  // Ordena por nome alfabético
   filtrados.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
 
   filtrados.forEach((c) => {
@@ -164,18 +179,18 @@ function renderTable(clientesEnriquecidos) {
         <div class="customer-nome-wrap">
           <strong class="customer-nome">${escapeHtml(c.nome)}</strong>
           ${badges ? `<div class="customer-badges">${badges}</div>` : ''}
-          ${c.endereco ? `<span class="customer-endereco text-muted text-sm">📍 ${escapeHtml(c.endereco)}</span>` : ''}
-          ${c.observacoes ? `<span class="customer-obs text-muted text-sm">📝 ${escapeHtml(c.observacoes)}</span>` : ''}
+          ${c.endereco ? `<span class="customer-endereco text-muted">📍 ${escapeHtml(c.endereco)}</span>` : ''}
+          ${c.observacoes ? `<span class="customer-obs text-muted">📝 ${escapeHtml(c.observacoes)}</span>` : ''}
         </div>
       </td>
       <td class="customer-col-contato">
         ${
           c.contato
             ? `<div class="customer-contato-wrap">
-                <span>${escapeHtml(c.contato)}</span>
+                <span class="customer-phone">${escapeHtml(c.contato)}</span>
                 ${
                   waLink
-                    ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-icon-wa" title="Abrir WhatsApp">💬</a>`
+                    ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-icon-wa" title="Conversar no WhatsApp">💬</a>`
                     : ''
                 }
               </div>`
@@ -183,53 +198,46 @@ function renderTable(clientesEnriquecidos) {
         }
       </td>
       <td class="customer-col-niver">
-        ${niverFormatado !== '—' ? `<span>🎂 ${niverFormatado}</span>` : '<span class="text-muted">—</span>'}
+        ${niverFormatado !== '—' ? `<span class="customer-niver-date">🎂 ${niverFormatado}</span>` : '<span class="text-muted">—</span>'}
       </td>
       <td class="customer-col-pedidos">
         <div class="customer-pedidos-stat">
-          <strong>${c.totalPedidos} ${c.totalPedidos === 1 ? 'pedido' : 'pedidos'}</strong>
-          <span class="text-muted text-sm">${formatCurrency(c.totalGasto)}</span>
+          <strong class="customer-pedidos-count">${c.totalPedidos} ${c.totalPedidos === 1 ? 'pedido' : 'pedidos'}</strong>
+          <span class="customer-ltv-val">${formatCurrency(c.totalGasto)}</span>
         </div>
       </td>
       <td class="customer-col-ultimo">
         ${
           c.ultimoPedidoData
             ? `<div class="customer-ultimo-wrap">
-                <span>${formatDate(c.ultimoPedidoData)}</span>
-                ${c.diasSemComprar !== null ? `<span class="text-muted text-sm">${c.diasSemComprar}d atrás</span>` : ''}
+                <span class="customer-ultimo-data">${formatDate(c.ultimoPedidoData)}</span>
+                ${c.diasSemComprar !== null ? `<span class="customer-dias-atras text-muted">${c.diasSemComprar}d atrás</span>` : ''}
               </div>`
             : '<span class="text-muted">Sem pedidos</span>'
         }
       </td>
       <td class="customer-col-actions text-right">
-        <button type="button" class="btn btn-sm btn-outline btn-edit-customer" data-id="${c.id}" title="Editar cliente">
-          ✏️
-        </button>
-        <button type="button" class="btn btn-sm btn-outline btn-danger btn-delete-customer" data-id="${c.id}" title="Excluir cliente">
-          🗑️
-        </button>
+        <div class="customer-actions-wrap"></div>
       </td>
     `;
 
-    // Eventos de editar e excluir
-    const editBtn = tr.querySelector('.btn-edit-customer');
-    if (editBtn) {
-      editBtn.addEventListener('click', () => {
-        const fullCustomer = storage.getCustomerById(c.id);
-        if (fullCustomer) customerForm.openEdit(fullCustomer);
-      });
-    }
-
-    const delBtn = tr.querySelector('.btn-delete-customer');
-    if (delBtn) {
-      delBtn.addEventListener('click', () => {
-        if (confirm(`Tem certeza que deseja excluir o cliente "${c.nome}"?`)) {
-          storage.deleteCustomer(c.id);
-          showToast('Cliente excluído com sucesso.');
-          render();
-          notifyChange();
-        }
-      });
+    // Adiciona botões de ação padronizados
+    const actionsWrap = tr.querySelector('.customer-actions-wrap');
+    if (actionsWrap) {
+      actionsWrap.append(
+        createIconBtn('✏️', 'Editar cliente', () => {
+          const fullCustomer = storage.getCustomerById(c.id);
+          if (fullCustomer) customerForm.openEdit(fullCustomer);
+        }),
+        createIconBtn('🗑️', 'Excluir cliente', () => {
+          if (confirm(`Tem certeza que deseja excluir o cliente "${c.nome}"?`)) {
+            storage.deleteCustomer(c.id);
+            showToast('Cliente excluído com sucesso.');
+            render();
+            notifyChange();
+          }
+        }, 'danger')
+      );
     }
 
     tbody.appendChild(tr);

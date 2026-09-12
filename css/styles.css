@@ -2041,9 +2041,33 @@ html.dark .type-summary-card:hover {
 }
 
 /* Tabela de Clientes */
+.customers-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.customers-table th {
+  background: var(--color-surface);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--color-border);
+}
+
 .customers-table td {
   vertical-align: middle;
   padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  transition: background-color var(--transition);
+}
+
+.customers-table tr:hover td {
+  background-color: var(--color-surface-alt);
 }
 
 .customer-nome-wrap {
@@ -2054,6 +2078,7 @@ html.dark .type-summary-card:hover {
 
 .customer-nome {
   font-size: 0.95rem;
+  font-weight: 700;
   color: var(--color-text);
 }
 
@@ -2061,6 +2086,7 @@ html.dark .type-summary-card:hover {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
+  margin-top: 2px;
 }
 
 .badge-vip {
@@ -2068,16 +2094,22 @@ html.dark .type-summary-card:hover {
   color: #856404;
   font-weight: 700;
   font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+html.dark .badge-vip {
+  background-color: #4d3800;
+  color: #ffd24d;
 }
 
 .badge-inativo {
   background-color: var(--color-surface-alt);
   color: var(--color-text-muted);
   font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
 }
 
 .badge-niver {
@@ -2085,14 +2117,29 @@ html.dark .type-summary-card:hover {
   color: var(--color-primary);
   font-weight: 700;
   font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.customer-endereco,
+.customer-obs {
+  font-size: 0.8rem;
+  line-height: 1.25;
 }
 
 .customer-contato-wrap {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+}
+
+.customer-phone {
+  font-weight: 600;
+}
+
+.customer-niver-date {
+  font-weight: 600;
+  color: var(--color-primary);
 }
 
 .customer-pedidos-stat {
@@ -2101,10 +2148,39 @@ html.dark .type-summary-card:hover {
   gap: 2px;
 }
 
+.customer-pedidos-count {
+  font-weight: 700;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.customer-ltv-val {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
 .customer-ultimo-wrap {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+
+.customer-ultimo-data {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.customer-dias-atras {
+  font-size: 0.78rem;
+}
+
+.customer-actions-wrap {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 
 
