@@ -333,8 +333,9 @@ export function updateCustomersDatalist() {
 
 /**
  * Abre o modal para criar um novo pedido.
+ * @param {Object} [prefill] - Dados pré-preenchidos (ex: cliente, contato).
  */
-export function openNew() {
+export function openNew(prefill = {}) {
   pendingDraft = null;
   form.reset();
   clearErrors();
@@ -350,6 +351,13 @@ export function openNew() {
   document.getElementById('field-status').value = 'Pendente';
   document.getElementById('field-pagamento').value = 'PIX';
   document.getElementById('field-entrega').value = 'Retirada';
+
+  if (prefill.cliente) {
+    document.getElementById('field-cliente').value = prefill.cliente;
+  }
+  if (prefill.contato) {
+    document.getElementById('field-contato').value = prefill.contato;
+  }
 
   // Reinicia com uma linha de item vazia (no primeiro tipo que tiver
   // produtos com disponibilidade para venda)

@@ -43,6 +43,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -2393,6 +2394,246 @@ html.dark .badge-vip {
   align-items: center;
 }
 
+/* ---------- Modal de Perfil & Histórico (Timeline) do Cliente ---------- */
+.cust-hist-header-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cust-hist-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.cust-hist-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cust-hist-profile-card {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.cust-hist-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.cust-hist-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cust-hist-info-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+.cust-hist-info-val {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cust-hist-phone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cust-hist-obs-val {
+  font-style: italic;
+  font-weight: normal;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: inline-block;
+}
+
+.cust-hist-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.cust-stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.cust-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.cust-stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.cust-hist-timeline-section {
+  margin-top: 10px;
+}
+
+.cust-hist-timeline-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.cust-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.cust-timeline-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  border-left: 4px solid var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.cust-timeline-card.status-Concluído {
+  border-left-color: var(--color-ok);
+}
+
+.cust-timeline-card.status-Cancelado {
+  border-left-color: var(--color-danger);
+  opacity: 0.75;
+}
+
+.cust-timeline-card.status-Pendente {
+  border-left-color: var(--color-warn);
+}
+
+.cust-timeline-card.status-Em-Produção {
+  border-left-color: var(--color-info);
+}
+
+.cust-timeline-card.status-Embalado {
+  border-left-color: #8b5cf6;
+}
+
+.timeline-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.timeline-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timeline-order-num {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.timeline-order-date {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.timeline-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-item-row {
+  font-size: 0.88rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--color-text);
+  padding: 2px 0;
+}
+
+.timeline-item-desc {
+  font-weight: 500;
+}
+
+.timeline-item-price {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.timeline-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+  margin-top: 8px;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.timeline-card-total {
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: var(--color-text);
+}
+
+.timeline-card-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cust-hist-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cust-hist-footer-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 
 
 
@@ -2550,6 +2791,10 @@ html.dark .badge-vip {
     max-width: 560px;
   }
 
+  .cust-hist-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .stat-value {
     font-size: 1.2rem;
   }
@@ -2658,6 +2903,7 @@ html.dark .badge-vip {
 
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
 
@@ -3694,10 +3940,92 @@ html.dark .badge-vip {
     </div>
   </div>
 
+  <!-- ============================================================
+       MODAL — Perfil e Histórico de Pedidos do Cliente (Timeline)
+       Controlado por js/modules/customerView.js
+       ============================================================ -->
+  <div id="modalCustomerHistory" class="modal" role="dialog" aria-modal="true" aria-labelledby="custHistTitle">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card modal-card-wide">
+      <div class="modal-header">
+        <div class="cust-hist-header-info">
+          <h2 id="custHistTitle" class="cust-hist-name">Histórico do Cliente</h2>
+          <div id="custHistBadges" class="cust-hist-badges"></div>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Detalhes de contato e endereço -->
+        <div class="cust-hist-profile-card">
+          <div class="cust-hist-profile-grid">
+            <div class="cust-hist-info-item" id="custHistContatoWrap">
+              <span class="cust-hist-info-label">WhatsApp / Telefone</span>
+              <div class="cust-hist-phone-row">
+                <span id="custHistPhone" class="cust-hist-info-val">—</span>
+                <a id="custHistWaBtn" href="#" target="_blank" rel="noopener" class="btn-icon-wa" title="Conversar no WhatsApp">💬</a>
+              </div>
+            </div>
+            <div class="cust-hist-info-item">
+              <span class="cust-hist-info-label">Data de Aniversário</span>
+              <span id="custHistNiver" class="cust-hist-info-val">—</span>
+            </div>
+            <div class="cust-hist-info-item form-field-full">
+              <span class="cust-hist-info-label">Endereço de Entrega</span>
+              <span id="custHistEndereco" class="cust-hist-info-val">—</span>
+            </div>
+            <div class="cust-hist-info-item form-field-full" id="custHistObsWrap">
+              <span class="cust-hist-info-label">Preferências / Observações</span>
+              <span id="custHistObs" class="cust-hist-info-val cust-hist-obs-val">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cards de Métricas do Cliente -->
+        <div class="cust-hist-stats-grid">
+          <div class="cust-stat-card">
+            <span class="cust-stat-label">Total Gasto (LTV)</span>
+            <strong id="custStatLtv" class="cust-stat-value">R$ 0,00</strong>
+          </div>
+          <div class="cust-stat-card">
+            <span class="cust-stat-label">Total de Pedidos</span>
+            <strong id="custStatPedidos" class="cust-stat-value">0</strong>
+          </div>
+          <div class="cust-stat-card">
+            <span class="cust-stat-label">Ticket Médio</span>
+            <strong id="custStatTicket" class="cust-stat-value">R$ 0,00</strong>
+          </div>
+          <div class="cust-stat-card">
+            <span class="cust-stat-label">Sabor Mais Pedido</span>
+            <strong id="custStatFavorito" class="cust-stat-value">—</strong>
+          </div>
+        </div>
+
+        <!-- Linha do Tempo de Pedidos -->
+        <div class="cust-hist-timeline-section">
+          <h3 class="cust-hist-timeline-title">Linha do Tempo de Pedidos</h3>
+          <div id="custHistTimeline" class="cust-timeline-list"></div>
+          <div id="custHistEmpty" class="empty-state" hidden>
+            <span class="empty-icon" aria-hidden="true">🧾</span>
+            <p>Nenhum pedido registrado para este cliente ainda.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer cust-hist-footer">
+        <button type="button" id="btnEditFromHistory" class="btn btn-ghost">✏️ Editar Cadastro</button>
+        <div class="cust-hist-footer-right">
+          <button type="button" class="btn btn-ghost" data-close-modal>Fechar</button>
+          <button type="button" id="btnNewOrderForCustomer" class="btn btn-primary">＋ Novo Pedido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Chart.js (gráficos do dashboard) — carregado localmente (offline) -->
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=43"></script>
+  <script type="module" src="js/app.js?v=44"></script>
 </body>
 </html>

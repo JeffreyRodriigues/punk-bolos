@@ -148,6 +148,10 @@
     max-width: 560px;
   }
 
+  .cust-hist-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .stat-value {
     font-size: 1.2rem;
   }

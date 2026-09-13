@@ -11,6 +11,7 @@
 import * as storage from './storage.js';
 import * as service from './customerService.js';
 import * as customerForm from './customerForm.js';
+import * as orderForm from './orderForm.js';
 import { formatCurrency, formatDate } from '../utils/money.js';
 import { showToast } from './toast.js';
 
@@ -42,6 +43,146 @@ function createIconBtn(icon, label, onClick, modifier = '') {
     onClick(e);
   });
   return btn;
+}
+
+/** Abre o modal de perfil e histórico detalhado (Timeline) do cliente. */
+export function abrirHistoricoCliente(customer) {
+  if (!customer) return;
+  const fullCustomer = storage.getCustomerById(customer.id) || customer;
+  const orders = storage.getAll();
+  const hist = service.obterHistoricoCliente(fullCustomer.nome, orders);
+
+  const modal = document.getElementById('modalCustomerHistory');
+  if (!modal) return;
+
+  // Cabeçalho
+  const titleEl = document.getElementById('custHistTitle');
+  const badgesEl = document.getElementById('custHistBadges');
+  if (titleEl) titleEl.textContent = fullCustomer.nome;
+
+  if (badgesEl) {
+    let badgesHtml = '';
+    const metricas = service.clientesComMetricas([fullCustomer], orders)[0];
+    if (metricas?.isVIP) badgesHtml += '<span class="badge badge-vip">👑 VIP</span> ';
+    if (metricas?.isInativo) badgesHtml += '<span class="badge badge-inativo">💤 Inativo</span> ';
+    if (metricas?.diasParaAniversario !== null && metricas?.diasParaAniversario <= 15) {
+      badgesHtml += `<span class="badge badge-niver">🎂 Níver (${metricas.diasParaAniversario}d)</span> `;
+    }
+    badgesEl.innerHTML = badgesHtml;
+  }
+
+  // Cartão de Perfil (Contato & Endereço)
+  const phoneEl = document.getElementById('custHistPhone');
+  const waBtn = document.getElementById('custHistWaBtn');
+  const niverEl = document.getElementById('custHistNiver');
+  const enderecoEl = document.getElementById('custHistEndereco');
+  const obsEl = document.getElementById('custHistObs');
+
+  if (phoneEl) phoneEl.textContent = fullCustomer.contato || '—';
+  if (waBtn) {
+    const waLink = service.formatarWhatsappLink(fullCustomer.contato, `Olá ${fullCustomer.nome}! Tudo bem?`);
+    if (waLink) {
+      waBtn.href = waLink;
+      waBtn.style.display = 'inline-flex';
+    } else {
+      waBtn.style.display = 'none';
+    }
+  }
+
+  if (niverEl) niverEl.textContent = service.formatarDataAniversario(fullCustomer.dataNascimento);
+  if (enderecoEl) enderecoEl.textContent = fullCustomer.endereco || '—';
+  if (obsEl) obsEl.textContent = fullCustomer.observacoes || 'Nenhuma preferência cadastrada';
+
+  // Cards de Métricas
+  const ltvEl = document.getElementById('custStatLtv');
+  const pedidosEl = document.getElementById('custStatPedidos');
+  const ticketEl = document.getElementById('custStatTicket');
+  const favoritoEl = document.getElementById('custStatFavorito');
+
+  if (ltvEl) ltvEl.textContent = formatCurrency(hist.totalGasto);
+  if (pedidosEl) pedidosEl.textContent = hist.totalPedidos;
+  if (ticketEl) ticketEl.textContent = formatCurrency(hist.ticketMedio);
+  if (favoritoEl) favoritoEl.textContent = hist.saborFavorito || '—';
+
+  // Lista de Timeline
+  const timelineEl = document.getElementById('custHistTimeline');
+  const emptyEl = document.getElementById('custHistEmpty');
+
+  if (timelineEl) {
+    timelineEl.innerHTML = '';
+    if (hist.pedidos.length === 0) {
+      if (emptyEl) emptyEl.hidden = false;
+    } else {
+      if (emptyEl) emptyEl.hidden = true;
+      hist.pedidos.forEach((p) => {
+        const card = document.createElement('div');
+        const statusClass = `status-${(p.status || 'Pendente').replace(/\s+/g, '-')}`;
+        card.className = `cust-timeline-card ${statusClass}`;
+
+        const itensHtml = (Array.isArray(p.itens) ? p.itens : []).map((item) => {
+          const qtd = item.quantidade || 1;
+          const tipo = item.tipoProduto || 'Produto';
+          const tam = item.tamanho ? ` (${item.tamanho})` : '';
+          const sabor = item.sabor ? ` - ${item.sabor}` : '';
+          const totalItem = (Number(item.quantidade) || 1) * (Number(item.valorUnitario) || 0);
+          const valorStr = item.cortesia ? 'Cortesia' : formatCurrency(totalItem);
+          return `<li class="timeline-item-row">
+            <span class="timeline-item-desc">• ${qtd}x ${escapeHtml(tipo)}${escapeHtml(tam)}${escapeHtml(sabor)}</span>
+            <span class="timeline-item-price">${valorStr}</span>
+          </li>`;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="timeline-card-header">
+            <div class="timeline-card-meta">
+              <strong class="timeline-order-num">Pedido #${p.numero}</strong>
+              <span class="timeline-order-date">📅 ${formatDate(p.data)}</span>
+            </div>
+            <span class="badge ${(p.status || 'Pendente').replace(/\s+/g, '-')}">${escapeHtml(p.status || 'Pendente')}</span>
+          </div>
+          <ul class="timeline-items-list">
+            ${itensHtml || '<li class="timeline-item-row"><span class="timeline-item-desc">• Pedido especial</span></li>'}
+          </ul>
+          <div class="timeline-card-footer">
+            <span class="timeline-card-total">Total: ${formatCurrency(p.valorTotal)}</span>
+            <div class="timeline-card-tags">
+              ${p.entrega ? `<span>🛵 ${escapeHtml(p.entrega)}</span>` : ''}
+              ${p.pagamento ? `<span>💳 ${escapeHtml(p.pagamento)}</span>` : ''}
+            </div>
+          </div>
+        `;
+
+        timelineEl.appendChild(card);
+      });
+    }
+  }
+
+  // Ações nos botões do modal
+  const btnNewOrder = document.getElementById('btnNewOrderForCustomer');
+  if (btnNewOrder) {
+    btnNewOrder.onclick = () => {
+      fecharHistoricoCliente();
+      orderForm.openNew({ cliente: fullCustomer.nome, contato: fullCustomer.contato });
+    };
+  }
+
+  const btnEdit = document.getElementById('btnEditFromHistory');
+  if (btnEdit) {
+    btnEdit.onclick = () => {
+      fecharHistoricoCliente();
+      customerForm.openEdit(fullCustomer);
+    };
+  }
+
+  modal.classList.add('open');
+  document.body.classList.add('modal-open');
+}
+
+/** Fecha o modal de histórico do cliente. */
+export function fecharHistoricoCliente() {
+  const modal = document.getElementById('modalCustomerHistory');
+  if (modal) modal.classList.remove('open');
+  document.body.classList.remove('modal-open');
 }
 
 /** Renderiza os cards de métricas no topo da tela. */
@@ -96,7 +237,7 @@ function renderAniversariantes(aniversariantes) {
     card.innerHTML = `
       <div class="birthday-card-header">
         <div class="birthday-card-info">
-          <strong class="birthday-name">${escapeHtml(c.nome)}</strong>
+          <strong class="birthday-name" style="cursor:pointer;" title="Ver histórico">${escapeHtml(c.nome)}</strong>
           <span class="birthday-date">📅 ${niverFormatado}</span>
         </div>
         <span class="${badgeClass}">${badgeText}</span>
@@ -118,6 +259,11 @@ function renderAniversariantes(aniversariantes) {
         }
       </div>
     `;
+
+    const nameBtn = card.querySelector('.birthday-name');
+    if (nameBtn) {
+      nameBtn.addEventListener('click', () => abrirHistoricoCliente(c));
+    }
 
     container.appendChild(card);
   });
@@ -177,7 +323,7 @@ function renderTable(clientesEnriquecidos) {
     tr.innerHTML = `
       <td class="customer-col-nome">
         <div class="customer-nome-wrap">
-          <strong class="customer-nome">${escapeHtml(c.nome)}</strong>
+          <strong class="customer-nome" style="cursor:pointer;" title="Clique para ver o histórico completo">${escapeHtml(c.nome)}</strong>
           ${badges ? `<div class="customer-badges">${badges}</div>` : ''}
           ${c.endereco ? `<span class="customer-endereco text-muted">📍 ${escapeHtml(c.endereco)}</span>` : ''}
           ${c.observacoes ? `<span class="customer-obs text-muted">📝 ${escapeHtml(c.observacoes)}</span>` : ''}
@@ -221,10 +367,17 @@ function renderTable(clientesEnriquecidos) {
       </td>
     `;
 
+    // Clique no nome abre o histórico
+    const nomeEl = tr.querySelector('.customer-nome');
+    if (nomeEl) {
+      nomeEl.addEventListener('click', () => abrirHistoricoCliente(c));
+    }
+
     // Adiciona botões de ação padronizados
     const actionsWrap = tr.querySelector('.customer-actions-wrap');
     if (actionsWrap) {
       actionsWrap.append(
+        createIconBtn('📜', 'Ver histórico de pedidos', () => abrirHistoricoCliente(c)),
         createIconBtn('✏️', 'Editar cliente', () => {
           const fullCustomer = storage.getCustomerById(c.id);
           if (fullCustomer) customerForm.openEdit(fullCustomer);
@@ -292,6 +445,19 @@ export function init() {
   customerForm.setChangeListener(() => {
     render();
     notifyChange();
+  });
+
+  const modalHist = document.getElementById('modalCustomerHistory');
+  if (modalHist) {
+    modalHist.querySelectorAll('[data-close-modal]').forEach((el) => {
+      el.addEventListener('click', fecharHistoricoCliente);
+    });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && modalHist && modalHist.classList.contains('open')) {
+      fecharHistoricoCliente();
+    }
   });
 }
 

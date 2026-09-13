@@ -127,6 +127,106 @@ function extrairUltimoSabor(clienteNome, orders = []) {
 }
 
 /**
+ * Extrai o sabor mais frequente (ou favorito) comprado por um cliente.
+ * @param {Array<Object>} pedidos - Lista de pedidos do cliente.
+ * @returns {string|null} Sabor favorito ou null.
+ */
+export function extrairSaborFavorito(pedidos = []) {
+  const contagemSabores = new Map();
+  (pedidos || []).forEach((o) => {
+    if (o.status === 'Cancelado') return;
+    (Array.isArray(o.itens) ? o.itens : []).forEach((item) => {
+      const chave = item.sabor ? String(item.sabor).trim() : (item.tipoProduto ? String(item.tipoProduto).trim() : '');
+      if (chave) {
+        const qtd = Number(item.quantidade) || 1;
+        contagemSabores.set(chave, (contagemSabores.get(chave) || 0) + qtd);
+      }
+    });
+  });
+
+  let maxQtd = 0;
+  let favorito = null;
+  for (const [sabor, qtd] of contagemSabores.entries()) {
+    if (qtd > maxQtd) {
+      maxQtd = qtd;
+      favorito = sabor;
+    }
+  }
+  return favorito;
+}
+
+/**
+ * Obtém o histórico detalhado de compras e estatísticas de um cliente específico.
+ * @param {string} clienteNome - Nome do cliente.
+ * @param {Array<Object>} orders - Lista de todos os pedidos.
+ * @param {Date} [dataReferencia=new Date()] - Data atual de corte.
+ * @returns {Object} Histórico e agregados do cliente.
+ */
+export function obterHistoricoCliente(clienteNome, orders = [], dataReferencia = new Date()) {
+  if (!clienteNome) {
+    return {
+      pedidos: [],
+      totalPedidos: 0,
+      totalGasto: 0,
+      ticketMedio: 0,
+      primeiroPedidoData: '',
+      ultimoPedidoData: '',
+      diasSemComprar: null,
+      saborFavorito: null,
+    };
+  }
+
+  const nomeNorm = String(clienteNome).trim().toLowerCase();
+  const pedidos = (orders || [])
+    .filter((o) => String(o.cliente || '').trim().toLowerCase() === nomeNorm)
+    .sort((a, b) => {
+      const cmp = String(b.data || '').localeCompare(String(a.data || ''));
+      if (cmp !== 0) return cmp;
+      return (b.numero || 0) - (a.numero || 0);
+    });
+
+  const pedidosValidos = pedidos.filter((o) => o.status !== 'Cancelado');
+  const totalPedidos = pedidosValidos.length;
+  const totalGasto = Math.round(
+    pedidosValidos.reduce((acc, p) => acc + (Number(p.valorTotal) || 0), 0) * 100
+  ) / 100;
+  const ticketMedio = totalPedidos > 0 ? Math.round((totalGasto / totalPedidos) * 100) / 100 : 0;
+
+  let primeiroPedidoData = '';
+  let ultimoPedidoData = '';
+  let diasSemComprar = null;
+
+  if (totalPedidos > 0) {
+    const datasValidas = pedidosValidos.map((p) => p.data).filter(Boolean).sort();
+    if (datasValidas.length > 0) {
+      primeiroPedidoData = datasValidas[0];
+      ultimoPedidoData = datasValidas[datasValidas.length - 1];
+
+      const [ano, mes, dia] = ultimoPedidoData.split('-').map(Number);
+      if (ano && mes && dia) {
+        const agora = new Date(dataReferencia.getFullYear(), dataReferencia.getMonth(), dataReferencia.getDate());
+        const dataUlt = new Date(ano, mes - 1, dia);
+        const diffMs = agora.getTime() - dataUlt.getTime();
+        diasSemComprar = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+      }
+    }
+  }
+
+  const saborFavorito = extrairSaborFavorito(pedidosValidos);
+
+  return {
+    pedidos,
+    totalPedidos,
+    totalGasto,
+    ticketMedio,
+    primeiroPedidoData,
+    ultimoPedidoData,
+    diasSemComprar,
+    saborFavorito,
+  };
+}
+
+/**
  * Retorna os clientes que fazem aniversário dentro da janela de dias especificada.
  * @param {Array<Object>} customers - Lista de clientes.
  * @param {Array<Object>} orders - Lista de pedidos (para extrair sabor favorito).

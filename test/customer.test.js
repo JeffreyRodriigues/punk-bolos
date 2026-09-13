@@ -151,4 +151,51 @@ test('gerarMensagemPedido — gera resumo completo de itens, valor total e pedid
   assert.ok(msg.includes('Você confirma os itens do seu pedido?'));
 });
 
+test('obterHistoricoCliente e extrairSaborFavorito — agrega pedidos, LTV, ticket médio e sabor favorito', () => {
+  const orders = [
+    {
+      numero: 1001,
+      cliente: 'Maria Silva',
+      status: 'Concluído',
+      data: '2026-07-10',
+      valorTotal: 50,
+      itens: [{ tipoProduto: 'Fatia', sabor: 'Ninho', quantidade: 2 }],
+    },
+    {
+      numero: 1005,
+      cliente: 'Maria Silva',
+      status: 'Concluído',
+      data: '2026-08-15',
+      valorTotal: 150,
+      itens: [{ tipoProduto: 'Bolo Inteiro', sabor: 'Ninho', quantidade: 1 }],
+    },
+    {
+      numero: 1008,
+      cliente: 'Maria Silva',
+      status: 'Cancelado',
+      data: '2026-09-01',
+      valorTotal: 200,
+      itens: [{ tipoProduto: 'Bolo Inteiro', sabor: 'Chocolate', quantidade: 2 }],
+    },
+    {
+      numero: 1010,
+      cliente: 'Outro Cliente',
+      status: 'Concluído',
+      data: '2026-09-02',
+      valorTotal: 80,
+      itens: [{ tipoProduto: 'Fatia', sabor: 'Cenoura', quantidade: 4 }],
+    },
+  ];
+
+  const hist = customerService.obterHistoricoCliente('maria silva', orders, new Date(2026, 8, 13));
+  assert.equal(hist.totalPedidos, 2); // ignora o cancelado e de outro cliente
+  assert.equal(hist.totalGasto, 200); // 50 + 150
+  assert.equal(hist.ticketMedio, 100); // 200 / 2
+  assert.equal(hist.primeiroPedidoData, '2026-07-10');
+  assert.equal(hist.ultimoPedidoData, '2026-08-15');
+  assert.equal(hist.saborFavorito, 'Ninho'); // 2 + 1 = 3 unidades de Ninho
+  assert.equal(hist.pedidos.length, 3); // inclui o cancelado na listagem de timeline
+});
+
+
 
