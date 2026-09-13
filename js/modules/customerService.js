@@ -213,6 +213,7 @@ export function obterHistoricoCliente(clienteNome, orders = [], dataReferencia =
   }
 
   const saborFavorito = extrairSaborFavorito(pedidosValidos);
+  const fidelidade = calcularFidelidade(totalPedidos);
 
   return {
     pedidos,
@@ -223,6 +224,7 @@ export function obterHistoricoCliente(clienteNome, orders = [], dataReferencia =
     ultimoPedidoData,
     diasSemComprar,
     saborFavorito,
+    fidelidade,
   };
 }
 
@@ -305,6 +307,7 @@ export function clientesComMetricas(customers = [], orders = [], dataReferencia 
     // Inativo se já comprou no passado mas está há mais de 60 dias sem comprar
     const isInativo = totalPedidos > 0 && diasSemComprar !== null && diasSemComprar > 60;
     const diasNiver = diasParaAniversario(c.dataNascimento, dataReferencia);
+    const fidelidade = calcularFidelidade(totalPedidos);
 
     return {
       ...c,
@@ -315,6 +318,8 @@ export function clientesComMetricas(customers = [], orders = [], dataReferencia 
       isVIP,
       isInativo,
       diasParaAniversario: diasNiver,
+      fidelidade,
+      temRecompensaFidelidade: fidelidade.temRecompensaDisponivel,
     };
   });
 }
@@ -455,5 +460,56 @@ export function clientesInativosDestaque(customers = [], orders = [], dataRefere
     };
   }).sort((a, b) => (b.totalGasto || 0) - (a.totalGasto || 0));
 }
+
+/**
+ * Calcula o progresso do Cartão Fidelidade (10 pedidos por padrão).
+ * @param {number} totalPedidos - Quantidade de pedidos válidos.
+ * @param {number} [meta=10] - Quantidade de pedidos para atingir a recompensa.
+ * @returns {Object} Dados do cartão fidelidade (selos preenchidos, faltantes, ciclos completados, recompensa liberada).
+ */
+export function calcularFidelidade(totalPedidos, meta = 10) {
+  const total = Math.max(0, parseInt(totalPedidos, 10) || 0);
+  const metaVal = Math.max(1, parseInt(meta, 10) || 10);
+  const ciclosCompletados = Math.floor(total / metaVal);
+  const mod = total % metaVal;
+  const temRecompensaDisponivel = total > 0 && mod === 0;
+
+  const selosPreenchidos = temRecompensaDisponivel ? metaVal : mod;
+  const faltam = temRecompensaDisponivel ? 0 : metaVal - mod;
+  const progressoPct = Math.round((selosPreenchidos / metaVal) * 100);
+
+  return {
+    totalPedidos: total,
+    meta: metaVal,
+    ciclosCompletados,
+    selosPreenchidos,
+    faltam,
+    temRecompensaDisponivel,
+    faltaApenasUm: faltam === 1,
+    progressoPct,
+  };
+}
+
+/**
+ * Gera mensagem de texto sem emojis para WhatsApp informando o cliente sobre o Cartão Fidelidade.
+ * @param {Object} customer - Cliente.
+ * @param {Object} fidelidade - Objeto retornado por calcularFidelidade.
+ * @returns {string} Mensagem pronta para o WhatsApp.
+ */
+export function gerarMensagemFidelidade(customer, fidelidade) {
+  const nome = (customer && customer.nome ? customer.nome.trim() : 'Cliente').split(' ')[0];
+  const fid = fidelidade || calcularFidelidade(customer?.totalPedidos || 0);
+
+  if (fid.temRecompensaDisponivel) {
+    return `Ola ${nome}! Parabens! Voce completou seu Cartao Fidelidade da Punk Bolos com ${fid.totalPedidos} pedidos acumulados e ganhou uma recompensa especial! No seu proximo pedido, nos avise para enviarmos seu presente especial da casa.`;
+  }
+
+  if (fid.faltaApenasUm) {
+    return `Ola ${nome}! Passando para avisar que falta apenas 1 pedido para voce completar seu Cartao Fidelidade da Punk Bolos (${fid.selosPreenchidos} de ${fid.meta}) e garantir seu brinde especial!`;
+  }
+
+  return `Ola ${nome}! Seu Cartao Fidelidade Punk Bolos esta com ${fid.selosPreenchidos} de ${fid.meta} pedidos preenchidos. Faltam apenas ${fid.faltam} pedidos para voce ganhar seu brinde especial!`;
+}
+
 
 

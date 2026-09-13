@@ -2275,6 +2275,33 @@ html.dark .badge-vip {
   border-radius: 999px;
 }
 
+.badge-fidelidade {
+  background-color: rgba(139, 92, 246, 0.12);
+  color: #7c3aed;
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+html.dark .badge-fidelidade {
+  background-color: rgba(139, 92, 246, 0.25);
+  color: #c4b5fd;
+}
+
+.badge-fidelidade-ready {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  font-weight: 800;
+  animation: pulse-reward 2s infinite ease-in-out;
+}
+
+@keyframes pulse-reward {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
 .customer-endereco,
 .customer-obs {
   font-size: 0.8rem;
@@ -2454,6 +2481,199 @@ html.dark .badge-vip {
 
 .btn-resgate-wa:hover {
   background-color: #1ebe5b;
+}
+
+/* Cartão Fidelidade Digital no Modal de Histórico */
+.cust-loyalty-card {
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.05), rgba(139, 92, 246, 0.08));
+  border: 1.5px dashed var(--color-primary-soft);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cust-loyalty-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cust-loyalty-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cust-loyalty-icon {
+  font-size: 1.4rem;
+}
+
+.cust-loyalty-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-text);
+  display: block;
+}
+
+.cust-loyalty-subtitle {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.badge-loyalty {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.badge-loyalty-ready {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+/* Grid com os 10 carimbos/selos */
+.loyalty-stamps-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+  margin: 4px 0;
+}
+
+@media (max-width: 600px) {
+  .loyalty-stamps-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+}
+
+.loyalty-stamp {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed var(--color-border);
+  background-color: var(--color-surface);
+  border-radius: 50%;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  position: relative;
+  transition: all var(--transition);
+}
+
+.loyalty-stamp-num {
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.loyalty-stamp.filled {
+  border-style: solid;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(233, 30, 99, 0.2);
+}
+
+.loyalty-stamp.reward {
+  border-color: #f59e0b;
+}
+
+.loyalty-stamp.reward.filled {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3));
+  color: #10b981;
+  animation: pulse-reward 2s infinite ease-in-out;
+}
+
+/* Barra de progresso */
+.loyalty-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loyalty-progress-track {
+  flex: 1;
+  height: 8px;
+  background-color: var(--color-surface-alt);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.loyalty-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), #8b5cf6);
+  border-radius: 999px;
+  transition: width 0.4s ease-out;
+}
+
+.loyalty-progress-pct {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  min-width: 35px;
+  text-align: right;
+}
+
+.cust-loyalty-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.cust-loyalty-cycles {
+  font-size: 0.8rem;
+}
+
+.btn-loyalty-wa {
+  background-color: #25d366;
+  color: #ffffff !important;
+  font-weight: 700;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 0.82rem;
+  transition: background-color var(--transition);
+}
+
+.btn-loyalty-wa:hover {
+  background-color: #1ebe5b;
+}
+
+/* Dica de Fidelidade no Modal de Novo Pedido */
+.order-loyalty-hint {
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(16, 185, 129, 0.1));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.order-loyalty-hint strong {
+  color: var(--color-primary);
 }
 
 .cust-hist-stats-grid {

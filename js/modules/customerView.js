@@ -64,6 +64,7 @@ export function abrirHistoricoCliente(customer) {
     let badgesHtml = '';
     const metricas = service.clientesComMetricas([fullCustomer], orders)[0];
     if (metricas?.isVIP) badgesHtml += '<span class="badge badge-vip">👑 VIP</span> ';
+    if (metricas?.temRecompensaFidelidade) badgesHtml += '<span class="badge badge-fidelidade badge-fidelidade-ready">🎁 Brinde Pronto!</span> ';
     if (metricas?.isInativo) badgesHtml += '<span class="badge badge-inativo">💤 Inativo</span> ';
     if (metricas?.diasParaAniversario !== null && metricas?.diasParaAniversario <= 15) {
       badgesHtml += `<span class="badge badge-niver">🎂 Níver (${metricas.diasParaAniversario}d)</span> `;
@@ -93,17 +94,6 @@ export function abrirHistoricoCliente(customer) {
   if (enderecoEl) enderecoEl.textContent = fullCustomer.endereco || '—';
   if (obsEl) obsEl.textContent = fullCustomer.observacoes || 'Nenhuma preferência cadastrada';
 
-  // Cards de Métricas
-  const ltvEl = document.getElementById('custStatLtv');
-  const pedidosEl = document.getElementById('custStatPedidos');
-  const ticketEl = document.getElementById('custStatTicket');
-  const favoritoEl = document.getElementById('custStatFavorito');
-
-  if (ltvEl) ltvEl.textContent = formatCurrency(hist.totalGasto);
-  if (pedidosEl) pedidosEl.textContent = hist.totalPedidos;
-  if (ticketEl) ticketEl.textContent = formatCurrency(hist.ticketMedio);
-  if (favoritoEl) favoritoEl.textContent = hist.saborFavorito || '—';
-
   // Banner de Inatividade / Resgate
   const inativoBanner = document.getElementById('custHistInativoBanner');
   const diasInativoEl = document.getElementById('custHistDiasInativo');
@@ -128,6 +118,81 @@ export function abrirHistoricoCliente(customer) {
       inativoBanner.hidden = true;
     }
   }
+
+  // Cartão Fidelidade Digital
+  const loyaltyCard = document.getElementById('custHistLoyaltyCard');
+  const loyaltySubtitle = document.getElementById('custLoyaltySubtitle');
+  const loyaltyBadge = document.getElementById('custLoyaltyBadge');
+  const loyaltyStamps = document.getElementById('custLoyaltyStamps');
+  const loyaltyProgressBar = document.getElementById('custLoyaltyProgressBar');
+  const loyaltyProgressPct = document.getElementById('custLoyaltyProgressPct');
+  const loyaltyCycles = document.getElementById('custLoyaltyCycles');
+  const loyaltyWaBtn = document.getElementById('custLoyaltyWaBtn');
+
+  const fid = hist.fidelidade || service.calcularFidelidade(hist.totalPedidos);
+
+  if (loyaltyCard) {
+    if (loyaltySubtitle) {
+      loyaltySubtitle.textContent = fid.temRecompensaDisponivel
+        ? `Recompensa disponível para resgate! (${fid.totalPedidos} pedidos acumulados)`
+        : `${fid.selosPreenchidos} de ${fid.meta} pedidos preenchidos`;
+    }
+
+    if (loyaltyBadge) {
+      if (fid.temRecompensaDisponivel) {
+        loyaltyBadge.className = 'badge badge-loyalty badge-loyalty-ready';
+        loyaltyBadge.textContent = '🎁 Resgatar Brinde!';
+      } else if (fid.faltaApenasUm) {
+        loyaltyBadge.className = 'badge badge-loyalty badge-loyalty-ready';
+        loyaltyBadge.textContent = 'Falta 1 pedido!';
+      } else {
+        loyaltyBadge.className = 'badge badge-loyalty';
+        loyaltyBadge.textContent = `Faltam ${fid.faltam}`;
+      }
+    }
+
+    if (loyaltyStamps) {
+      loyaltyStamps.innerHTML = '';
+      for (let i = 1; i <= fid.meta; i++) {
+        const isFilled = i <= fid.selosPreenchidos;
+        const isReward = i === fid.meta;
+        const stampEl = document.createElement('div');
+        stampEl.className = `loyalty-stamp${isFilled ? ' filled' : ''}${isReward ? ' reward' : ''}`;
+        stampEl.title = isReward ? (isFilled ? 'Recompensa conquistada!' : '10º pedido = Brinde Especial') : `Pedido #${i}`;
+        const icon = isReward ? (isFilled ? '🎁' : '🍰') : (isFilled ? '🧁' : '○');
+        stampEl.innerHTML = `<span>${icon}</span><span class="loyalty-stamp-num">${i}</span>`;
+        loyaltyStamps.appendChild(stampEl);
+      }
+    }
+
+    if (loyaltyProgressBar) loyaltyProgressBar.style.width = `${fid.progressoPct}%`;
+    if (loyaltyProgressPct) loyaltyProgressPct.textContent = `${fid.progressoPct}%`;
+    if (loyaltyCycles) {
+      loyaltyCycles.textContent = `${fid.ciclosCompletados} ${fid.ciclosCompletados === 1 ? 'recompensa resgatada' : 'recompensas resgatadas'}`;
+    }
+
+    if (loyaltyWaBtn) {
+      const waFidMsg = service.gerarMensagemFidelidade(fullCustomer, fid);
+      const waFidLink = service.formatarWhatsappLink(fullCustomer.contato, waFidMsg);
+      if (waFidLink) {
+        loyaltyWaBtn.href = waFidLink;
+        loyaltyWaBtn.style.display = 'inline-flex';
+      } else {
+        loyaltyWaBtn.style.display = 'none';
+      }
+    }
+  }
+
+  // Cards de Métricas
+  const ltvEl = document.getElementById('custStatLtv');
+  const pedidosEl = document.getElementById('custStatPedidos');
+  const ticketEl = document.getElementById('custStatTicket');
+  const favoritoEl = document.getElementById('custStatFavorito');
+
+  if (ltvEl) ltvEl.textContent = formatCurrency(hist.totalGasto);
+  if (pedidosEl) pedidosEl.textContent = hist.totalPedidos;
+  if (ticketEl) ticketEl.textContent = formatCurrency(hist.ticketMedio);
+  if (favoritoEl) favoritoEl.textContent = hist.saborFavorito || '—';
 
   // Lista de Timeline
   const timelineEl = document.getElementById('custHistTimeline');
@@ -378,6 +443,8 @@ function renderTable(clientesEnriquecidos) {
     filtrados = filtrados.filter((c) => c.isVIP);
   } else if (currentFilter === 'inativos') {
     filtrados = filtrados.filter((c) => c.isInativo);
+  } else if (currentFilter === 'fidelidade') {
+    filtrados = filtrados.filter((c) => c.temRecompensaFidelidade);
   }
 
   if (filtrados.length === 0) {
@@ -402,6 +469,14 @@ function renderTable(clientesEnriquecidos) {
     const niverFormatado = service.formatarDataAniversario(c.dataNascimento);
 
     let badges = '';
+    if (c.temRecompensaFidelidade) {
+      badges += '<span class="badge badge-fidelidade badge-fidelidade-ready">🎁 Brinde Pronto!</span> ';
+    } else if (c.fidelidade?.faltaApenasUm) {
+      badges += '<span class="badge badge-fidelidade">🎁 Falta 1</span> ';
+    } else if (c.fidelidade?.selosPreenchidos > 0) {
+      badges += `<span class="badge badge-fidelidade">${c.fidelidade.selosPreenchidos}/10</span> `;
+    }
+
     if (c.isVIP) badges += '<span class="badge badge-vip">👑 VIP</span> ';
     if (c.isInativo) badges += '<span class="badge badge-inativo">💤 Inativo</span> ';
     if (c.diasParaAniversario !== null && c.diasParaAniversario <= 15) {

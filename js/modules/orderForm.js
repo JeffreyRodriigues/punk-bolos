@@ -15,6 +15,7 @@ import * as storage from './storage.js';
 import * as order from './order.js';
 import * as product from './product.js';
 import * as estoque from './estoque.js';
+import * as customerService from './customerService.js';
 import { formatCurrency } from '../utils/money.js';
 import { defaultItemType } from '../utils/describe.js';
 
@@ -332,6 +333,40 @@ export function updateCustomersDatalist() {
 }
 
 /**
+ * Atualiza o banner/dica de fidelidade no modal de pedido.
+ * @param {string} clienteNome - Nome digitado do cliente.
+ */
+function updateLoyaltyHint(clienteNome) {
+  const hintEl = document.getElementById('orderLoyaltyHint');
+  if (!hintEl) return;
+
+  const nomeTrim = String(clienteNome || '').trim();
+  if (!nomeTrim) {
+    hintEl.hidden = true;
+    hintEl.innerHTML = '';
+    return;
+  }
+
+  const allOrders = storage.getAll();
+  const hist = customerService.obterHistoricoCliente(nomeTrim, allOrders);
+  const fid = hist.fidelidade || customerService.calcularFidelidade(hist.totalPedidos);
+
+  if (fid.temRecompensaDisponivel) {
+    hintEl.hidden = false;
+    hintEl.innerHTML = `<span>🎁 <strong>Fidelidade Concluída:</strong> Este cliente acumulou ${fid.totalPedidos} pedidos e tem um brinde especial liberado para resgate!</span>`;
+  } else if (fid.faltaApenasUm) {
+    hintEl.hidden = false;
+    hintEl.innerHTML = `<span>✨ <strong>Quase lá:</strong> Este será o 10º pedido do cliente! Ao concluir, ele completará o Cartão Fidelidade.</span>`;
+  } else if (fid.selosPreenchidos > 0) {
+    hintEl.hidden = false;
+    hintEl.innerHTML = `<span>🎁 <strong>Cartão Fidelidade:</strong> ${fid.selosPreenchidos}/10 pedidos acumulados.</span>`;
+  } else {
+    hintEl.hidden = true;
+    hintEl.innerHTML = '';
+  }
+}
+
+/**
  * Abre o modal para criar um novo pedido.
  * @param {Object} [prefill] - Dados pré-preenchidos (ex: cliente, contato).
  */
@@ -358,6 +393,8 @@ export function openNew(prefill = {}) {
   if (prefill.contato) {
     document.getElementById('field-contato').value = prefill.contato;
   }
+
+  updateLoyaltyHint(prefill.cliente || '');
 
   // Reinicia com uma linha de item vazia (no primeiro tipo que tiver
   // produtos com disponibilidade para venda)
@@ -390,6 +427,8 @@ export function openEdit(orderToEdit) {
   document.getElementById('field-pagamento').value = orderToEdit.pagamento || 'PIX';
   document.getElementById('field-entrega').value = orderToEdit.entrega || 'Retirada';
   document.getElementById('field-observacoes').value = orderToEdit.observacoes || '';
+
+  updateLoyaltyHint(orderToEdit.cliente || '');
 
   // Preenche as linhas de item a partir do pedido
   const items = Array.isArray(orderToEdit.itens) ? orderToEdit.itens : [];
@@ -638,11 +677,13 @@ function handleSubmit(event) {
 
 /* ---------- Eventos ---------- */
 
-// Autopreenchimento do contato ao selecionar/digitar cliente cadastrado
+// Autopreenchimento do contato e dica de fidelidade ao selecionar/digitar cliente cadastrado
 const clienteInput = document.getElementById('field-cliente');
 if (clienteInput) {
   clienteInput.addEventListener('input', () => {
-    const val = clienteInput.value.trim().toLowerCase();
+    const rawVal = clienteInput.value;
+    const val = rawVal.trim().toLowerCase();
+    updateLoyaltyHint(rawVal);
     if (!val) return;
     const match = storage.getAllCustomers().find((c) => c.nome.trim().toLowerCase() === val);
     if (match) {

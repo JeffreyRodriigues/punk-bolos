@@ -232,6 +232,73 @@ test('clientesInativosDestaque — filtra inativos e ordena por maior gasto no p
   assert.equal(inativos[1].ultimoSabor, 'Cenoura');
 });
 
+test('calcularFidelidade — calcula selos, faltantes, ciclos e recompensa liberada', () => {
+  // 0 pedidos
+  const f0 = customerService.calcularFidelidade(0, 10);
+  assert.equal(f0.totalPedidos, 0);
+  assert.equal(f0.selosPreenchidos, 0);
+  assert.equal(f0.faltam, 10);
+  assert.equal(f0.ciclosCompletados, 0);
+  assert.equal(f0.temRecompensaDisponivel, false);
+  assert.equal(f0.faltaApenasUm, false);
+  assert.equal(f0.progressoPct, 0);
+
+  // 7 pedidos (7/10)
+  const f7 = customerService.calcularFidelidade(7, 10);
+  assert.equal(f7.selosPreenchidos, 7);
+  assert.equal(f7.faltam, 3);
+  assert.equal(f7.temRecompensaDisponivel, false);
+  assert.equal(f7.faltaApenasUm, false);
+  assert.equal(f7.progressoPct, 70);
+
+  // 9 pedidos (9/10, falta 1)
+  const f9 = customerService.calcularFidelidade(9, 10);
+  assert.equal(f9.selosPreenchidos, 9);
+  assert.equal(f9.faltam, 1);
+  assert.equal(f9.temRecompensaDisponivel, false);
+  assert.equal(f9.faltaApenasUm, true);
+  assert.equal(f9.progressoPct, 90);
+
+  // 10 pedidos (10/10, recompensa disponível)
+  const f10 = customerService.calcularFidelidade(10, 10);
+  assert.equal(f10.selosPreenchidos, 10);
+  assert.equal(f10.faltam, 0);
+  assert.equal(f10.ciclosCompletados, 1);
+  assert.equal(f10.temRecompensaDisponivel, true);
+  assert.equal(f10.progressoPct, 100);
+
+  // 23 pedidos (3 no ciclo atual, 2 ciclos completados)
+  const f23 = customerService.calcularFidelidade(23, 10);
+  assert.equal(f23.selosPreenchidos, 3);
+  assert.equal(f23.faltam, 7);
+  assert.equal(f23.ciclosCompletados, 2);
+  assert.equal(f23.temRecompensaDisponivel, false);
+  assert.equal(f23.progressoPct, 30);
+});
+
+test('gerarMensagemFidelidade — cria mensagem personalizada sem emojis para WhatsApp', () => {
+  const c = { nome: 'Juliana Paes' };
+
+  // Recompensa pronta
+  const f10 = customerService.calcularFidelidade(10, 10);
+  const msg10 = customerService.gerarMensagemFidelidade(c, f10);
+  assert.ok(msg10.includes('Juliana'));
+  assert.ok(msg10.includes('completou seu Cartao Fidelidade'));
+  assert.ok(msg10.includes('10 pedidos acumulados'));
+
+  // Falta 1 pedido
+  const f9 = customerService.calcularFidelidade(9, 10);
+  const msg9 = customerService.gerarMensagemFidelidade(c, f9);
+  assert.ok(msg9.includes('falta apenas 1 pedido'));
+
+  // Em progresso regular
+  const f4 = customerService.calcularFidelidade(4, 10);
+  const msg4 = customerService.gerarMensagemFidelidade(c, f4);
+  assert.ok(msg4.includes('4 de 10 pedidos'));
+  assert.ok(msg4.includes('Faltam apenas 6 pedidos'));
+});
+
+
 
 
 
