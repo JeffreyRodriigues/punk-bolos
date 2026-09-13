@@ -1955,6 +1955,85 @@ html.dark .type-summary-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* Painel de Clientes Inativos (Resgate / Saudades) */
+.customer-inativos-section {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(107, 114, 128, 0.08));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.customer-inativos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.customer-inativo-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.customer-inativo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.inativo-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inativo-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inativo-name {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.inativo-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  white-space: nowrap;
+}
+
+html.dark .inativo-badge {
+  background-color: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+}
+
+.inativo-card-body {
+  font-size: 0.83rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.inativo-card-actions {
+  margin-top: auto;
+}
+
 .birthday-card-header {
   display: flex;
   align-items: flex-start;
@@ -2325,6 +2404,56 @@ html.dark .badge-vip {
   border-radius: 6px;
   padding: 6px 10px;
   display: inline-block;
+}
+
+/* Banner de Resgate no Modal de Histórico */
+.cust-inativo-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(239, 68, 68, 0.08));
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cust-inativo-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cust-inativo-icon {
+  font-size: 1.5rem;
+}
+
+.cust-inativo-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.btn-resgate-wa {
+  background-color: #25d366;
+  color: #ffffff !important;
+  font-weight: 700;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background-color var(--transition);
+  white-space: nowrap;
+}
+
+.btn-resgate-wa:hover {
+  background-color: #1ebe5b;
 }
 
 .cust-hist-stats-grid {

@@ -104,6 +104,31 @@ export function abrirHistoricoCliente(customer) {
   if (ticketEl) ticketEl.textContent = formatCurrency(hist.ticketMedio);
   if (favoritoEl) favoritoEl.textContent = hist.saborFavorito || '—';
 
+  // Banner de Inatividade / Resgate
+  const inativoBanner = document.getElementById('custHistInativoBanner');
+  const diasInativoEl = document.getElementById('custHistDiasInativo');
+  const btnResgate = document.getElementById('custHistBtnResgate');
+  const isInativo = hist.totalPedidos > 0 && hist.diasSemComprar !== null && hist.diasSemComprar > 60;
+
+  if (inativoBanner) {
+    if (isInativo) {
+      inativoBanner.hidden = false;
+      if (diasInativoEl) diasInativoEl.textContent = hist.diasSemComprar;
+      if (btnResgate) {
+        const msgResgate = service.gerarMensagemResgateInativo(fullCustomer, hist.saborFavorito || fullCustomer.ultimoSabor);
+        const waLinkResgate = service.formatarWhatsappLink(fullCustomer.contato, msgResgate);
+        if (waLinkResgate) {
+          btnResgate.href = waLinkResgate;
+          btnResgate.style.display = 'inline-flex';
+        } else {
+          btnResgate.style.display = 'none';
+        }
+      }
+    } else {
+      inativoBanner.hidden = true;
+    }
+  }
+
   // Lista de Timeline
   const timelineEl = document.getElementById('custHistTimeline');
   const emptyEl = document.getElementById('custHistEmpty');
@@ -269,6 +294,64 @@ function renderAniversariantes(aniversariantes) {
   });
 }
 
+/** Renderiza a seção de clientes inativos (> 60 dias) com botão WhatsApp de resgate. */
+function renderInativos(inativos) {
+  const container = document.getElementById('customerInativosContainer');
+  const section = document.getElementById('customerInativosSection');
+  if (!container || !section) return;
+
+  if (inativos.length === 0) {
+    section.hidden = true;
+    container.innerHTML = '';
+    return;
+  }
+
+  section.hidden = false;
+  container.innerHTML = '';
+
+  inativos.forEach((c) => {
+    const card = document.createElement('div');
+    card.className = 'customer-inativo-card';
+
+    const msg = service.gerarMensagemResgateInativo(c, c.ultimoSabor);
+    const waLink = service.formatarWhatsappLink(c.contato, msg);
+
+    card.innerHTML = `
+      <div class="inativo-card-header">
+        <div class="inativo-card-info">
+          <strong class="inativo-name" style="cursor:pointer;" title="Ver histórico">${escapeHtml(c.nome)}</strong>
+          <span class="text-muted text-sm">${c.contato || 'Sem telefone'}</span>
+        </div>
+        <span class="inativo-badge">💤 ${c.diasSemComprar}d sem pedir</span>
+      </div>
+      <div class="inativo-card-body">
+        <span>💰 Total gasto: <strong>${formatCurrency(c.totalGasto)}</strong> (${c.totalPedidos} ${c.totalPedidos === 1 ? 'pedido' : 'pedidos'})</span>
+        ${
+          c.ultimoSabor
+            ? `<span>🍰 Último bolo: <strong>${escapeHtml(c.ultimoSabor)}</strong> (${formatDate(c.ultimoPedidoData)})</span>`
+            : `<span>📅 Último pedido: ${formatDate(c.ultimoPedidoData)}</span>`
+        }
+      </div>
+      <div class="inativo-card-actions">
+        ${
+          waLink
+            ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-resgate-wa" title="Enviar mensagem de saudades no WhatsApp">
+                <span class="whatsapp-icon">💬</span> Enviar Mensagem de Saudades
+              </a>`
+            : `<span class="text-muted text-sm">Sem WhatsApp cadastrado</span>`
+        }
+      </div>
+    `;
+
+    const nameBtn = card.querySelector('.inativo-name');
+    if (nameBtn) {
+      nameBtn.addEventListener('click', () => abrirHistoricoCliente(c));
+    }
+
+    container.appendChild(card);
+  });
+}
+
 /** Renderiza a tabela de clientes com busca e filtros aplicados. */
 function renderTable(clientesEnriquecidos) {
   const tbody = document.getElementById('customersTableBody');
@@ -310,7 +393,12 @@ function renderTable(clientesEnriquecidos) {
     const tr = document.createElement('tr');
     tr.className = 'customer-row';
 
-    const waLink = service.formatarWhatsappLink(c.contato, `Olá ${c.nome}! Tudo bem?`);
+    const waMsg = c.isInativo
+      ? service.gerarMensagemResgateInativo(c, c.ultimoSabor)
+      : (c.diasParaAniversario !== null && c.diasParaAniversario <= 15
+          ? service.gerarMensagemAniversario(c, c.ultimoSabor)
+          : `Olá ${c.nome}! Tudo bem?`);
+    const waLink = service.formatarWhatsappLink(c.contato, waMsg);
     const niverFormatado = service.formatarDataAniversario(c.dataNascimento);
 
     let badges = '';
@@ -336,7 +424,7 @@ function renderTable(clientesEnriquecidos) {
                 <span class="customer-phone">${escapeHtml(c.contato)}</span>
                 ${
                   waLink
-                    ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-icon-wa" title="Conversar no WhatsApp">💬</a>`
+                    ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-icon-wa" title="${c.isInativo ? 'Enviar mensagem de saudades' : 'Conversar no WhatsApp'}">💬</a>`
                     : ''
                 }
               </div>`
@@ -404,10 +492,12 @@ export function render() {
 
   const metrics = service.metricasClientes(customers, orders);
   const aniversariantes = service.aniversariantesProximos(customers, orders, 15);
+  const inativos = service.clientesInativosDestaque(customers, orders);
   const enriquecidos = service.clientesComMetricas(customers, orders);
 
   renderStats(metrics);
   renderAniversariantes(aniversariantes);
+  renderInativos(inativos);
   renderTable(enriquecidos);
 }
 

@@ -407,3 +407,53 @@ export function gerarMensagemPedido(order) {
   return `Olá ${cliente}! Tudo bem?\n\nSobre o seu pedido #${order.numero} da Punk Bolos:\n\n${itensList || '1 x Pedido Especial'}\n\nTotal ${valorTotalStr}${entregaStr}\n\nVocê confirma os itens do seu pedido? Qual seria a melhor forma de pagamento para você${formaPagamento}?`;
 }
 
+/**
+ * Gera uma mensagem amigável de resgate/saudades para clientes inativos via WhatsApp.
+ * Cita o último sabor pedido e preferências do cliente se houver.
+ * @param {Object} customer - Objeto do cliente.
+ * @param {string|null} [ultimoSabor] - Último sabor comprado.
+ * @returns {string} Mensagem pronta.
+ */
+export function gerarMensagemResgateInativo(customer, ultimoSabor = null) {
+  const nome = (customer && customer.nome ? customer.nome.trim() : 'Cliente').split(' ')[0];
+  const obs = customer && customer.observacoes ? customer.observacoes.trim() : '';
+
+  let msg = `Oi ${nome}, tudo bem? Faz um tempinho que não te vemos por aqui na Punk Bolos!`;
+
+  if (ultimoSabor) {
+    msg += ` Da última vez você pediu nosso ${ultimoSabor}. Passando para avisar que temos delícias fresquinhas saindo essa semana!`;
+  } else {
+    msg += ` Passando para avisar que temos bolos e fatias fresquinhas saindo essa semana!`;
+  }
+
+  if (obs) {
+    msg += ` Já deixei anotado aqui a sua preferência: "${obs}".`;
+  }
+
+  msg += ` Que tal garantir a sua comemoração ou sobremesa? Posso te mandar o nosso cardápio atualizado?`;
+
+  return msg;
+}
+
+/**
+ * Retorna a lista de clientes inativos (> 60 dias sem comprar) ordenados por LTV (total gasto).
+ * Inclui o último sabor pedido para a mensagem rápida.
+ * @param {Array<Object>} customers - Clientes cadastrados.
+ * @param {Array<Object>} orders - Pedidos.
+ * @param {Date} [dataReferencia=new Date()] - Data de corte.
+ * @returns {Array<Object>} Inativos ordenados por relevância financeira.
+ */
+export function clientesInativosDestaque(customers = [], orders = [], dataReferencia = new Date()) {
+  const metricas = clientesComMetricas(customers, orders, dataReferencia);
+  const inativos = metricas.filter((c) => c.isInativo);
+
+  return inativos.map((c) => {
+    const ultimoSabor = extrairUltimoSabor(c.nome, orders);
+    return {
+      ...c,
+      ultimoSabor,
+    };
+  }).sort((a, b) => (b.totalGasto || 0) - (a.totalGasto || 0));
+}
+
+

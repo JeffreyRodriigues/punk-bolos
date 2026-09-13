@@ -197,5 +197,41 @@ test('obterHistoricoCliente e extrairSaborFavorito — agrega pedidos, LTV, tick
   assert.equal(hist.pedidos.length, 3); // inclui o cancelado na listagem de timeline
 });
 
+test('gerarMensagemResgateInativo — cria mensagem amigável citando último sabor e preferências', () => {
+  const msg = customerService.gerarMensagemResgateInativo(
+    { nome: 'Camila Santos', observacoes: 'Gosto de bolo bem molhadinho' },
+    'Bolo de Cenoura'
+  );
+
+  assert.ok(msg.includes('Camila'));
+  assert.ok(msg.includes('Bolo de Cenoura'));
+  assert.ok(msg.includes('Gosto de bolo bem molhadinho'));
+  assert.ok(msg.includes('Faz um tempinho que não te vemos por aqui'));
+  assert.ok(msg.includes('Posso te mandar o nosso cardápio atualizado?'));
+});
+
+test('clientesInativosDestaque — filtra inativos e ordena por maior gasto no passado (LTV)', () => {
+  const customers = [
+    { id: 'c1', nome: 'Cliente Antigo Top', contato: '11999991111' },
+    { id: 'c2', nome: 'Cliente Recente', contato: '11999992222' },
+    { id: 'c3', nome: 'Cliente Antigo Médio', contato: '11999993333' },
+  ];
+  const orders = [
+    { cliente: 'Cliente Antigo Top', status: 'Concluído', valorTotal: 500, data: '2026-05-01', itens: [{ sabor: 'Nutella' }] },
+    { cliente: 'Cliente Recente', status: 'Concluído', valorTotal: 100, data: '2026-09-01', itens: [{ sabor: 'Ninho' }] },
+    { cliente: 'Cliente Antigo Médio', status: 'Concluído', valorTotal: 150, data: '2026-05-10', itens: [{ sabor: 'Cenoura' }] },
+  ];
+
+  const inativos = customerService.clientesInativosDestaque(customers, orders, new Date(2026, 8, 13));
+  assert.equal(inativos.length, 2);
+  assert.equal(inativos[0].id, 'c1');
+  assert.equal(inativos[0].totalGasto, 500);
+  assert.equal(inativos[0].ultimoSabor, 'Nutella');
+  assert.equal(inativos[1].id, 'c3');
+  assert.equal(inativos[1].totalGasto, 150);
+  assert.equal(inativos[1].ultimoSabor, 'Cenoura');
+});
+
+
 
 
