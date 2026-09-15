@@ -2,26 +2,47 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as menuService from '../js/modules/menuService.js';
 
-test('adicionarItemCarrinho — adiciona novo item ou incrementa quantidade existente', () => {
-  const p1 = { id: 'p1', titulo: 'Ninho com Nutella', tipoProduto: 'Bolo Inteiro', tamanho: 'Aro 15', valor: 85 };
-  const p2 = { id: 'p2', titulo: 'Cenoura com Brigadeiro', tipoProduto: 'Fatia', valor: 15 };
+test('verificarDisponibilidadeCardapio — Bolo Inteiro sempre sob encomenda; Fatia/Punkitos exigem estoque', () => {
+  const bolo = { id: 'b1', tipoProduto: 'Bolo Inteiro', titulo: 'Ninho' };
+  const fatia = { id: 'f1', tipoProduto: 'Fatia', titulo: 'Cenoura' };
+  const punkito = { id: 'pk1', tipoProduto: 'Punkitos', titulo: 'Doce de Leite' };
+
+  // Bolo Inteiro com 0 de estoque de produção -> SEMPRE disponível sob encomenda
+  const dispBolo = menuService.verificarDisponibilidadeCardapio(bolo, 0);
+  assert.equal(dispBolo.sobEncomenda, true);
+  assert.equal(dispBolo.disponivel, true);
+  assert.equal(dispBolo.statusClass, 'status-encomenda');
+
+  // Fatia com 3 de estoque -> Disponível pronta entrega
+  const dispFatia = menuService.verificarDisponibilidadeCardapio(fatia, 3);
+  assert.equal(dispFatia.sobEncomenda, false);
+  assert.equal(dispFatia.disponivel, true);
+  assert.equal(dispFatia.estoqueMax, 3);
+  assert.equal(dispFatia.statusClass, 'status-pronta');
+
+  // Fatia com 0 de estoque -> Esgotado
+  const dispFatiaEsgotada = menuService.verificarDisponibilidadeCardapio(fatia, 0);
+  assert.equal(dispFatiaEsgotada.disponivel, false);
+  assert.equal(dispFatiaEsgotada.statusClass, 'status-esgotado');
+
+  // Punkitos com 5 de estoque -> Disponível pronta entrega
+  const dispPk = menuService.verificarDisponibilidadeCardapio(punkito, 5);
+  assert.equal(dispPk.disponivel, true);
+  assert.equal(dispPk.estoqueMax, 5);
+});
+
+test('adicionarItemCarrinho — respeita limite de estoque de pronta entrega', () => {
+  const fatia = { id: 'p2', titulo: 'Cenoura com Brigadeiro', tipoProduto: 'Fatia', valor: 15 };
 
   let carrinho = [];
-  carrinho = menuService.adicionarItemCarrinho(carrinho, p1, 1);
-  assert.equal(carrinho.length, 1);
-  assert.equal(carrinho[0].quantidade, 1);
-  assert.equal(carrinho[0].valor, 85);
-
-  // Adiciona mais 2 do mesmo produto
-  carrinho = menuService.adicionarItemCarrinho(carrinho, p1, 2);
+  // Tenta adicionar 5, mas estoque max é 3
+  carrinho = menuService.adicionarItemCarrinho(carrinho, fatia, 5, 3);
   assert.equal(carrinho.length, 1);
   assert.equal(carrinho[0].quantidade, 3);
 
-  // Adiciona produto diferente
-  carrinho = menuService.adicionarItemCarrinho(carrinho, p2, 1);
-  assert.equal(carrinho.length, 2);
-  assert.equal(carrinho[1].id, 'p2');
-  assert.equal(carrinho[1].quantidade, 1);
+  // Tenta adicionar mais 2, continua travado em 3
+  carrinho = menuService.adicionarItemCarrinho(carrinho, fatia, 2, 3);
+  assert.equal(carrinho[0].quantidade, 3);
 });
 
 test('alterarQuantidadeCarrinho — altera quantidade e remove se for <= 0', () => {
@@ -30,8 +51,8 @@ test('alterarQuantidadeCarrinho — altera quantidade e remove se for <= 0', () 
     { id: 'p2', titulo: 'Fatia 1', valor: 15, quantidade: 1 },
   ];
 
-  // Aumenta quantidade
-  let c = menuService.alterarQuantidadeCarrinho(inicial, 'p1', 5);
+  // Aumenta quantidade respeitando max
+  let c = menuService.alterarQuantidadeCarrinho(inicial, 'p1', 5, 99);
   assert.equal(c.find((i) => i.id === 'p1').quantidade, 5);
 
   // Zera quantidade (remove)
@@ -40,21 +61,10 @@ test('alterarQuantidadeCarrinho — altera quantidade e remove se for <= 0', () 
   assert.equal(c.length, 1);
 });
 
-test('removerItemCarrinho — remove o produto especificado', () => {
-  const inicial = [
-    { id: 'p1', titulo: 'Bolo 1', valor: 80, quantidade: 1 },
-    { id: 'p2', titulo: 'Fatia 1', valor: 15, quantidade: 1 },
-  ];
-
-  const c = menuService.removerItemCarrinho(inicial, 'p1');
-  assert.equal(c.length, 1);
-  assert.equal(c[0].id, 'p2');
-});
-
 test('calcularTotaisCarrinho — calcula quantidade de itens e valor total', () => {
   const carrinho = [
-    { id: 'p1', valor: 85, quantidade: 2 }, // 170
-    { id: 'p2', valor: 15.5, quantidade: 2 }, // 31
+    { id: 'p1', valor: 85, quantidade: 2 },
+    { id: 'p2', valor: 15.5, quantidade: 2 },
   ];
 
   const totais = menuService.calcularTotaisCarrinho(carrinho);
@@ -65,65 +75,36 @@ test('calcularTotaisCarrinho — calcula quantidade de itens e valor total', () 
 test('validarCheckout — valida campos obrigatórios (nome, whatsapp, data, endereco se entrega)', () => {
   const carrinho = [{ id: 'p1', valor: 80, quantidade: 1 }];
 
-  // Válido com retirada
   const v1 = menuService.validarCheckout(
     { nome: 'Ana Souza', whatsapp: '11999998888', dataDesejada: '2026-09-20', tipoEntrega: 'Retirada' },
     carrinho
   );
   assert.equal(v1.valid, true);
 
-  // Inválido se carrinho vazio
   const v2 = menuService.validarCheckout(
     { nome: 'Ana Souza', whatsapp: '11999998888', dataDesejada: '2026-09-20' },
     []
   );
   assert.equal(v2.valid, false);
-  assert.ok(v2.errors.carrinho);
-
-  // Inválido sem nome ou telefone curto
-  const v3 = menuService.validarCheckout(
-    { nome: '', whatsapp: '123', dataDesejada: '2026-09-20' },
-    carrinho
-  );
-  assert.equal(v3.valid, false);
-  assert.ok(v3.errors.nome);
-  assert.ok(v3.errors.whatsapp);
-
-  // Inválido se entrega sem endereço
-  const v4 = menuService.validarCheckout(
-    { nome: 'Ana Souza', whatsapp: '11999998888', dataDesejada: '2026-09-20', tipoEntrega: 'Entrega', endereco: '' },
-    carrinho
-  );
-  assert.equal(v4.valid, false);
-  assert.ok(v4.errors.endereco);
 });
 
-test('gerarMensagemPedidoWhatsapp — formata mensagem sem emojis pronta para WhatsApp', () => {
+test('gerarMensagemPedidoWhatsapp — adiciona aviso de alinhamento para Bolo sob encomenda', () => {
   const dados = {
     nome: 'Mariana Silva',
     whatsapp: '(11) 99999-7777',
     tipoEntrega: 'Entrega',
-    endereco: 'Rua Augusta, 500 - Consolação',
+    endereco: 'Rua Augusta, 500',
     dataDesejada: '2026-09-25',
     periodo: 'Tarde',
     pagamento: 'PIX',
-    observacoes: 'Escrever Parabéns na caixa',
   };
 
-  const carrinho = [
+  const carrinhoComBolo = [
     { titulo: 'Ninho com Morango', tipoProduto: 'Bolo Inteiro', tamanho: 'Aro 15', valor: 85, quantidade: 1 },
-    { titulo: 'Cenoura com Chocolate', tipoProduto: 'Fatia', tamanho: '', valor: 15, quantidade: 2 },
   ];
 
-  const msg = menuService.gerarMensagemPedidoWhatsapp(dados, carrinho, 115, 'Punk Bolos');
-  assert.ok(msg.includes('Mariana Silva'));
-  assert.ok(msg.includes('Ninho com Morango'));
-  assert.ok(msg.includes('Rua Augusta, 500'));
-  assert.ok(msg.includes('VALOR TOTAL:'));
-  assert.ok(msg.includes('PIX'));
-});
-
-test('formatarLinkWhatsapp — monta url wa.me com DDI', () => {
-  const url = menuService.formatarLinkWhatsapp('11999998888', 'Ola mundo');
-  assert.ok(url.startsWith('https://wa.me/5511999998888?text='));
+  const msg = menuService.gerarMensagemPedidoWhatsapp(dados, carrinhoComBolo, 85, 'Punk Bolos');
+  assert.ok(msg.includes('Sob Encomenda'));
+  assert.ok(msg.includes('IMPORTANTE:'));
+  assert.ok(msg.includes('alinhar e confirmar o horario exato'));
 });

@@ -8,7 +8,6 @@
 
   <!-- CSS INLINE (build: node tools/build-css.js) -->
 
-
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -108,9 +107,9 @@ html.dark {
    ============================================================ */
 
 :root {
-  --menu-bg: #fff;
+  --menu-bg: #f8fafc;
   --menu-surface: #ffffff;
-  --menu-surface-alt: #f8fafc;
+  --menu-surface-alt: #f1f5f9;
   --menu-border: #e2e8f0;
   --menu-text: #1e293b;
   --menu-text-muted: #64748b;
@@ -148,7 +147,7 @@ body.menu-page {
 
 /* Header */
 .menu-header {
-  background: linear-gradient(135deg, rgba(233, 30, 99, 0.12), rgba(139, 92, 246, 0.12));
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.15), rgba(139, 92, 246, 0.12));
   border-bottom: 1px solid var(--menu-border);
   padding: 24px 16px 20px;
   text-align: center;
@@ -219,6 +218,21 @@ html.dark .menu-badge-status {
   max-width: 680px;
   margin: 0 auto;
   padding: 16px;
+}
+
+/* Banner Informativo */
+.menu-notice-banner {
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.08), rgba(245, 158, 11, 0.08));
+  border: 1px solid var(--menu-primary-soft);
+  border-radius: var(--menu-radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 0.82rem;
+  color: var(--menu-text);
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* Barra de Busca & Filtros */
@@ -308,6 +322,10 @@ html.dark .menu-badge-status {
   transform: translateY(-1px);
 }
 
+.menu-product-card.esgotado {
+  opacity: 0.75;
+}
+
 .menu-product-info {
   flex: 1;
   display: flex;
@@ -315,8 +333,14 @@ html.dark .menu-badge-status {
   gap: 4px;
 }
 
+.menu-badges-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
 .menu-product-badge {
-  align-self: flex-start;
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--menu-primary);
@@ -324,6 +348,39 @@ html.dark .menu-badge-status {
   padding: 2px 8px;
   border-radius: 999px;
   text-transform: uppercase;
+}
+
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.status-encomenda {
+  background: rgba(139, 92, 246, 0.15);
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+html.dark .status-encomenda {
+  color: #c4b5fd;
+}
+
+.status-pronta {
+  background: rgba(37, 211, 102, 0.15);
+  color: #16a34a;
+  border: 1px solid rgba(37, 211, 102, 0.3);
+}
+
+html.dark .status-pronta {
+  color: #4ade80;
+}
+
+.status-esgotado {
+  background: var(--menu-surface-alt);
+  color: var(--menu-text-muted);
+  border: 1px solid var(--menu-border);
 }
 
 .menu-product-title {
@@ -369,13 +426,21 @@ html.dark .menu-badge-status {
   transition: background-color 0.2s, transform 0.1s;
 }
 
-.btn-add-item:hover {
+.btn-add-item:hover:not(:disabled) {
   background-color: var(--menu-primary-hover);
   transform: scale(1.03);
 }
 
-.btn-add-item:active {
+.btn-add-item:active:not(:disabled) {
   transform: scale(0.97);
+}
+
+.btn-add-item:disabled {
+  background-color: var(--menu-surface-alt);
+  color: var(--menu-text-muted);
+  border: 1px solid var(--menu-border);
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 
 /* Seletor de Quantidade do Card */
@@ -759,7 +824,6 @@ html.dark .menu-badge-status {
 </style>
 <!-- CSS_INLINE:END -->
 
-
 </head>
 <body class="menu-page">
 
@@ -770,7 +834,7 @@ html.dark .menu-badge-status {
         <span class="menu-logo-icon">🧁</span>
         <h1 class="menu-title">Punk Bolos</h1>
       </div>
-      <p class="menu-subtitle">Bolos artesanais, fatias recheadas e delícias sob encomenda</p>
+      <p class="menu-subtitle">Bolos artesanais sob encomenda e delícias de pronta entrega</p>
       <div class="menu-badge-status">
         <span class="menu-badge-dot"></span>
         <span>Aberto para Pedidos</span>
@@ -780,6 +844,11 @@ html.dark .menu-badge-status {
 
   <!-- Conteúdo Principal -->
   <main class="menu-container">
+    <!-- Banner Informativo de Encomenda vs Pronta Entrega -->
+    <div class="menu-notice-banner">
+      <span>💡 <strong>Bolos Inteiros:</strong> preparados sob encomenda (data/horário alinhados no WhatsApp).<br>🍰 <strong>Fatias & Punkitos:</strong> pronta entrega conforme disponibilidade do dia.</span>
+    </div>
+
     <!-- Barra de Busca & Filtros por Categoria -->
     <div class="menu-toolbar">
       <input type="search" id="menuSearch" class="menu-search-input" placeholder="🔍 Buscar bolo, fatia ou sabor..." autocomplete="off">
@@ -787,7 +856,7 @@ html.dark .menu-badge-status {
         <button type="button" class="menu-cat-btn active" data-category="todos">Todos</button>
         <button type="button" class="menu-cat-btn" data-category="Bolo Inteiro">🎂 Bolos Inteiros</button>
         <button type="button" class="menu-cat-btn" data-category="Fatia">🍰 Fatias</button>
-        <button type="button" class="menu-cat-btn" data-category="outros">🧁 Doces & Outros</button>
+        <button type="button" class="menu-cat-btn" data-category="Punkitos">🧁 Punkitos</button>
       </div>
     </div>
 
@@ -797,7 +866,7 @@ html.dark .menu-badge-status {
     <!-- Empty State quando nenhum produto for encontrado -->
     <div id="menuEmptyState" class="cart-empty-state" hidden>
       <span class="cart-empty-icon">🍰</span>
-      <p>Nenhum produto encontrado nesta categoria.</p>
+      <p>Nenhum produto encontrado nesta categoria no momento.</p>
     </div>
   </main>
 
@@ -910,6 +979,6 @@ html.dark .menu-badge-status {
   </div>
 
   <!-- Módulos ES6 -->
-  <script type="module" src="js/cardapio.js?v=1"></script>
+  <script type="module" src="js/cardapio.js?v=2"></script>
 </body>
 </html>

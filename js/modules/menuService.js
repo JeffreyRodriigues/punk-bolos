@@ -2,27 +2,73 @@
    MENUSERVICE.JS — Regras de Negócio do Cardápio Digital Público
    ------------------------------------------------------------
    Funções puras para:
-   - Gestão do carrinho de compras (adicionar, remover, alterar quantidade)
+   - Gestão do carrinho de compras com travas de estoque de pronta entrega
+   - Regras de disponibilidade: Bolos sob encomenda vs Fatias/Punkitos
    - Cálculo de subtotais e valor total
    - Validação dos dados de checkout do cliente
    - Formatação da mensagem do pedido para o WhatsApp (sem emojis)
    ============================================================ */
 
 /**
- * Adiciona um produto ao carrinho ou incrementa sua quantidade.
+ * Verifica se um produto está disponível para venda no cardápio.
+ * - "Bolo Inteiro": sempre disponível sob encomenda (não depende de estoque prévio).
+ * - "Fatia", "Punkitos" e outros: disponíveis apenas se saldoEstoque > 0.
+ * @param {Object} produto - Produto do catálogo.
+ * @param {number} [saldoEstoque=0] - Saldo disponível retornado por estoque.disponivel(p).
+ * @returns {{ sobEncomenda: boolean, disponivel: boolean, estoqueMax: number, statusTexto: string, statusClass: string }}
+ */
+export function verificarDisponibilidadeCardapio(produto, saldoEstoque = 0) {
+  if (!produto) {
+    return {
+      sobEncomenda: false,
+      disponivel: false,
+      estoqueMax: 0,
+      statusTexto: 'Indisponível',
+      statusClass: 'status-esgotado',
+    };
+  }
+
+  const isBolo = produto.tipoProduto === 'Bolo Inteiro';
+  if (isBolo) {
+    return {
+      sobEncomenda: true,
+      disponivel: true,
+      estoqueMax: 99,
+      statusTexto: 'Sob Encomenda',
+      statusClass: 'status-encomenda',
+    };
+  }
+
+  const saldo = Math.max(0, parseInt(saldoEstoque, 10) || 0);
+  const temEstoque = saldo > 0;
+
+  return {
+    sobEncomenda: false,
+    disponivel: temEstoque,
+    estoqueMax: saldo,
+    statusTexto: temEstoque ? `Pronta Entrega (${saldo} disp.)` : 'Esgotado por hoje',
+    statusClass: temEstoque ? 'status-pronta' : 'status-esgotado',
+  };
+}
+
+/**
+ * Adiciona um produto ao carrinho ou incrementa sua quantidade respeitando o estoque máximo.
  * @param {Array<Object>} carrinho - Lista atual de itens no carrinho.
  * @param {Object} produto - Produto selecionado do catálogo.
  * @param {number} [quantidade=1] - Quantidade a adicionar.
+ * @param {number} [maxEstoque=99] - Quantidade máxima permitida em estoque.
  * @returns {Array<Object>} Novo estado do carrinho.
  */
-export function adicionarItemCarrinho(carrinho = [], produto, quantidade = 1) {
+export function adicionarItemCarrinho(carrinho = [], produto, quantidade = 1, maxEstoque = 99) {
   if (!produto || !produto.id) return [...carrinho];
-  const qtd = Math.max(1, parseInt(quantidade, 10) || 1);
+  const qtdAdd = Math.max(1, parseInt(quantidade, 10) || 1);
+  const limite = Math.max(1, parseInt(maxEstoque, 10) || 99);
   const copia = carrinho.map((item) => ({ ...item }));
   const index = copia.findIndex((item) => item.id === produto.id);
 
   if (index >= 0) {
-    copia[index].quantidade = (copia[index].quantidade || 1) + qtd;
+    const qtdAtual = copia[index].quantidade || 1;
+    copia[index].quantidade = Math.min(limite, qtdAtual + qtdAdd);
   } else {
     copia.push({
       id: produto.id,
@@ -31,7 +77,7 @@ export function adicionarItemCarrinho(carrinho = [], produto, quantidade = 1) {
       tamanho: produto.tamanho || '',
       valor: Number(produto.valor) || 0,
       detalhes: produto.detalhes || '',
-      quantidade: qtd,
+      quantidade: Math.min(limite, qtdAdd),
     });
   }
 
@@ -43,17 +89,21 @@ export function adicionarItemCarrinho(carrinho = [], produto, quantidade = 1) {
  * @param {Array<Object>} carrinho - Lista atual de itens.
  * @param {string} produtoId - Id do produto.
  * @param {number} novaQuantidade - Nova quantidade desejada.
+ * @param {number} [maxEstoque=99] - Limite máximo de estoque.
  * @returns {Array<Object>} Novo estado do carrinho.
  */
-export function alterarQuantidadeCarrinho(carrinho = [], produtoId, novaQuantidade) {
+export function alterarQuantidadeCarrinho(carrinho = [], produtoId, novaQuantidade, maxEstoque = 99) {
   const qtd = parseInt(novaQuantidade, 10);
   if (isNaN(qtd) || qtd <= 0) {
     return removerItemCarrinho(carrinho, produtoId);
   }
 
+  const limite = Math.max(1, parseInt(maxEstoque, 10) || 99);
+  const qtdAjustada = Math.min(limite, qtd);
+
   return carrinho.map((item) => {
     if (item.id === produtoId) {
-      return { ...item, quantidade: qtd };
+      return { ...item, quantidade: qtdAjustada };
     }
     return { ...item };
   });
@@ -155,13 +205,16 @@ export function gerarMensagemPedidoWhatsapp(
   totalValor = 0,
   nomeConfeitaria = 'Punk Bolos'
 ) {
+  const temBoloEncomenda = (carrinho || []).some((i) => i.tipoProduto === 'Bolo Inteiro');
+
   const itensTexto = (carrinho || []).map((item) => {
     const qtd = item.quantidade || 1;
     const tipo = item.tipoProduto || 'Produto';
     const tam = item.tamanho ? ` (${item.tamanho})` : '';
     const titulo = item.titulo ? ` - ${item.titulo}` : '';
+    const tagEncomenda = item.tipoProduto === 'Bolo Inteiro' ? ' [Sob Encomenda]' : ' [Pronta Entrega]';
     const itemTotal = (Number(item.quantidade) || 1) * (Number(item.valor) || 0);
-    return `- ${qtd}x ${tipo}${tam}${titulo} (${formatarMoeda(itemTotal)})`;
+    return `- ${qtd}x ${tipo}${tam}${titulo}${tagEncomenda} (${formatarMoeda(itemTotal)})`;
   }).join('\n');
 
   const tipoEntrega = dadosCliente.tipoEntrega === 'Entrega' ? 'Entrega' : 'Retirada no Ateliê';
@@ -175,6 +228,10 @@ export function gerarMensagemPedidoWhatsapp(
     ? `\n- Observacoes: ${dadosCliente.observacoes.trim()}`
     : '';
 
+  const avisoFinal = temBoloEncomenda
+    ? '\n\n*IMPORTANTE:* Seu pedido inclui bolo sob encomenda. Vamos alinhar e confirmar o horario exato de entrega por aqui!'
+    : '\n\nVoce confirma a disponibilidade para retirada/entrega?';
+
   return `Ola ${nomeConfeitaria}! Gostaria de fazer o seguinte pedido:
 
 *ITENS DO PEDIDO:*
@@ -186,9 +243,7 @@ ${itensTexto || '- Nenhum item'}
 - Nome: ${(dadosCliente.nome || '').trim()}
 - WhatsApp: ${(dadosCliente.whatsapp || '').trim()}
 - Tipo: ${tipoEntrega}${enderecoLinha}
-- Data desejada: ${(dadosCliente.dataDesejada || '').trim()}${periodoStr}${pagamentoStr}${obsLinha}
-
-Voce confirma a disponibilidade para essa data?`;
+- Data desejada: ${(dadosCliente.dataDesejada || '').trim()}${periodoStr}${pagamentoStr}${obsLinha}${avisoFinal}`;
 }
 
 /**

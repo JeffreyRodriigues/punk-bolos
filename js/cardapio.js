@@ -2,12 +2,13 @@
    CARDAPIO.JS — Controlador do Cardápio Digital Público
    ------------------------------------------------------------
    Ponto de entrada de cardapio.html. Gerencia catálogo, carrinho,
-   filtros, modal de sacola e envio do pedido para o WhatsApp.
+   filtros, estoque de pronta entrega e envio do pedido para o WhatsApp.
    ============================================================ */
 
 import * as storage from './modules/storage.js';
 import * as menuService from './modules/menuService.js';
 import * as orderModule from './modules/order.js';
+import * as estoque from './modules/estoque.js';
 
 // Estado local da página
 let cart = [];
@@ -15,7 +16,7 @@ let currentCategory = 'todos';
 let currentSearch = '';
 let currentDeliveryType = 'Retirada';
 
-// Telefone da confeitaria (fallback ou das configurações)
+// Telefone da confeitaria
 const STORE_PHONE = '11999999999';
 
 /* ---------- Inicialização ---------- */
@@ -60,9 +61,6 @@ function renderProducts() {
 
     // Categoria
     if (currentCategory === 'todos') return true;
-    if (currentCategory === 'outros') {
-      return p.tipoProduto !== 'Bolo Inteiro' && p.tipoProduto !== 'Fatia';
-    }
     return p.tipoProduto === currentCategory;
   });
 
@@ -77,38 +75,48 @@ function renderProducts() {
 
   filtered.forEach((p) => {
     const card = document.createElement('div');
-    card.className = 'menu-product-card';
-
+    const saldoEstoque = estoque.disponivel(p);
+    const disp = menuService.verificarDisponibilidadeCardapio(p, saldoEstoque);
     const inCart = cart.find((item) => item.id === p.id);
-    const badgeText = p.tipoProduto === 'Bolo Inteiro' && p.tamanho ? `${p.tipoProduto} • ${p.tamanho}` : p.tipoProduto;
+
+    card.className = `menu-product-card${!disp.disponivel ? ' esgotado' : ''}`;
+
+    const badgeCategoria = p.tipoProduto === 'Bolo Inteiro' && p.tamanho
+      ? `${p.tipoProduto} • ${p.tamanho}`
+      : p.tipoProduto;
 
     card.innerHTML = `
       <div class="menu-product-info">
-        <span class="menu-product-badge">${escapeHtml(badgeText)}</span>
+        <div class="menu-badges-row">
+          <span class="menu-product-badge">${escapeHtml(badgeCategoria)}</span>
+          <span class="status-badge ${disp.statusClass}">${escapeHtml(disp.statusTexto)}</span>
+        </div>
         <h3 class="menu-product-title">${escapeHtml(p.titulo)}</h3>
         ${p.detalhes ? `<p class="menu-product-details">${escapeHtml(p.detalhes)}</p>` : ''}
         <span class="menu-product-price">${menuService.formatarMoeda(p.valor)}</span>
       </div>
       <div class="menu-product-action">
         ${
-          inCart
-            ? `<div class="menu-qty-control">
-                <button type="button" class="btn-qty btn-minus" data-id="${p.id}" aria-label="Diminuir">－</button>
-                <span class="qty-val">${inCart.quantidade}</span>
-                <button type="button" class="btn-qty btn-plus" data-id="${p.id}" aria-label="Aumentar">＋</button>
-              </div>`
-            : `<button type="button" class="btn-add-item" data-id="${p.id}">
-                <span>＋</span> Adicionar
-              </button>`
+          !disp.disponivel
+            ? `<button type="button" class="btn-add-item" disabled>Esgotado</button>`
+            : inCart
+              ? `<div class="menu-qty-control">
+                  <button type="button" class="btn-qty btn-minus" data-id="${p.id}" aria-label="Diminuir">－</button>
+                  <span class="qty-val">${inCart.quantidade}</span>
+                  <button type="button" class="btn-qty btn-plus" data-id="${p.id}" aria-label="Aumentar" ${inCart.quantidade >= disp.estoqueMax ? 'disabled title="Limite máximo disponível"' : ''}>＋</button>
+                </div>`
+              : `<button type="button" class="btn-add-item" data-id="${p.id}">
+                  <span>＋</span> Adicionar
+                </button>`
         }
       </div>
     `;
 
     // Eventos dos botões do card
-    const btnAdd = card.querySelector('.btn-add-item');
+    const btnAdd = card.querySelector('.btn-add-item:not(:disabled)');
     if (btnAdd) {
       btnAdd.addEventListener('click', () => {
-        cart = menuService.adicionarItemCarrinho(cart, p, 1);
+        cart = menuService.adicionarItemCarrinho(cart, p, 1, disp.estoqueMax);
         updateCartUi();
         renderProducts();
       });
@@ -119,19 +127,19 @@ function renderProducts() {
       btnMinus.addEventListener('click', () => {
         const item = cart.find((i) => i.id === p.id);
         if (item) {
-          cart = menuService.alterarQuantidadeCarrinho(cart, p.id, item.quantidade - 1);
+          cart = menuService.alterarQuantidadeCarrinho(cart, p.id, item.quantidade - 1, disp.estoqueMax);
           updateCartUi();
           renderProducts();
         }
       });
     }
 
-    const btnPlus = card.querySelector('.btn-plus');
+    const btnPlus = card.querySelector('.btn-plus:not(:disabled)');
     if (btnPlus) {
       btnPlus.addEventListener('click', () => {
         const item = cart.find((i) => i.id === p.id);
         if (item) {
-          cart = menuService.alterarQuantidadeCarrinho(cart, p.id, item.quantidade + 1);
+          cart = menuService.alterarQuantidadeCarrinho(cart, p.id, item.quantidade + 1, disp.estoqueMax);
           updateCartUi();
           renderProducts();
         }
@@ -188,9 +196,15 @@ function renderCartDrawerItems() {
   if (btnSubmit) btnSubmit.disabled = false;
   container.innerHTML = '';
 
+  const allProducts = storage.getProducts() || [];
+
   cart.forEach((item) => {
     const row = document.createElement('div');
     row.className = 'cart-item-row';
+
+    const prod = allProducts.find((p) => p.id === item.id) || item;
+    const saldoEstoque = estoque.disponivel(prod);
+    const disp = menuService.verificarDisponibilidadeCardapio(prod, saldoEstoque);
 
     const itemTotal = (Number(item.quantidade) || 1) * (Number(item.valor) || 0);
     const desc = item.tamanho ? `${item.tipoProduto} (${item.tamanho})` : item.tipoProduto;
@@ -198,26 +212,26 @@ function renderCartDrawerItems() {
     row.innerHTML = `
       <div class="cart-item-info">
         <h4 class="cart-item-name">${escapeHtml(item.titulo)}</h4>
-        <p class="cart-item-desc">${escapeHtml(desc)}</p>
+        <p class="cart-item-desc">${escapeHtml(desc)} • <span class="status-badge ${disp.statusClass}" style="font-size:0.68rem;">${escapeHtml(disp.statusTexto)}</span></p>
       </div>
       <div class="cart-item-controls">
         <div class="menu-qty-control">
           <button type="button" class="btn-qty btn-drawer-minus" data-id="${item.id}" aria-label="Diminuir">－</button>
           <span class="qty-val">${item.quantidade}</span>
-          <button type="button" class="btn-qty btn-drawer-plus" data-id="${item.id}" aria-label="Aumentar">＋</button>
+          <button type="button" class="btn-qty btn-drawer-plus" data-id="${item.id}" aria-label="Aumentar" ${item.quantidade >= disp.estoqueMax ? 'disabled title="Limite máximo disponível"' : ''}>＋</button>
         </div>
         <span class="cart-item-price">${menuService.formatarMoeda(itemTotal)}</span>
       </div>
     `;
 
     row.querySelector('.btn-drawer-minus')?.addEventListener('click', () => {
-      cart = menuService.alterarQuantidadeCarrinho(cart, item.id, item.quantidade - 1);
+      cart = menuService.alterarQuantidadeCarrinho(cart, item.id, item.quantidade - 1, disp.estoqueMax);
       updateCartUi();
       renderProducts();
     });
 
-    row.querySelector('.btn-drawer-plus')?.addEventListener('click', () => {
-      cart = menuService.alterarQuantidadeCarrinho(cart, item.id, item.quantidade + 1);
+    row.querySelector('.btn-drawer-plus:not(:disabled)')?.addEventListener('click', () => {
+      cart = menuService.alterarQuantidadeCarrinho(cart, item.id, item.quantidade + 1, disp.estoqueMax);
       updateCartUi();
       renderProducts();
     });
