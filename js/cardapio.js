@@ -50,7 +50,7 @@ function renderProducts() {
   const emptyState = document.getElementById('menuEmptyState');
   if (!grid) return;
 
-  const allProducts = storage.getProducts() || [];
+  const allProducts = storage.getAllProducts() || [];
 
   // Filtragem por busca e categoria
   const q = currentSearch.trim().toLowerCase();
@@ -201,7 +201,7 @@ function renderCartDrawerItems() {
   if (btnSubmit) btnSubmit.disabled = false;
   container.innerHTML = '';
 
-  const allProducts = storage.getProducts() || [];
+  const allProducts = storage.getAllProducts() || [];
 
   cart.forEach((item) => {
     const row = document.createElement('div');

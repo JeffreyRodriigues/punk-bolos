@@ -549,6 +549,7 @@ export function getAllProducts() {
   }
   return productsCache;
 }
+export const getProducts = getAllProducts;
 
 /**
  * Lê todas as produções (log de estoque).
