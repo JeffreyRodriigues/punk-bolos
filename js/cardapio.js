@@ -21,10 +21,15 @@ const STORE_PHONE = '11999999999';
 
 /* ---------- Inicialização ---------- */
 async function init() {
+  const loadingEl = document.getElementById('menuLoadingState');
+  if (loadingEl) loadingEl.hidden = false;
+
   try {
-    await storage.init();
+    await storage.initPublicMenu();
   } catch (err) {
     console.warn('[cardapio] Inicializado com dados locais/cache:', err);
+  } finally {
+    if (loadingEl) loadingEl.hidden = true;
   }
 
   // Preenche a data mínima para hoje
@@ -75,7 +80,7 @@ function renderProducts() {
 
   filtered.forEach((p) => {
     const card = document.createElement('div');
-    const saldoEstoque = estoque.disponivel(p);
+    const saldoEstoque = p.estoqueDisponivel !== undefined ? p.estoqueDisponivel : estoque.disponivel(p);
     const disp = menuService.verificarDisponibilidadeCardapio(p, saldoEstoque);
     const inCart = cart.find((item) => item.id === p.id);
 
@@ -203,7 +208,7 @@ function renderCartDrawerItems() {
     row.className = 'cart-item-row';
 
     const prod = allProducts.find((p) => p.id === item.id) || item;
-    const saldoEstoque = estoque.disponivel(prod);
+    const saldoEstoque = prod.estoqueDisponivel !== undefined ? prod.estoqueDisponivel : estoque.disponivel(prod);
     const disp = menuService.verificarDisponibilidadeCardapio(prod, saldoEstoque);
 
     const itemTotal = (Number(item.quantidade) || 1) * (Number(item.valor) || 0);

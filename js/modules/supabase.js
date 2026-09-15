@@ -115,15 +115,14 @@ async function tryRefreshSession() {
  * @returns {Promise<Object|null>} JSON da resposta (ou null se 204).
  */
 async function request(path, { method = 'GET', body, auth = false, headers: extraHeaders = {}, _isRetry = false } = {}) {
+  const token = accessToken();
+  const bearerToken = token || CONFIG.supabaseAnonKey;
   const headers = { apikey: CONFIG.supabaseAnonKey };
+  if (bearerToken) {
+    headers['Authorization'] = `Bearer ${bearerToken}`;
+  }
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
-  }
-  if (auth) {
-    const token = accessToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
   }
   Object.assign(headers, extraHeaders);
 
@@ -138,7 +137,10 @@ async function request(path, { method = 'GET', body, auth = false, headers: extr
     if (_isRetry || path.startsWith('/auth/')) {
       clearSession();
       if (typeof window !== 'undefined' && window.location) {
-        window.location.replace('login.html');
+        const pathname = window.location.pathname || '';
+        if (!pathname.includes('cardapio') && !pathname.includes('reset-password') && !pathname.includes('login')) {
+          window.location.replace('login.html');
+        }
       }
       throw new Error('Sessão expirada');
     }
@@ -150,7 +152,10 @@ async function request(path, { method = 'GET', body, auth = false, headers: extr
     // Renovação falhou (refresh expirado): encerra e volta ao login
     clearSession();
     if (typeof window !== 'undefined' && window.location) {
-      window.location.replace('login.html');
+      const pathname = window.location.pathname || '';
+      if (!pathname.includes('cardapio') && !pathname.includes('reset-password') && !pathname.includes('login')) {
+        window.location.replace('login.html');
+      }
     }
     throw new Error('Sessão expirada');
   }
@@ -507,5 +512,12 @@ export async function deleteCustomer(id) {
     method: 'DELETE',
     auth: true,
   });
+}
+
+/* ---------- Cardápio Digital Público (View Segura) ---------- */
+
+/** Lista os produtos com o estoque em tempo real para o cardápio público. */
+export async function listPublicMenu() {
+  return request('/rest/v1/vw_cardapio_produtos?select=*');
 }
 

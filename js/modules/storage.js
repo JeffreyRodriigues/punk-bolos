@@ -620,16 +620,18 @@ export async function init() {
 
   try {
     const [remoteOrders, remoteProducts, remoteProductions, remoteInsumos, remotePrecificacoes, remoteCustomers] = await Promise.all([
-      supabase.listOrders(),
-      supabase.listProducts(),
-      supabase.listProductions(),
-      supabase.listInsumos(),
-      supabase.listPrecificacoes(),
+      supabase.listOrders().catch(() => []),
+      supabase.listProducts().catch(() => []),
+      supabase.listProductions().catch(() => []),
+      supabase.listInsumos().catch(() => []),
+      supabase.listPrecificacoes().catch(() => []),
       supabase.listCustomers().catch(() => []),
     ]);
 
-    // Migração inicial única: apenas se o banco Supabase estiver 100% vazio e este dispositivo ainda não migrou
+    // Migração inicial única: apenas se o banco Supabase estiver 100% vazio, houver usuário logado e este dispositivo ainda não migrou
+    const session = supabase.loadSession();
     const isInitialEmptyDb =
+      Boolean(session) &&
       remoteOrders.length === 0 &&
       remoteProducts.length === 0 &&
       remoteProductions.length === 0 &&
@@ -742,6 +744,39 @@ export async function init() {
     getAllProducts();
     online = false;
   }
+}
+
+/**
+ * Inicialização específica para o Cardápio Digital Público.
+ * Carrega a view agregada `vw_cardapio_produtos` do Supabase ou faz fallback seguro.
+ * @returns {Promise<Array<Object>>} Lista de produtos com estoque calculado.
+ */
+export async function initPublicMenu() {
+  if (supabase.isConfigured()) {
+    try {
+      const remoteMenu = await supabase.listPublicMenu();
+      if (Array.isArray(remoteMenu) && remoteMenu.length > 0) {
+        productsCache = remoteMenu.map((row) => ({
+          id: row.id,
+          titulo: row.titulo || '',
+          tipoProduto: row.tipo_produto || 'Fatia',
+          tamanho: row.tamanho || '',
+          valor: Number(row.valor) || 0,
+          detalhes: row.detalhes || '',
+          controlaEstoque: Boolean(row.controla_estoque),
+          estoqueDisponivel: row.estoque_disponivel != null ? Number(row.estoque_disponivel) : undefined,
+        }));
+        online = true;
+        return productsCache;
+      }
+    } catch (err) {
+      console.warn('[storage] listPublicMenu falhou, tentando fallback:', err);
+    }
+  }
+
+  // Fallback: se a view não estiver criada ainda, roda o init padrão
+  await init();
+  return getAllProducts();
 }
 
 /* ---------- Escrita e Exclusão Direta (sincronizada com Supabase) ---------- */

@@ -8,6 +8,7 @@
 
   <!-- CSS INLINE (build: node tools/build-css.js) -->
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -821,8 +822,30 @@ html.dark .status-pronta {
   margin-bottom: 10px;
 }
 
+/* Estado de Carregamento */
+.menu-loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--menu-text-muted);
+}
+
+.menu-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--menu-primary-soft);
+  border-top-color: var(--menu-primary);
+  border-radius: 50%;
+  animation: menu-spin 0.8s linear infinite;
+  margin: 0 auto 14px;
+}
+
+@keyframes menu-spin {
+  to { transform: rotate(360deg); }
+}
+
 </style>
 <!-- CSS_INLINE:END -->
+
 
 </head>
 <body class="menu-page">
@@ -860,13 +883,19 @@ html.dark .status-pronta {
       </div>
     </div>
 
+    <!-- Estado de Carregamento Inicial -->
+    <div id="menuLoadingState" class="menu-loading-state">
+      <div class="menu-spinner"></div>
+      <p>Carregando delícias...</p>
+    </div>
+
     <!-- Grade de Produtos -->
     <div id="menuProductsGrid" class="menu-products-grid"></div>
 
     <!-- Empty State quando nenhum produto for encontrado -->
     <div id="menuEmptyState" class="cart-empty-state" hidden>
       <span class="cart-empty-icon">🍰</span>
-      <p>Nenhum produto encontrado nesta categoria no momento.</p>
+      <p>Nenhum produto disponível nesta categoria no momento.</p>
     </div>
   </main>
 
@@ -979,6 +1008,6 @@ html.dark .status-pronta {
   </div>
 
   <!-- Módulos ES6 -->
-  <script type="module" src="js/cardapio.js?v=2"></script>
+  <script type="module" src="js/cardapio.js?v=3"></script>
 </body>
 </html>

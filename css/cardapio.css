@@ -719,3 +719,24 @@ html.dark .status-pronta {
   display: block;
   margin-bottom: 10px;
 }
+
+/* Estado de Carregamento */
+.menu-loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--menu-text-muted);
+}
+
+.menu-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--menu-primary-soft);
+  border-top-color: var(--menu-primary);
+  border-radius: 50%;
+  animation: menu-spin 0.8s linear infinite;
+  margin: 0 auto 14px;
+}
+
+@keyframes menu-spin {
+  to { transform: rotate(360deg); }
+}
