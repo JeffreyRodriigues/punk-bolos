@@ -24,6 +24,7 @@ const ROOT = path.join(__dirname, '..');
 const MAP = {
   'index.html': ['css/themes.css', 'css/styles.css', 'css/responsive.css'],
   'login.html': ['css/themes.css', 'css/login.css'],
+  'cardapio.html': ['css/themes.css', 'css/cardapio.css'],
 };
 
 const MARK_START = '<!-- CSS_INLINE:START -->';

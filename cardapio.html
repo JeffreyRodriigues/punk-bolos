@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e91e63">
+  <title>Punk Bolos — Cardápio Digital</title>
+
+  <!-- CSS INLINE (build: node tools/build-css.js) -->
+
+
+<!-- CSS_INLINE:START -->
+
+<style>
+/* css/themes.css */
+/* ============================================================
+   THEMES.CSS — Sistema de temas (Dark / Light)
+   ------------------------------------------------------------
+   Todo o app usa apenas variáveis CSS. O tema é trocado
+   adicionando a classe "dark" no elemento <html> via theme.js.
+
+   Estrutura:
+   :root        -> valores do tema CLARO (padrão)
+   html.dark    -> sobrescreve as variáveis para o tema ESCURO
+
+   NOTA: a fonte Quicksand é carregada por <link> no HTML (preconnect
+   + stylesheet com carga assíncrona), NÃO via @import: @import serializa
+   os downloads e bloqueia a renderização, penalizando o LCP.
+   ============================================================ */
+
+:root {
+  /* Paleta de cores — tema claro */
+  --color-bg: #f4f5f9;
+  --color-surface: #ffffff;
+  --color-surface-alt: #eef0f6;
+  --color-text: #1c2030;
+  --color-text-muted: #6b7280;
+  --color-border: #e3e6ee;
+
+  /* Cor de destaque (marca) */
+  --color-primary: #e91e63;
+  --color-primary-hover: #c2185b;
+  --color-primary-soft: #fde3ec;
+  --color-on-primary: #ffffff;
+
+  /* Cores semânticas (status e destaque) */
+  --color-ok: #16a34a;
+  --color-ok-soft: #dcfce7;
+  --color-warn: #f59e0b;
+  --color-warn-soft: #fef3c7;
+  --color-info: #2563eb;
+  --color-info-soft: #dbeafe;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+
+  /* Sombras */
+  --shadow-card: 0 2px 10px rgba(28, 32, 48, 0.08);
+  --shadow-modal: 0 12px 40px rgba(28, 32, 48, 0.25);
+  --shadow-fab: 0 6px 20px rgba(233, 30, 99, 0.45);
+
+  /* Bordas arredondadas */
+  --radius: 16px;
+  --radius-sm: 10px;
+
+  /* Fonte */
+  --font-family: "Quicksand", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+/* ============================================================
+   Tema ESCURO — sobrescreve apenas o necessário
+   ============================================================ */
+html.dark {
+  --color-bg: #14151d;
+  --color-surface: #1e2030;
+  --color-surface-alt: #252838;
+  --color-text: #e8eaf2;
+  --color-text-muted: #9aa0b4;
+  --color-border: #32364a;
+
+  --color-primary: #ff2d78;
+  --color-primary-hover: #ff5c95;
+  --color-primary-soft: #3a1526;
+  --color-on-primary: #1c2030;
+
+  --color-ok: #4ade80;
+  --color-ok-soft: #0f2a1a;
+  --color-warn: #fbbf24;
+  --color-warn-soft: #2b2210;
+  --color-info: #60a5fa;
+  --color-info-soft: #10243f;
+  --color-danger: #f87171;
+  --color-danger-soft: #3a1316;
+
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-fab: 0 6px 20px rgba(255, 45, 120, 0.45);
+}
+
+</style>
+
+<style>
+/* css/cardapio.css */
+/* ============================================================
+   CARDAPIO.CSS — Estilos do Cardápio Digital Público
+   ------------------------------------------------------------
+   Design Mobile-First, visual moderno para clientes finais
+   com suporte a tema claro e escuro.
+   ============================================================ */
+
+:root {
+  --menu-bg: #fff;
+  --menu-surface: #ffffff;
+  --menu-surface-alt: #f8fafc;
+  --menu-border: #e2e8f0;
+  --menu-text: #1e293b;
+  --menu-text-muted: #64748b;
+  --menu-primary: #e91e63;
+  --menu-primary-hover: #d81b60;
+  --menu-primary-soft: rgba(233, 30, 99, 0.1);
+  --menu-whatsapp: #25d366;
+  --menu-whatsapp-hover: #1ebe5b;
+  --menu-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+  --menu-radius: 14px;
+  --menu-radius-sm: 8px;
+}
+
+html.dark {
+  --menu-bg: #0f172a;
+  --menu-surface: #1e293b;
+  --menu-surface-alt: #334155;
+  --menu-border: #334155;
+  --menu-text: #f8fafc;
+  --menu-text-muted: #94a3b8;
+  --menu-primary: #f43f5e;
+  --menu-primary-hover: #fb7185;
+  --menu-primary-soft: rgba(244, 63, 94, 0.15);
+  --menu-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+}
+
+body.menu-page {
+  background-color: var(--menu-bg);
+  color: var(--menu-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0 0 100px 0; /* Espaço para o botão flutuante */
+  line-height: 1.5;
+}
+
+/* Header */
+.menu-header {
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.12), rgba(139, 92, 246, 0.12));
+  border-bottom: 1px solid var(--menu-border);
+  padding: 24px 16px 20px;
+  text-align: center;
+}
+
+.menu-header-content {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.menu-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.menu-logo-icon {
+  font-size: 2rem;
+}
+
+.menu-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--menu-primary);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.menu-subtitle {
+  font-size: 0.9rem;
+  color: var(--menu-text-muted);
+  margin: 0 0 12px 0;
+}
+
+.menu-badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(37, 211, 102, 0.15);
+  color: #16a34a;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+html.dark .menu-badge-status {
+  color: #4ade80;
+}
+
+.menu-badge-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Container Principal */
+.menu-container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Barra de Busca & Filtros */
+.menu-toolbar {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.menu-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--menu-border);
+  background-color: var(--menu-surface);
+  color: var(--menu-text);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.menu-search-input:focus {
+  border-color: var(--menu-primary);
+  box-shadow: 0 0 0 3px var(--menu-primary-soft);
+}
+
+.menu-categories {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.menu-categories::-webkit-scrollbar {
+  display: none;
+}
+
+.menu-cat-btn {
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
+  color: var(--menu-text-muted);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.menu-cat-btn:hover {
+  border-color: var(--menu-primary);
+  color: var(--menu-primary);
+}
+
+.menu-cat-btn.active {
+  background-color: var(--menu-primary);
+  color: #fff;
+  border-color: var(--menu-primary);
+}
+
+/* Grade de Produtos */
+.menu-products-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.menu-product-card {
+  background-color: var(--menu-surface);
+  border: 1px solid var(--menu-border);
+  border-radius: var(--menu-radius);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--menu-shadow);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.menu-product-card:hover {
+  border-color: var(--menu-primary-soft);
+  transform: translateY(-1px);
+}
+
+.menu-product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-product-badge {
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--menu-primary);
+  background: var(--menu-primary-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.menu-product-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--menu-text);
+  margin: 0;
+}
+
+.menu-product-details {
+  font-size: 0.85rem;
+  color: var(--menu-text-muted);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.menu-product-price {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--menu-primary);
+  margin-top: 4px;
+}
+
+.menu-product-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.btn-add-item {
+  background-color: var(--menu-primary);
+  color: #ffffff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-add-item:hover {
+  background-color: var(--menu-primary-hover);
+  transform: scale(1.03);
+}
+
+.btn-add-item:active {
+  transform: scale(0.97);
+}
+
+/* Seletor de Quantidade do Card */
+.menu-qty-control {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--menu-surface-alt);
+  border: 1px solid var(--menu-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.btn-qty {
+  background: transparent;
+  border: none;
+  color: var(--menu-text);
+  font-size: 1rem;
+  font-weight: bold;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.btn-qty:hover {
+  background-color: var(--menu-primary-soft);
+  color: var(--menu-primary);
+}
+
+.qty-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Barra Flutuante da Sacola (Footer) */
+.floating-cart-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 640px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+  box-sizing: border-box;
+}
+
+.floating-cart-bar:hover {
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.floating-cart-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.floating-cart-count {
+  background-color: var(--menu-primary);
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.floating-cart-total {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.floating-cart-action {
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+/* Modal / Gaveta do Carrinho */
+.cart-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.25s, opacity 0.25s;
+}
+
+.cart-modal.open {
+  visibility: visible;
+  opacity: 1;
+}
+
+.cart-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.cart-drawer {
+  position: relative;
+  background: var(--menu-surface);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.25);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.cart-modal.open .cart-drawer {
+  transform: translateY(0);
+}
+
+.cart-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--menu-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cart-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-close {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--menu-text-muted);
+  cursor: pointer;
+}
+
+.cart-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cart-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--menu-text);
+}
+
+/* Lista de Itens na Sacola */
+.cart-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cart-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--menu-border);
+}
+
+.cart-item-info {
+  flex: 1;
+}
+
+.cart-item-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--menu-text);
+  margin: 0;
+}
+
+.cart-item-desc {
+  font-size: 0.78rem;
+  color: var(--menu-text-muted);
+  margin: 0;
+}
+
+.cart-item-price {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--menu-primary);
+  min-width: 70px;
+  text-align: right;
+}
+
+.cart-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Formulário do Cliente */
+.cart-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 540px) {
+  .cart-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cart-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cart-field-full {
+  grid-column: 1 / -1;
+}
+
+.cart-field label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--menu-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.cart-field input,
+.cart-field select,
+.cart-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--menu-border);
+  border-radius: var(--menu-radius-sm);
+  background-color: var(--menu-surface-alt);
+  color: var(--menu-text);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.cart-field input:focus,
+.cart-field select:focus,
+.cart-field textarea:focus {
+  border-color: var(--menu-primary);
+}
+
+.cart-field textarea {
+  resize: vertical;
+  min-height: 50px;
+}
+
+/* Seletor Tipo de Entrega */
+.delivery-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.delivery-opt {
+  flex: 1;
+  border: 1px solid var(--menu-border);
+  border-radius: var(--menu-radius-sm);
+  padding: 8px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--menu-surface);
+  transition: all 0.2s;
+}
+
+.delivery-opt.active {
+  border-color: var(--menu-primary);
+  background-color: var(--menu-primary-soft);
+  color: var(--menu-primary);
+}
+
+/* Footer do Carrinho com Botão WhatsApp */
+.cart-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--menu-border);
+  background-color: var(--menu-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cart-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cart-summary-label {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.cart-summary-total {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--menu-primary);
+}
+
+.btn-checkout-wa {
+  background-color: var(--menu-whatsapp);
+  color: #ffffff !important;
+  border: none;
+  padding: 14px 20px;
+  border-radius: var(--menu-radius-sm);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-checkout-wa:hover {
+  background-color: var(--menu-whatsapp-hover);
+  transform: translateY(-1px);
+}
+
+.btn-checkout-wa:active {
+  transform: translateY(1px);
+}
+
+.cart-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--menu-text-muted);
+}
+
+.cart-empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+</style>
+<!-- CSS_INLINE:END -->
+
+
+</head>
+<body class="menu-page">
+
+  <!-- Cabeçalho do Cardápio -->
+  <header class="menu-header">
+    <div class="menu-header-content">
+      <div class="menu-brand">
+        <span class="menu-logo-icon">🧁</span>
+        <h1 class="menu-title">Punk Bolos</h1>
+      </div>
+      <p class="menu-subtitle">Bolos artesanais, fatias recheadas e delícias sob encomenda</p>
+      <div class="menu-badge-status">
+        <span class="menu-badge-dot"></span>
+        <span>Aberto para Pedidos</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="menu-container">
+    <!-- Barra de Busca & Filtros por Categoria -->
+    <div class="menu-toolbar">
+      <input type="search" id="menuSearch" class="menu-search-input" placeholder="🔍 Buscar bolo, fatia ou sabor..." autocomplete="off">
+      <div class="menu-categories" role="group" aria-label="Categorias de produtos">
+        <button type="button" class="menu-cat-btn active" data-category="todos">Todos</button>
+        <button type="button" class="menu-cat-btn" data-category="Bolo Inteiro">🎂 Bolos Inteiros</button>
+        <button type="button" class="menu-cat-btn" data-category="Fatia">🍰 Fatias</button>
+        <button type="button" class="menu-cat-btn" data-category="outros">🧁 Doces & Outros</button>
+      </div>
+    </div>
+
+    <!-- Grade de Produtos -->
+    <div id="menuProductsGrid" class="menu-products-grid"></div>
+
+    <!-- Empty State quando nenhum produto for encontrado -->
+    <div id="menuEmptyState" class="cart-empty-state" hidden>
+      <span class="cart-empty-icon">🍰</span>
+      <p>Nenhum produto encontrado nesta categoria.</p>
+    </div>
+  </main>
+
+  <!-- Barra Flutuante da Sacola (Footer) -->
+  <div id="floatingCartBar" class="floating-cart-bar" hidden>
+    <div class="floating-cart-info">
+      <span id="cartCountBadge" class="floating-cart-count">0</span>
+      <span id="cartTotalAmount" class="floating-cart-total">R$ 0,00</span>
+    </div>
+    <div class="floating-cart-action">
+      <span>Ver Sacola</span>
+      <span>🛒</span>
+    </div>
+  </div>
+
+  <!-- Modal / Gaveta do Carrinho de Compras -->
+  <div id="cartModal" class="cart-modal" role="dialog" aria-modal="true" aria-labelledby="cartModalTitle">
+    <div class="cart-backdrop" id="cartBackdrop"></div>
+    <div class="cart-drawer">
+      <div class="cart-header">
+        <h2 id="cartModalTitle" class="cart-title">
+          <span>🛍️</span> Sua Sacola
+        </h2>
+        <button type="button" id="btnCartClose" class="cart-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="cart-body">
+        <!-- Lista de Itens -->
+        <div>
+          <h3 class="cart-section-title">Itens Selecionados</h3>
+          <div id="cartItemsContainer" class="cart-items-list"></div>
+          <div id="cartDrawerEmpty" class="cart-empty-state" hidden>
+            <span class="cart-empty-icon">🛍️</span>
+            <p>Sua sacola está vazia.</p>
+          </div>
+        </div>
+
+        <!-- Formulário de Identificação e Entrega -->
+        <div id="cartFormSection">
+          <h3 class="cart-section-title">Dados para Entrega</h3>
+          <form id="checkoutForm" class="cart-form-grid" novalidate>
+            <div class="cart-field cart-field-full">
+              <label for="clientName">Seu Nome Completo *</label>
+              <input type="text" id="clientName" placeholder="Ex.: Mariana Silva" required autocomplete="name">
+            </div>
+
+            <div class="cart-field cart-field-full">
+              <label for="clientPhone">Seu WhatsApp com DDD *</label>
+              <input type="tel" id="clientPhone" placeholder="(11) 99999-9999" required autocomplete="tel">
+            </div>
+
+            <div class="cart-field cart-field-full">
+              <label>Forma de Recebimento</label>
+              <div class="delivery-toggle">
+                <button type="button" id="btnOptRetirada" class="delivery-opt active" data-type="Retirada">🏪 Retirar no Ateliê</button>
+                <button type="button" id="btnOptEntrega" class="delivery-opt" data-type="Entrega">🛵 Entrega / Delivery</button>
+              </div>
+            </div>
+
+            <div class="cart-field cart-field-full" id="fieldAddressWrap" hidden>
+              <label for="clientAddress">Endereço Completo de Entrega *</label>
+              <input type="text" id="clientAddress" placeholder="Rua, número, complemento e bairro">
+            </div>
+
+            <div class="cart-field">
+              <label for="deliveryDate">Data Desejada *</label>
+              <input type="date" id="deliveryDate" required>
+            </div>
+
+            <div class="cart-field">
+              <label for="deliveryPeriod">Período / Horário</label>
+              <select id="deliveryPeriod">
+                <option value="Manhã (09h às 12h)">Manhã (09h às 12h)</option>
+                <option value="Tarde (13h às 18h)" selected>Tarde (13h às 18h)</option>
+                <option value="Noite (18h às 20h)">Noite (18h às 20h)</option>
+                <option value="Horário a combinar">Horário a combinar</option>
+              </select>
+            </div>
+
+            <div class="cart-field cart-field-full">
+              <label for="paymentMethod">Forma de Pagamento Preferida</label>
+              <select id="paymentMethod">
+                <option value="PIX" selected>PIX</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="Dinheiro">Dinheiro</option>
+              </select>
+            </div>
+
+            <div class="cart-field cart-field-full">
+              <label for="orderNotes">Observações / Dedicatória</label>
+              <textarea id="orderNotes" placeholder="Ex.: Sem morango, escrever Parabéns na caixa, etc."></textarea>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Rodapé do Carrinho com Botão WhatsApp -->
+      <div class="cart-footer">
+        <div class="cart-summary-row">
+          <span class="cart-summary-label">Total do Pedido:</span>
+          <strong id="modalCartTotal" class="cart-summary-total">R$ 0,00</strong>
+        </div>
+        <button type="button" id="btnSubmitWhatsapp" class="btn-checkout-wa">
+          <span class="whatsapp-icon">💬</span>
+          <span>Enviar Pedido no WhatsApp</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Módulos ES6 -->
+  <script type="module" src="js/cardapio.js?v=1"></script>
+</body>
+</html>

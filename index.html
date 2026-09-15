@@ -46,6 +46,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -313,6 +315,26 @@ input[type="number"] {
 
 .header-btn:active {
   transform: rotate(180deg);
+}
+
+.header-link-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  color: #fff !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.header-link-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+  transform: translateY(-1px);
 }
 
 /* ---------- Layout Principal com Sidebar (Desktop) ---------- */
@@ -3286,6 +3308,8 @@ html.dark .badge-fidelidade {
 
 
 
+
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3414,6 +3438,7 @@ html.dark .badge-fidelidade {
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Alternar tema claro/escuro">
         <span class="theme-toggle-icon">🌙</span>
       </button>
+      <a href="cardapio.html" target="_blank" rel="noopener" class="header-link-btn" title="Abrir Cardápio Digital Público">🛍️ Cardápio</a>
       <button id="refreshBtn" class="header-btn" type="button" title="Atualizar dados da nuvem" aria-label="Atualizar dados da nuvem">⟳</button>
       <button id="logoutBtn" class="logout-btn" type="button" title="Sair do sistema" aria-label="Sair do sistema">Sair</button>
     </div>
@@ -4436,6 +4461,6 @@ html.dark .badge-fidelidade {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=46"></script>
+  <script type="module" src="js/app.js?v=47"></script>
 </body>
 </html>
