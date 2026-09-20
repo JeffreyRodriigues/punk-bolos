@@ -42,6 +42,10 @@ select
               and item->>'tipoProduto' = p.tipo_produto
               and coalesce(item->>'tamanho', '') = coalesce(p.tamanho, '')
               and (item->>'valorUnitario')::numeric = p.valor
+              and (
+                coalesce(item->>'sabor', item->>'titulo', '') = ''
+                or lower(trim(coalesce(item->>'sabor', item->>'titulo', ''))) = lower(trim(p.titulo))
+              )
             )
           )
       ), 0)

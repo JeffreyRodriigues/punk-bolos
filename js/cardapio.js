@@ -1095,6 +1095,7 @@ async function handleCheckout() {
     const orders = storage.getAll();
     const numero = orderModule.nextOrderNumber(orders);
     const orderItems = cart.map((c) => ({
+      produtoId: c.id,
       tipoProduto: c.tipoProduto,
       sabor: c.titulo,
       tamanho: c.tamanho || '',
