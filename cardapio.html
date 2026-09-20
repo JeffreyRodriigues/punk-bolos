@@ -17,6 +17,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1575,10 +1576,193 @@ html.dark .status-pronta {
   }
 }
 
+/* ============================================================
+   TOASTS E MODAL DE CONFIRMAÇÃO CUSTOMIZADOS DO CARDÁPIO
+   ============================================================ */
+
+.menu-toast-container {
+  position: fixed;
+  bottom: 86px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 99999;
+  width: 90%;
+  max-width: 440px;
+  pointer-events: none;
+}
+
+.menu-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  background-color: var(--menu-surface);
+  color: var(--menu-text);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
+  border: 1.5px solid var(--menu-border);
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.menu-toast.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.menu-toast-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.menu-toast-msg {
+  flex: 1;
+}
+
+.menu-toast.toast-success {
+  border-color: #10b981;
+}
+.menu-toast.toast-success .menu-toast-icon {
+  color: #10b981;
+}
+
+.menu-toast.toast-error {
+  border-color: #ef4444;
+}
+
+.menu-toast.toast-warn {
+  border-color: #f59e0b;
+}
+
+.menu-toast.toast-info {
+  border-color: var(--menu-primary);
+}
+
+/* Modal de Confirmação Customizado */
+.menu-confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.menu-confirm-modal[hidden] {
+  display: none !important;
+}
+
+.menu-confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.menu-confirm-card {
+  position: relative;
+  z-index: 2;
+  background-color: var(--menu-surface);
+  border: 1.5px solid var(--menu-border);
+  border-radius: 18px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: confirmPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes confirmPop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.menu-confirm-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.menu-confirm-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--menu-text);
+  margin: 0 0 6px 0;
+}
+
+.menu-confirm-desc {
+  font-size: 0.88rem;
+  color: var(--menu-text-muted);
+  line-height: 1.4;
+  margin: 0 0 20px 0;
+}
+
+.menu-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-confirm-cancel {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  border: 1.5px solid var(--menu-border);
+  background: var(--menu-surface-alt);
+  color: var(--menu-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-confirm-cancel:hover {
+  background: var(--menu-border);
+}
+
+.btn-confirm-ok {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  background: var(--menu-primary);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-confirm-ok:hover {
+  opacity: 0.9;
+}
+
+
 
 
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
 
@@ -2066,8 +2250,24 @@ html.dark .status-pronta {
     </div>
   </div>
 
+  <!-- Modal de Confirmação Customizado -->
+  <div id="confirmDialogModal" class="menu-confirm-modal" role="dialog" aria-modal="true" aria-hidden="true" hidden>
+    <div class="menu-confirm-backdrop" id="confirmDialogBackdrop"></div>
+    <div class="menu-confirm-card">
+      <div class="menu-confirm-icon" id="confirmDialogIcon">🚪</div>
+      <h3 class="menu-confirm-title" id="confirmDialogTitle">Deseja sair da sua conta?</h3>
+      <p class="menu-confirm-desc" id="confirmDialogDesc">Você precisará informar seu WhatsApp novamente para acessar seu histórico de pedidos e selos.</p>
+      <div class="menu-confirm-actions">
+        <button type="button" class="btn-confirm-cancel" id="confirmDialogCancel">Cancelar</button>
+        <button type="button" class="btn-confirm-ok" id="confirmDialogOk">Sim, Sair</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container de Notificações Toast do Cardápio -->
+  <div id="menuToastContainer" class="menu-toast-container" aria-live="polite"></div>
+
   <!-- Módulos ES6 -->
-  <script type="module" src="js/cardapio.js?v=6"></script>
+  <script type="module" src="js/cardapio.js?v=7"></script>
 </body>
 </html>
-

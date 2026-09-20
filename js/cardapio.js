@@ -21,7 +21,7 @@ let currentCustomer = null;
 let currentCustomerOrders = [];
 
 // Telefone da confeitaria
-const STORE_PHONE = '11999999999';
+const STORE_PHONE = '11978819005';
 
 /* ---------- Inicialização ---------- */
 async function init() {
@@ -50,6 +50,79 @@ async function init() {
   updateAuthUi();
   renderProducts();
   updateCartUi();
+}
+
+/* ---------- Sistema de Toasts e Confirmações do Cardápio ---------- */
+
+function showCardapioToast(message, type = 'success', durationMs = 3200) {
+  let container = document.getElementById('menuToastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'menuToastContainer';
+    container.className = 'menu-toast-container';
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    success: '🧁',
+    error: '❌',
+    warn: '⚠️',
+    info: '💡',
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `menu-toast toast-${type}`;
+  toast.innerHTML = `
+    <span class="menu-toast-icon">${icons[type] || '🧁'}</span>
+    <span class="menu-toast-msg">${message}</span>
+  `;
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 250);
+  }, durationMs);
+}
+
+let pendingConfirmCallback = null;
+
+function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okText = 'Sim', cancelText = 'Cancelar', onConfirm }) {
+  const modal = document.getElementById('confirmDialogModal');
+  const iconEl = document.getElementById('confirmDialogIcon');
+  const titleEl = document.getElementById('confirmDialogTitle');
+  const descEl = document.getElementById('confirmDialogDesc');
+  const okBtn = document.getElementById('confirmDialogOk');
+  const cancelBtn = document.getElementById('confirmDialogCancel');
+
+  if (!modal) {
+    if (confirm(desc || title)) {
+      if (typeof onConfirm === 'function') onConfirm();
+    }
+    return;
+  }
+
+  if (iconEl) iconEl.textContent = icon;
+  if (titleEl) titleEl.textContent = title;
+  if (descEl) descEl.textContent = desc;
+  if (okBtn) okBtn.textContent = okText;
+  if (cancelBtn) cancelBtn.textContent = cancelText;
+
+  pendingConfirmCallback = onConfirm;
+  modal.hidden = false;
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmDialog() {
+  const modal = document.getElementById('confirmDialogModal');
+  if (modal) {
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+  pendingConfirmCallback = null;
 }
 
 /* ---------- Gestão de Endereço Estruturado e Autocompletar CEP ---------- */
@@ -336,7 +409,7 @@ async function handleRegisterSubmit(e) {
   const validacao = menuService.validarCadastroCliente({ nome, contato, endereco: enderecoObj });
   if (!validacao.valid) {
     const primeiroErro = Object.values(validacao.errors)[0];
-    alert(primeiroErro);
+    showCardapioToast(primeiroErro, 'warn');
     return;
   }
 
@@ -380,9 +453,9 @@ async function handleRegisterSubmit(e) {
     menuService.salvarSessaoCliente(currentCustomer);
     updateAuthUi();
     closeAuthModal();
-    alert(`Conta criada com sucesso! Bem-vinda(o), ${menuService.extrairPrimeiroNome(currentCustomer.nome)}! 🧁`);
+    showCardapioToast(`Conta criada com sucesso! Bem-vinda(o), ${menuService.extrairPrimeiroNome(currentCustomer.nome)}! 🧁`, 'success');
   } catch (err) {
-    alert(`Erro ao salvar cadastro: ${err.message || err}`);
+    showCardapioToast(`Erro ao salvar cadastro: ${err.message || err}`, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -397,7 +470,7 @@ async function handleLoginSubmit(e) {
   const cleanPhone = menuService.sanitizarTelefone(phone);
 
   if (!cleanPhone || cleanPhone.length < 10) {
-    alert('Informe um número de WhatsApp válido com DDD.');
+    showCardapioToast('Informe um número de WhatsApp válido com DDD.', 'warn');
     return;
   }
 
@@ -428,15 +501,15 @@ async function handleLoginSubmit(e) {
       menuService.salvarSessaoCliente(currentCustomer);
       updateAuthUi();
       closeAuthModal();
-      alert(`Olá de volta, ${menuService.extrairPrimeiroNome(currentCustomer.nome)}! 👋`);
+      showCardapioToast(`Olá de volta, ${menuService.extrairPrimeiroNome(currentCustomer.nome)}! 👋`, 'success');
     } else {
-      alert('Telefone não encontrado. Vamos criar sua conta agora em menos de 1 minuto!');
+      showCardapioToast('Telefone não encontrado. Vamos criar sua conta agora!', 'info');
       const regPhone = document.getElementById('regCustomerPhone');
       if (regPhone) regPhone.value = phone;
       switchModalTab('authModal', 'tabContentRegister');
     }
   } catch (err) {
-    alert(`Erro ao entrar: ${err.message || err}`);
+    showCardapioToast(`Erro ao entrar: ${err.message || err}`, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -446,14 +519,22 @@ async function handleLoginSubmit(e) {
 }
 
 function handleLogout() {
-  if (confirm('Deseja sair da sua conta neste dispositivo?')) {
-    menuService.limparSessaoCliente();
-    currentCustomer = null;
-    currentCustomerOrders = [];
-    updateAuthUi();
-    toggleUserDropdown(false);
-    closeAccountModal();
-  }
+  showConfirmDialog({
+    icon: '🚪',
+    title: 'Deseja sair da sua conta?',
+    desc: 'Você precisará informar seu WhatsApp novamente para acessar seus pedidos e selos de fidelidade.',
+    okText: 'Sim, Sair',
+    cancelText: 'Cancelar',
+    onConfirm: () => {
+      menuService.limparSessaoCliente();
+      currentCustomer = null;
+      currentCustomerOrders = [];
+      updateAuthUi();
+      toggleUserDropdown(false);
+      closeAccountModal();
+      showCardapioToast('Você saiu da sua conta neste dispositivo.', 'info');
+    },
+  });
 }
 
 function prefillProfileForm() {
@@ -487,7 +568,7 @@ async function handleProfileSave(e) {
 
   if (!validacao.valid) {
     const primeiroErro = Object.values(validacao.errors)[0];
-    alert(primeiroErro);
+    showCardapioToast(primeiroErro, 'warn');
     return;
   }
 
@@ -526,9 +607,9 @@ async function handleProfileSave(e) {
     currentCustomer = updated;
     menuService.salvarSessaoCliente(currentCustomer);
     updateAuthUi();
-    alert('Dados atualizados com sucesso!');
+    showCardapioToast('Seus dados foram atualizados com sucesso! ✨', 'success');
   } catch (err) {
-    alert(`Erro ao salvar dados: ${err.message || err}`);
+    showCardapioToast(`Erro ao salvar dados: ${err.message || err}`, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -687,7 +768,7 @@ function renderCustomerLoyalty(orders = []) {
 function repeatOrder(order) {
   const items = Array.isArray(order.itens) ? order.itens : [];
   if (items.length === 0) {
-    alert('Este pedido não contém itens para repetir.');
+    showCardapioToast('Este pedido não contém itens para repetir.', 'warn');
     return;
   }
 
@@ -978,7 +1059,7 @@ async function handleCheckout() {
   const validacao = menuService.validarCheckout(dadosCliente, cart);
   if (!validacao.valid) {
     const primeiroErro = Object.values(validacao.errors)[0];
-    alert(primeiroErro);
+    showCardapioToast(primeiroErro, 'warn');
     return;
   }
 
@@ -1158,6 +1239,17 @@ function setupEventListeners() {
 
   // Botão Enviar Pedido
   document.getElementById('btnSubmitWhatsapp')?.addEventListener('click', handleCheckout);
+
+  // Modal de Confirmação Customizado
+  document.getElementById('confirmDialogCancel')?.addEventListener('click', closeConfirmDialog);
+  document.getElementById('confirmDialogBackdrop')?.addEventListener('click', closeConfirmDialog);
+  document.getElementById('confirmDialogOk')?.addEventListener('click', () => {
+    const cb = pendingConfirmCallback;
+    closeConfirmDialog();
+    if (typeof cb === 'function') {
+      cb();
+    }
+  });
 }
 
 function escapeHtml(str) {
