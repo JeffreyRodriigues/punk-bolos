@@ -87,8 +87,9 @@ function showCardapioToast(message, type = 'success', durationMs = 3200) {
 }
 
 let pendingConfirmCallback = null;
+let pendingCancelCallback = null;
 
-function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okText = 'Sim', cancelText = 'Cancelar', onConfirm }) {
+function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okText = 'Sim', cancelText = 'Cancelar', onConfirm, onCancel }) {
   const modal = document.getElementById('confirmDialogModal');
   const iconEl = document.getElementById('confirmDialogIcon');
   const titleEl = document.getElementById('confirmDialogTitle');
@@ -99,6 +100,8 @@ function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okTex
   if (!modal) {
     if (confirm(desc || title)) {
       if (typeof onConfirm === 'function') onConfirm();
+    } else {
+      if (typeof onCancel === 'function') onCancel();
     }
     return;
   }
@@ -110,6 +113,7 @@ function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okTex
   if (cancelBtn) cancelBtn.textContent = cancelText;
 
   pendingConfirmCallback = onConfirm;
+  pendingCancelCallback = onCancel;
   modal.hidden = false;
   modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
@@ -123,6 +127,7 @@ function closeConfirmDialog() {
     document.body.style.overflow = '';
   }
   pendingConfirmCallback = null;
+  pendingCancelCallback = null;
 }
 
 /* ---------- Gestão de Endereço Estruturado e Autocompletar CEP ---------- */
@@ -672,7 +677,17 @@ function renderCustomerOrders(orders = []) {
   if (emptyEl) emptyEl.hidden = true;
   listEl.innerHTML = '';
 
-  orders.forEach((order) => {
+  // Ordena os pedidos mais recentes primeiro (por número decrescente e data)
+  const sortedOrders = [...orders].sort((a, b) => {
+    const numA = Number(a.numero) || 0;
+    const numB = Number(b.numero) || 0;
+    if (numA && numB) return numB - numA;
+    const dateA = new Date(a.data || a.created_at || 0).getTime();
+    const dateB = new Date(b.data || b.created_at || 0).getTime();
+    return dateB - dateA;
+  });
+
+  sortedOrders.forEach((order) => {
     const card = document.createElement('div');
     card.className = 'order-history-card';
 
@@ -1021,6 +1036,10 @@ function openCartModal() {
   const modal = document.getElementById('cartModal');
   if (modal) {
     updateAuthUi();
+    const addressWrap = document.getElementById('fieldAddressWrap');
+    if (addressWrap) {
+      addressWrap.hidden = currentDeliveryType !== 'Entrega';
+    }
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
@@ -1139,6 +1158,15 @@ async function handleCheckout() {
   renderProducts();
   closeCartModal();
 
+  // Reseta estado de entrega para Retirada padrão
+  currentDeliveryType = 'Retirada';
+  const btnRet = document.getElementById('btnOptRetirada');
+  const btnEnt = document.getElementById('btnOptEntrega');
+  const addrWrap = document.getElementById('fieldAddressWrap');
+  if (btnRet) btnRet.classList.add('active');
+  if (btnEnt) btnEnt.classList.remove('active');
+  if (addrWrap) addrWrap.hidden = true;
+
   // Limpa campos específicos do pedido mantendo dados do cliente
   const notesEl = document.getElementById('orderNotes');
   if (notesEl) notesEl.value = '';
@@ -1247,6 +1275,39 @@ function setupEventListeners() {
       btnRetirada.classList.remove('active');
       currentDeliveryType = 'Entrega';
       if (addressWrap) addressWrap.hidden = false;
+
+      // Se o cliente já possui endereço cadastrado, pergunta se deseja usá-lo ou informar outro
+      if (currentCustomer && currentCustomer.endereco) {
+        const endTexto = typeof currentCustomer.endereco === 'string'
+          ? currentCustomer.endereco
+          : menuService.montarEnderecoCompleto(currentCustomer.endereco);
+
+        showConfirmDialog({
+          icon: '📍',
+          title: 'Endereço de Entrega',
+          desc: `Deseja entregar no seu endereço cadastrado?\n"${endTexto}"`,
+          okText: 'Sim, no meu endereço',
+          cancelText: 'Em outro endereço',
+          onConfirm: () => {
+            setStructuredAddress('client', currentCustomer.endereco);
+            showCardapioToast('Endereço cadastrado aplicado! 📍', 'success');
+          },
+          onCancel: () => {
+            setStructuredAddress('client', {
+              cep: '',
+              logradouro: '',
+              numero: '',
+              complemento: '',
+              bairro: '',
+              cidade: '',
+              uf: '',
+              referencia: '',
+            });
+            document.getElementById('clientCep')?.focus();
+            showCardapioToast('Informe o novo endereço de entrega abaixo. 📍', 'info');
+          },
+        });
+      }
     });
   }
 
@@ -1254,8 +1315,20 @@ function setupEventListeners() {
   document.getElementById('btnSubmitWhatsapp')?.addEventListener('click', handleCheckout);
 
   // Modal de Confirmação Customizado
-  document.getElementById('confirmDialogCancel')?.addEventListener('click', closeConfirmDialog);
-  document.getElementById('confirmDialogBackdrop')?.addEventListener('click', closeConfirmDialog);
+  document.getElementById('confirmDialogCancel')?.addEventListener('click', () => {
+    const cb = pendingCancelCallback;
+    closeConfirmDialog();
+    if (typeof cb === 'function') {
+      cb();
+    }
+  });
+  document.getElementById('confirmDialogBackdrop')?.addEventListener('click', () => {
+    const cb = pendingCancelCallback;
+    closeConfirmDialog();
+    if (typeof cb === 'function') {
+      cb();
+    }
+  });
   document.getElementById('confirmDialogOk')?.addEventListener('click', () => {
     const cb = pendingConfirmCallback;
     closeConfirmDialog();
