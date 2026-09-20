@@ -114,7 +114,9 @@ function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okTex
 
   pendingConfirmCallback = onConfirm;
   pendingCancelCallback = onCancel;
+  modal.removeAttribute('hidden');
   modal.hidden = false;
+  modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
 }
@@ -122,7 +124,9 @@ function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okTex
 function closeConfirmDialog() {
   const modal = document.getElementById('confirmDialogModal');
   if (modal) {
+    modal.setAttribute('hidden', '');
     modal.hidden = true;
+    modal.classList.remove('open');
     modal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
@@ -265,6 +269,41 @@ function setupCepLookup(prefix) {
   cepInput.addEventListener('blur', doLookup);
 }
 
+/* ---------- Gestão de Endereço Padrão e Atalhos ---------- */
+
+function updateAddressShortcutsUi() {
+  const shortcutsEl = document.getElementById('addressShortcuts');
+  const btnDefault = document.getElementById('btnUseDefaultAddress');
+  const btnLast = document.getElementById('btnUseLastAddress');
+  if (!shortcutsEl || !btnDefault || !btnLast) return;
+
+  const defaultEnd = currentCustomer?.endereco;
+  const lastEnd = currentCustomer?.ultimoEnderecoEntrega;
+
+  const defaultStr = defaultEnd ? (typeof defaultEnd === 'object' ? menuService.montarEnderecoCompleto(defaultEnd) : String(defaultEnd).trim()) : '';
+  const lastStr = lastEnd ? (typeof lastEnd === 'object' ? menuService.montarEnderecoCompleto(lastEnd) : String(lastEnd).trim()) : '';
+
+  if (defaultStr || lastStr) {
+    shortcutsEl.hidden = false;
+    shortcutsEl.removeAttribute('hidden');
+
+    if (defaultStr && lastStr && defaultStr !== lastStr) {
+      btnDefault.hidden = false;
+      btnDefault.removeAttribute('hidden');
+      btnLast.hidden = false;
+      btnLast.removeAttribute('hidden');
+    } else {
+      btnDefault.hidden = false;
+      btnDefault.removeAttribute('hidden');
+      btnLast.hidden = true;
+      btnLast.setAttribute('hidden', '');
+    }
+  } else {
+    shortcutsEl.hidden = true;
+    shortcutsEl.setAttribute('hidden', '');
+  }
+}
+
 /* ---------- Gestão de Autenticação / Sessão na Interface ---------- */
 
 function updateAuthUi() {
@@ -274,6 +313,8 @@ function updateAuthUi() {
   const banner = document.getElementById('cartUserSessionBanner');
   const loggedName = document.getElementById('cartLoggedUserName');
 
+  updateAddressShortcutsUi();
+
   if (currentCustomer && currentCustomer.nome) {
     const firstName = menuService.extrairPrimeiroNome(currentCustomer.nome);
     if (userLabel) userLabel.textContent = `Olá, ${firstName} ▾`;
@@ -282,6 +323,7 @@ function updateAuthUi() {
 
     if (banner && loggedName) {
       banner.hidden = false;
+      banner.removeAttribute('hidden');
       loggedName.textContent = `${currentCustomer.nome} (${menuService.formatarTelefone(currentCustomer.contato)})`;
     }
 
@@ -291,14 +333,19 @@ function updateAuthUi() {
 
     if (nameInput && !nameInput.value) nameInput.value = currentCustomer.nome;
     if (phoneInput && !phoneInput.value) phoneInput.value = menuService.formatarTelefone(currentCustomer.contato);
-    if (currentCustomer.endereco) {
-      setStructuredAddress('client', currentCustomer.endereco);
+    
+    const endToApply = currentCustomer.endereco || currentCustomer.ultimoEnderecoEntrega;
+    if (endToApply) {
+      setStructuredAddress('client', endToApply);
     }
   } else {
     if (userLabel) userLabel.textContent = 'Entrar / Criar Conta';
     if (userIcon) userIcon.textContent = '👤';
     if (btnAuth) btnAuth.classList.remove('btn-user-logged');
-    if (banner) banner.hidden = true;
+    if (banner) {
+      banner.hidden = true;
+      banner.setAttribute('hidden', '');
+    }
   }
 }
 
@@ -534,10 +581,27 @@ function handleLogout() {
       menuService.limparSessaoCliente();
       currentCustomer = null;
       currentCustomerOrders = [];
+
+      // Limpa os campos do formulário de checkout
+      const nameInput = document.getElementById('clientName');
+      const phoneInput = document.getElementById('clientPhone');
+      if (nameInput) nameInput.value = '';
+      if (phoneInput) phoneInput.value = '';
+      setStructuredAddress('client', {
+        cep: '',
+        logradouro: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        uf: '',
+        referencia: '',
+      });
+
       updateAuthUi();
       toggleUserDropdown(false);
       closeAccountModal();
-      showCardapioToast('Você saiu da sua conta neste dispositivo.', 'info');
+      showCardapioToast('Você saiu da sua conta.', 'info');
     },
   });
 }
@@ -1122,8 +1186,26 @@ async function handleCheckout() {
     orders.push(novoPedido);
     storage.save(orders);
 
-    // Se o cliente não estava logado, cria a sessão com esses dados para ele
-    if (!currentCustomer) {
+    // Atualiza o endereço padrão (se não tiver) e o último endereço de entrega no perfil do cliente
+    if (currentCustomer) {
+      if (currentDeliveryType === 'Entrega' && (enderecoObj || endereco)) {
+        currentCustomer.ultimoEnderecoEntrega = enderecoObj || endereco;
+        if (!currentCustomer.endereco) {
+          currentCustomer.endereco = enderecoObj || endereco;
+        }
+      }
+      currentCustomer.nome = nome.trim();
+      currentCustomer.contato = whatsapp.trim();
+      storage.saveCustomer(currentCustomer);
+      menuService.salvarSessaoCliente(currentCustomer);
+
+      if (supabase.isConfigured()) {
+        supabase.upsertCustomerProfilePublic(currentCustomer).catch((e) =>
+          console.warn('[cardapio] upsertCustomerProfilePublic falhou em checkout:', e)
+        );
+      }
+      updateAuthUi();
+    } else {
       const cleanPhone = menuService.sanitizarTelefone(whatsapp);
       const allCust = storage.getAllCustomers();
       let matchCust = allCust.find((c) => menuService.sanitizarTelefone(c.contato) === cleanPhone);
@@ -1133,7 +1215,8 @@ async function handleCheckout() {
           id: `cli_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           nome: nome.trim(),
           contato: whatsapp.trim(),
-          endereco: currentDeliveryType === 'Entrega' ? endereco.trim() : '',
+          endereco: currentDeliveryType === 'Entrega' ? (enderecoObj || endereco.trim()) : '',
+          ultimoEnderecoEntrega: currentDeliveryType === 'Entrega' ? (enderecoObj || endereco.trim()) : '',
           dataNascimento: '',
           observacoes: observacoes.trim(),
         };
@@ -1143,6 +1226,14 @@ async function handleCheckout() {
           supabase.upsertCustomerProfilePublic(matchCust).catch((e) =>
             console.warn('[cardapio] upsertCustomerProfilePublic falhou em checkout:', e)
           );
+        }
+      } else {
+        if (currentDeliveryType === 'Entrega' && (enderecoObj || endereco)) {
+          matchCust.ultimoEnderecoEntrega = enderecoObj || endereco;
+          if (!matchCust.endereco) {
+            matchCust.endereco = enderecoObj || endereco;
+          }
+          storage.saveCustomer(matchCust);
         }
       }
       currentCustomer = matchCust;
@@ -1293,49 +1384,55 @@ function setupEventListeners() {
       btnRetirada.classList.add('active');
       btnEntrega.classList.remove('active');
       currentDeliveryType = 'Retirada';
-      if (addressWrap) addressWrap.hidden = true;
+      if (addressWrap) {
+        addressWrap.hidden = true;
+        addressWrap.setAttribute('hidden', '');
+      }
     });
 
     btnEntrega.addEventListener('click', () => {
       btnEntrega.classList.add('active');
       btnRetirada.classList.remove('active');
       currentDeliveryType = 'Entrega';
-      if (addressWrap) addressWrap.hidden = false;
+      if (addressWrap) {
+        addressWrap.hidden = false;
+        addressWrap.removeAttribute('hidden');
+      }
 
-      // Se o cliente já possui endereço cadastrado, pergunta se deseja usá-lo ou informar outro
-      if (currentCustomer && currentCustomer.endereco) {
-        const endTexto = typeof currentCustomer.endereco === 'string'
-          ? currentCustomer.endereco
-          : menuService.montarEnderecoCompleto(currentCustomer.endereco);
-
-        showConfirmDialog({
-          icon: '📍',
-          title: 'Endereço de Entrega',
-          desc: `Deseja entregar no seu endereço cadastrado?\n"${endTexto}"`,
-          okText: 'Sim, no meu endereço',
-          cancelText: 'Em outro endereço',
-          onConfirm: () => {
-            setStructuredAddress('client', currentCustomer.endereco);
-            showCardapioToast('Endereço cadastrado aplicado! 📍', 'success');
-          },
-          onCancel: () => {
-            setStructuredAddress('client', {
-              cep: '',
-              logradouro: '',
-              numero: '',
-              complemento: '',
-              bairro: '',
-              cidade: '',
-              uf: '',
-              referencia: '',
-            });
-            document.getElementById('clientCep')?.focus();
-            showCardapioToast('Informe o novo endereço de entrega abaixo. 📍', 'info');
-          },
-        });
+      if (currentCustomer) {
+        updateAddressShortcutsUi();
+        const streetVal = document.getElementById('clientStreet')?.value;
+        if (!streetVal) {
+          const endToApply = currentCustomer.endereco || currentCustomer.ultimoEnderecoEntrega;
+          if (endToApply) {
+            setStructuredAddress('client', endToApply);
+          }
+        }
       }
     });
   }
+
+  // Atalhos de Endereço no Checkout
+  document.getElementById('btnUseDefaultAddress')?.addEventListener('click', () => {
+    if (currentCustomer?.endereco) {
+      setStructuredAddress('client', currentCustomer.endereco);
+      document.getElementById('btnUseDefaultAddress')?.classList.add('active');
+      document.getElementById('btnUseLastAddress')?.classList.remove('active');
+      showCardapioToast('Endereço padrão aplicado! 🏠', 'success');
+    }
+  });
+
+  document.getElementById('btnUseLastAddress')?.addEventListener('click', () => {
+    if (currentCustomer?.ultimoEnderecoEntrega) {
+      setStructuredAddress('client', currentCustomer.ultimoEnderecoEntrega);
+      document.getElementById('btnUseLastAddress')?.classList.add('active');
+      document.getElementById('btnUseDefaultAddress')?.classList.remove('active');
+      showCardapioToast('Último endereço aplicado! 🕒', 'success');
+    }
+  });
+
+  // Botão Sair da Conta dentro da aba Meus Dados
+  document.getElementById('btnLogoutFromProfile')?.addEventListener('click', handleLogout);
 
   // Botão Enviar Pedido
   document.getElementById('btnSubmitWhatsapp')?.addEventListener('click', handleCheckout);

@@ -938,6 +938,43 @@ html.dark .status-pronta {
   line-height: 1.35;
 }
 
+/* Atalhos de Endereço no Checkout */
+.address-shortcuts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.address-shortcuts[hidden] {
+  display: none !important;
+}
+
+.btn-address-shortcut {
+  flex: 1;
+  min-width: 130px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1.5px solid var(--menu-border);
+  background: var(--menu-surface);
+  color: var(--menu-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-address-shortcut:hover,
+.btn-address-shortcut.active {
+  border-color: var(--menu-primary);
+  background: var(--menu-primary-soft);
+  color: var(--menu-primary);
+}
+
 .address-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1652,6 +1689,35 @@ html.dark .status-pronta {
 
 .btn-confirm-ok:hover {
   opacity: 0.9;
+}
+
+/* Ações no Rodapé do Perfil */
+.profile-actions-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.btn-logout-secondary {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #ef4444;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-logout-secondary:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 
