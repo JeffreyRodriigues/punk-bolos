@@ -22,6 +22,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1631,15 +1633,15 @@ html.dark .status-pronta {
 
 .menu-toast-container {
   position: fixed;
-  top: calc(16px + env(safe-area-inset-top, 0px));
+  top: calc(20px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  z-index: 9999999;
-  width: 90%;
+  gap: 10px;
+  z-index: 99999999;
+  width: calc(100% - 32px);
   max-width: 440px;
   pointer-events: none;
 }
@@ -1648,19 +1650,19 @@ html.dark .status-pronta {
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
-  border-radius: 14px;
-  font-size: 0.9rem;
-  font-weight: 700;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
   line-height: 1.35;
   background-color: var(--menu-surface);
   color: var(--menu-text);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.12);
   border: 1.5px solid var(--menu-border);
   opacity: 0;
-  transform: translateY(-16px) scale(0.96);
-  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(-20px) scale(0.96);
+  transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1), transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
   width: 100%;
   box-sizing: border-box;
 }
@@ -1671,7 +1673,14 @@ html.dark .status-pronta {
 }
 
 .menu-toast-icon {
-  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 800;
   flex-shrink: 0;
 }
 
@@ -1683,19 +1692,32 @@ html.dark .status-pronta {
   border-color: #10b981;
 }
 .menu-toast.toast-success .menu-toast-icon {
-  color: #10b981;
+  background-color: #10b981;
+  color: #ffffff;
 }
 
 .menu-toast.toast-error {
   border-color: #ef4444;
 }
+.menu-toast.toast-error .menu-toast-icon {
+  background-color: #ef4444;
+  color: #ffffff;
+}
 
 .menu-toast.toast-warn {
   border-color: #f59e0b;
 }
+.menu-toast.toast-warn .menu-toast-icon {
+  background-color: #f59e0b;
+  color: #ffffff;
+}
 
 .menu-toast.toast-info {
   border-color: var(--menu-primary);
+}
+.menu-toast.toast-info .menu-toast-icon {
+  background-color: var(--menu-primary);
+  color: #ffffff;
 }
 
 /* Modal de Confirmação Customizado */
@@ -1845,6 +1867,8 @@ html.dark .status-pronta {
 
 </style>
 <!-- CSS_INLINE:END -->
+
+
 
 
 
@@ -2364,6 +2388,6 @@ html.dark .status-pronta {
   <div id="menuToastContainer" class="menu-toast-container" aria-live="polite"></div>
 
   <!-- Módulos ES6 -->
-  <script type="module" src="js/cardapio.js?v=14"></script>
+  <script type="module" src="js/cardapio.js?v=16"></script>
 </body>
 </html>

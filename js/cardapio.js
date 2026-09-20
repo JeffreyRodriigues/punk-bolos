@@ -73,26 +73,40 @@ function showCardapioToast(message, type = 'success', durationMs = 3200) {
     document.body.appendChild(container);
   }
 
+  try {
+    if (navigator && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(type === 'error' ? [40, 40, 40] : 30);
+    }
+  } catch (_) {}
+
   const icons = {
-    success: '🧁',
-    error: '❌',
-    warn: '⚠️',
-    info: '💡',
+    success: '✓',
+    error: '✕',
+    warn: '!',
+    info: 'i',
   };
 
   const toast = document.createElement('div');
   toast.className = `menu-toast toast-${type}`;
   toast.innerHTML = `
-    <span class="menu-toast-icon">${icons[type] || '🧁'}</span>
+    <span class="menu-toast-icon">${icons[type] || '✓'}</span>
     <span class="menu-toast-msg">${message}</span>
   `;
 
   container.appendChild(toast);
-  requestAnimationFrame(() => toast.classList.add('show'));
+  void toast.offsetHeight;
+
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
 
   setTimeout(() => {
     toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 250);
+    setTimeout(() => {
+      try {
+        toast.remove();
+      } catch (_) {}
+    }, 280);
   }, durationMs);
 }
 
@@ -475,13 +489,43 @@ async function handleRegisterSubmit(e) {
     return;
   }
 
+  const cleanPhone = menuService.sanitizarTelefone(contato);
+
   const btn = document.getElementById('btnSubmitRegister');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Salvando dados...';
+    btn.textContent = 'Verificando...';
   }
 
   try {
+    // 1. Valida se o cliente já existe pelo WhatsApp cadastrado
+    let existingCustomer = null;
+    if (supabase.isConfigured()) {
+      try {
+        existingCustomer = await supabase.getCustomerByPhonePublic(cleanPhone);
+      } catch (err) {
+        console.warn('[cardapio] getCustomerByPhonePublic falhou em register:', err);
+      }
+    }
+
+    if (!existingCustomer) {
+      existingCustomer = storage.getAllCustomers().find(
+        (c) => menuService.sanitizarTelefone(c.contato) === cleanPhone
+      );
+    }
+
+    if (existingCustomer) {
+      showCardapioToast('Este WhatsApp já possui cadastro. Acesse pela aba Já Tenho Cadastro.', 'warn', 4500);
+      const loginPhone = document.getElementById('loginCustomerPhone');
+      if (loginPhone) loginPhone.value = contato;
+      switchModalTab('authModal', 'tabContentLogin');
+      return;
+    }
+
+    if (btn) {
+      btn.textContent = 'Salvando dados...';
+    }
+
     let savedCustomer = null;
     if (supabase.isConfigured()) {
       try {
@@ -497,12 +541,8 @@ async function handleRegisterSubmit(e) {
     }
 
     if (!savedCustomer) {
-      const cleanPhone = menuService.sanitizarTelefone(contato);
-      const existing = storage.getAllCustomers().find(
-        (c) => menuService.sanitizarTelefone(c.contato) === cleanPhone
-      );
       savedCustomer = {
-        id: existing ? existing.id : `cli_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        id: `cli_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         nome: nome.trim(),
         contato: contato.trim(),
         endereco: endereco.trim(),
@@ -515,7 +555,7 @@ async function handleRegisterSubmit(e) {
     menuService.salvarSessaoCliente(currentCustomer);
     updateAuthUi();
     closeAuthModal();
-    showCardapioToast(`Conta criada com sucesso! Bem-vinda(o), ${menuService.extrairPrimeiroNome(currentCustomer.nome)}! 🧁`, 'success');
+    showCardapioToast(`Conta criada com sucesso! Bem-vinda(o), ${menuService.extrairPrimeiroNome(currentCustomer.nome)}!`, 'success');
   } catch (err) {
     showCardapioToast(`Erro ao salvar cadastro: ${err.message || err}`, 'error');
   } finally {
@@ -563,9 +603,9 @@ async function handleLoginSubmit(e) {
       menuService.salvarSessaoCliente(currentCustomer);
       updateAuthUi();
       closeAuthModal();
-      showCardapioToast(`Olá de volta, ${menuService.extrairPrimeiroNome(currentCustomer.nome)}! 👋`, 'success');
+      showCardapioToast(`Olá de volta, ${menuService.extrairPrimeiroNome(currentCustomer.nome)}!`, 'success');
     } else {
-      showCardapioToast('Telefone não encontrado. Vamos criar sua conta agora!', 'info');
+      showCardapioToast('Telefone não encontrado. Vamos criar sua conta agora.', 'info');
       const regPhone = document.getElementById('regCustomerPhone');
       if (regPhone) regPhone.value = phone;
       switchModalTab('authModal', 'tabContentRegister');
@@ -713,10 +753,28 @@ async function handleProfileSave(e) {
     currentCustomer = updated;
     menuService.salvarSessaoCliente(currentCustomer);
     updateAuthUi();
-    showCardapioToast('Seus dados foram atualizados com sucesso! ✨', 'success');
+
+    if (btn) {
+      btn.textContent = 'Dados Salvos!';
+      btn.style.backgroundColor = '#10b981';
+      btn.style.borderColor = '#10b981';
+      btn.style.color = '#ffffff';
+    }
+
+    showCardapioToast('Seus dados foram atualizados com sucesso.', 'success');
+
+    setTimeout(() => {
+      closeAccountModal();
+      if (btn) {
+        btn.textContent = 'Salvar Alterações';
+        btn.style.backgroundColor = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.disabled = false;
+      }
+    }, 1000);
   } catch (err) {
     showCardapioToast(`Erro ao salvar dados: ${err.message || err}`, 'error');
-  } finally {
     if (btn) {
       btn.disabled = false;
       btn.textContent = 'Salvar Alterações';
@@ -960,7 +1018,7 @@ function repeatOrder(order) {
   if (itemsNaoDisponiveis.length > 0) {
     showCardapioToast(`Pedido carregado! Alguns itens estavam esgotados: ${itemsNaoDisponiveis.join(', ')}`, 'warn', 5000);
   } else {
-    showCardapioToast('Itens do pedido carregados na sua sacola! 🛍️', 'success');
+    showCardapioToast('Itens do pedido carregados na sua sacola.', 'success');
   }
 }
 
@@ -1358,7 +1416,7 @@ async function handleCheckout() {
   if (notesEl) notesEl.value = '';
 
   // Notifica o cliente com toast de sucesso
-  showCardapioToast('Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp. 🎉', 'success', 6000);
+  showCardapioToast('Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp.', 'success', 6000);
 
   // Redireciona para o WhatsApp
   const waLink = menuService.formatarLinkWhatsapp(STORE_PHONE, msg);
@@ -1507,7 +1565,7 @@ function setupEventListeners() {
       setStructuredAddress('client', currentCustomer.endereco);
       document.getElementById('btnUseDefaultAddress')?.classList.add('active');
       document.getElementById('btnUseLastAddress')?.classList.remove('active');
-      showCardapioToast('Endereço padrão aplicado! 🏠', 'success');
+      showCardapioToast('Endereço padrão aplicado.', 'success');
     }
   });
 
@@ -1516,9 +1574,33 @@ function setupEventListeners() {
       setStructuredAddress('client', currentCustomer.ultimoEnderecoEntrega);
       document.getElementById('btnUseLastAddress')?.classList.add('active');
       document.getElementById('btnUseDefaultAddress')?.classList.remove('active');
-      showCardapioToast('Último endereço aplicado! 🕒', 'success');
+      showCardapioToast('Último endereço aplicado.', 'success');
     }
   });
+
+  // Verificação em tempo real ao preencher o telefone no cadastro
+  const regPhoneInput = document.getElementById('regCustomerPhone');
+  if (regPhoneInput) {
+    regPhoneInput.addEventListener('blur', async () => {
+      const cleanPhone = menuService.sanitizarTelefone(regPhoneInput.value);
+      if (cleanPhone && cleanPhone.length >= 10) {
+        let existing = null;
+        if (supabase.isConfigured()) {
+          try {
+            existing = await supabase.getCustomerByPhonePublic(cleanPhone);
+          } catch (_) {}
+        }
+        if (!existing) {
+          existing = storage.getAllCustomers().find(
+            (c) => menuService.sanitizarTelefone(c.contato) === cleanPhone
+          );
+        }
+        if (existing) {
+          showCardapioToast('Este WhatsApp já possui cadastro. Acesse pela aba Já Tenho Cadastro.', 'info', 4000);
+        }
+      }
+    });
+  }
 
   // Botão Sair da Conta dentro da aba Meus Dados
   document.getElementById('btnLogoutFromProfile')?.addEventListener('click', handleLogout);
