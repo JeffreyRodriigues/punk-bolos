@@ -50,6 +50,16 @@ async function init() {
   updateAuthUi();
   renderProducts();
   updateCartUi();
+
+  // Verifica notificação pendente ao inicializar/recarregar
+  try {
+    const pendingToast = sessionStorage.getItem('punk_order_toast');
+    if (pendingToast) {
+      sessionStorage.removeItem('punk_order_toast');
+      closeCartModal();
+      showCardapioToast(pendingToast, 'success', 5000);
+    }
+  } catch (_) {}
 }
 
 /* ---------- Sistema de Toasts e Confirmações do Cardápio ---------- */
@@ -571,6 +581,7 @@ async function handleLoginSubmit(e) {
 }
 
 function handleLogout() {
+  toggleUserDropdown(false);
   showConfirmDialog({
     icon: '🚪',
     title: 'Deseja sair da sua conta?',
@@ -597,6 +608,29 @@ function handleLogout() {
         uf: '',
         referencia: '',
       });
+
+      // Limpa os campos do formulário de perfil e histórico
+      const profName = document.getElementById('profCustomerName');
+      const profPhone = document.getElementById('profCustomerPhone');
+      const profBday = document.getElementById('profCustomerBirthday');
+      if (profName) profName.value = '';
+      if (profPhone) profPhone.value = '';
+      if (profBday) profBday.value = '';
+      setStructuredAddress('profCustomer', {
+        cep: '',
+        logradouro: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        uf: '',
+        referencia: '',
+      });
+
+      const ordersList = document.getElementById('accountOrdersList');
+      if (ordersList) ordersList.innerHTML = '';
+      const stampsGrid = document.getElementById('loyaltyStampsGrid');
+      if (stampsGrid) stampsGrid.innerHTML = '';
 
       updateAuthUi();
       toggleUserDropdown(false);
@@ -1344,6 +1378,7 @@ function setupEventListeners() {
     } catch (_) {}
   };
 
+  window.addEventListener('pageshow', checkPendingOrderToast);
   window.addEventListener('focus', checkPendingOrderToast);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
