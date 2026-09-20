@@ -1133,6 +1133,19 @@ async function handleCheckout() {
     console.error('[cardapio] Erro ao salvar pedido interno:', e);
   }
 
+  // Limpa o carrinho e reseta a interface para a tela principal
+  cart = [];
+  updateCartUi();
+  renderProducts();
+  closeCartModal();
+
+  // Limpa campos específicos do pedido mantendo dados do cliente
+  const notesEl = document.getElementById('orderNotes');
+  if (notesEl) notesEl.value = '';
+
+  // Notifica o cliente com toast de sucesso
+  showCardapioToast('Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp. 🎉', 'success', 5000);
+
   // Redireciona para o WhatsApp
   const waLink = menuService.formatarLinkWhatsapp(STORE_PHONE, msg);
   if (waLink) {
