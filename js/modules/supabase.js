@@ -604,7 +604,7 @@ export async function createPublicOrder(orderData = {}) {
     return request('/rest/v1/orders', {
       method: 'POST',
       auth: false,
-      headers: { Prefer: 'return=representation' },
+      headers: { Prefer: 'return=minimal' },
       body: row,
     });
   }
