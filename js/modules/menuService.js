@@ -169,9 +169,12 @@ export function validarCheckout(dadosCliente = {}, carrinho = []) {
 
   const tipoEntrega = dadosCliente.tipoEntrega || 'Retirada';
   if (tipoEntrega === 'Entrega') {
-    const endereco = String(dadosCliente.endereco || '').trim();
-    if (!endereco) {
+    const end = dadosCliente.endereco;
+    const endStr = typeof end === 'object' && end !== null ? montarEnderecoCompleto(end) : String(end || '').trim();
+    if (!endStr) {
       errors.endereco = 'Informe o endereço completo para a entrega.';
+    } else if (typeof end === 'object' && end !== null && (end.logradouro || end.rua) && !end.numero) {
+      errors.numero = 'Por favor, informe o número do imóvel para a entrega.';
     }
   }
 
@@ -320,8 +323,9 @@ export function validarCadastroCliente(dados = {}) {
   }
 
   if (dados.endereco !== undefined) {
-    const endereco = String(dados.endereco || '').trim();
-    if (!endereco) {
+    const end = dados.endereco;
+    const endStr = typeof end === 'object' && end !== null ? montarEnderecoCompleto(end) : String(end || '').trim();
+    if (!endStr) {
       errors.endereco = 'Por favor, informe seu endereço para entrega.';
     }
   }
@@ -330,6 +334,156 @@ export function validarCadastroCliente(dados = {}) {
     valid: Object.keys(errors).length === 0,
     errors,
   };
+}
+
+/* ---------- Gestão de Endereço e CEP (ViaCEP) ---------- */
+
+/**
+ * Sanitiza um CEP removendo caracteres não numéricos.
+ * @param {string} cep
+ * @returns {string}
+ */
+export function sanitizarCep(cep) {
+  return String(cep || '').replace(/\D/g, '');
+}
+
+/**
+ * Formata um CEP no padrão brasileiro (00000-000).
+ * @param {string} cep
+ * @returns {string}
+ */
+export function formatarCep(cep) {
+  const d = sanitizarCep(cep);
+  if (d.length === 8) {
+    return `${d.slice(0, 5)}-${d.slice(5)}`;
+  }
+  return cep || '';
+}
+
+/**
+ * Consulta os dados de endereço na API pública do ViaCEP.
+ * @param {string} cep - CEP com ou sem formatação.
+ * @returns {Promise<{ sucesso: boolean, logradouro?: string, bairro?: string, localidade?: string, uf?: string, cep?: string, erro?: string }>}
+ */
+export async function consultarCepViaCep(cep) {
+  const clean = sanitizarCep(cep);
+  if (!clean || clean.length !== 8) {
+    return { sucesso: false, erro: 'CEP deve conter 8 dígitos numéricos.' };
+  }
+
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+    if (!res.ok) {
+      return { sucesso: false, erro: 'Falha na consulta do CEP.' };
+    }
+    const data = await res.json();
+    if (data.erro) {
+      return { sucesso: false, erro: 'CEP não encontrado.' };
+    }
+    return {
+      sucesso: true,
+      logradouro: data.logradouro || '',
+      bairro: data.bairro || '',
+      localidade: data.localidade || '',
+      uf: data.uf || '',
+      cep: data.cep || formatarCep(clean),
+    };
+  } catch {
+    return { sucesso: false, erro: 'Não foi possível conectar ao serviço de CEP.' };
+  }
+}
+
+/**
+ * Monta o endereço completo estruturado em uma string única e legível para entregadores.
+ * @param {Object} partes - { cep, logradouro, rua, numero, complemento, bairro, cidade, localidade, uf, referencia }
+ * @returns {string}
+ */
+export function montarEnderecoCompleto(partes = {}) {
+  if (!partes) return '';
+  if (typeof partes === 'string') return partes.trim();
+
+  const logr = String(partes.logradouro || partes.rua || '').trim();
+  const num = String(partes.numero || '').trim();
+  const compl = String(partes.complemento || '').trim();
+  const bairro = String(partes.bairro || '').trim();
+  const cidade = String(partes.cidade || partes.localidade || '').trim();
+  const uf = String(partes.uf || '').trim().toUpperCase();
+  const cep = sanitizarCep(partes.cep);
+  const ref = String(partes.referencia || '').trim();
+
+  if (!logr && !cidade && !cep) return '';
+
+  const pedacos = [];
+
+  // Logradouro + Número + Complemento
+  let linhaRua = logr;
+  if (num) linhaRua += linhaRua ? `, ${num}` : num;
+  if (compl) linhaRua += linhaRua ? ` (${compl})` : compl;
+  if (linhaRua) pedacos.push(linhaRua);
+
+  // Bairro
+  if (bairro) pedacos.push(bairro);
+
+  // Cidade / UF
+  let cidadeUf = cidade;
+  if (uf) cidadeUf += cidadeUf ? `/${uf}` : uf;
+  if (cidadeUf) pedacos.push(cidadeUf);
+
+  let resultado = pedacos.join(' - ');
+
+  // CEP
+  if (cep && cep.length === 8) {
+    resultado += ` [CEP: ${formatarCep(cep)}]`;
+  }
+
+  // Ponto de Referência
+  if (ref) {
+    resultado += ` (Ref: ${ref})`;
+  }
+
+  return resultado.trim();
+}
+
+/**
+ * Decompõe uma string de endereço em campos estruturados básicos (fallback/parse inteligente).
+ * @param {string} enderecoTexto
+ * @returns {{ cep: string, logradouro: string, numero: string, complemento: string, bairro: string, cidade: string, uf: string, referencia: string }}
+ */
+export function decomporEndereco(enderecoTexto) {
+  const res = {
+    cep: '',
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    uf: '',
+    referencia: '',
+  };
+
+  if (!enderecoTexto || typeof enderecoTexto !== 'string') return res;
+  const texto = enderecoTexto.trim();
+
+  // Extrai CEP se houver (00000-000 ou CEP: 00000-000)
+  const cepMatch = texto.match(/(?:CEP:?\s*)?(\d{5}-?\d{3})/i);
+  if (cepMatch) {
+    res.cep = formatarCep(cepMatch[1]);
+  }
+
+  // Extrai Referência se houver [Ref: ...] ou (Ref: ...)
+  const refMatch = texto.match(/(?:\[|\()Ref:?\s*([^\]\)]+)(?:\]|\))/i);
+  if (refMatch) {
+    res.referencia = refMatch[1].trim();
+  }
+
+  // Limpa CEP e Referência do texto base
+  res.logradouro = texto
+    .replace(/\[CEP:[^\]]+\]/gi, '')
+    .replace(/\(Ref:[^\)]+\)/gi, '')
+    .replace(/\[Ref:[^\]]+\]/gi, '')
+    .trim();
+
+  return res;
 }
 
 /**

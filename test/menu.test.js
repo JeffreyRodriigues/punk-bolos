@@ -166,3 +166,88 @@ test('calcularFidelidadeCliente — calcula selos e recompensas a cada 10 pedido
   assert.equal(f11.selosRestantes, 9);
 });
 
+test('sanitizarCep e formatarCep — higieniza e formata CEPs brasileiros', () => {
+  assert.equal(menuService.sanitizarCep('01310-100'), '01310100');
+  assert.equal(menuService.sanitizarCep('01.310.100'), '01310100');
+  assert.equal(menuService.formatarCep('01310100'), '01310-100');
+  assert.equal(menuService.formatarCep('01310-100'), '01310-100');
+});
+
+test('montarEnderecoCompleto — gera texto de endereço estruturado e legível', () => {
+  const partes = {
+    cep: '01310-100',
+    logradouro: 'Avenida Paulista',
+    numero: '1578',
+    complemento: 'Apto 42',
+    bairro: 'Bela Vista',
+    cidade: 'São Paulo',
+    uf: 'SP',
+    referencia: 'Próximo ao MASP',
+  };
+
+  const end = menuService.montarEnderecoCompleto(partes);
+  assert.equal(
+    end,
+    'Avenida Paulista, 1578 (Apto 42) - Bela Vista - São Paulo/SP [CEP: 01310-100] (Ref: Próximo ao MASP)'
+  );
+
+  // Sem complemento e sem referência
+  const simples = menuService.montarEnderecoCompleto({
+    logradouro: 'Rua das Flores',
+    numero: '100',
+    bairro: 'Centro',
+    cidade: 'Guarulhos',
+    uf: 'SP',
+  });
+  assert.equal(simples, 'Rua das Flores, 100 - Centro - Guarulhos/SP');
+});
+
+test('decomporEndereco — extrai campos de uma string legada ou composta', () => {
+  const texto = 'Avenida Paulista, 1578 - Bela Vista - São Paulo/SP [CEP: 01310-100] (Ref: Perto do MASP)';
+  const d = menuService.decomporEndereco(texto);
+  assert.equal(d.cep, '01310-100');
+  assert.equal(d.referencia, 'Perto do MASP');
+  assert.ok(d.logradouro.includes('Avenida Paulista'));
+});
+
+test('validarCheckout e validarCadastroCliente com objeto de endereço estruturado', () => {
+  const carrinho = [{ id: 'p1', valor: 50, quantidade: 1 }];
+
+  // Checkout com endereço estruturado completo
+  const v1 = menuService.validarCheckout(
+    {
+      nome: 'Mariana Silva',
+      whatsapp: '11999998888',
+      tipoEntrega: 'Entrega',
+      endereco: {
+        logradouro: 'Rua Augusta',
+        numero: '500',
+        bairro: 'Consolação',
+        cidade: 'São Paulo',
+        uf: 'SP',
+      },
+      dataDesejada: '2026-09-25',
+    },
+    carrinho
+  );
+  assert.equal(v1.valid, true);
+
+  // Checkout com logradouro preenchido mas sem número
+  const v2 = menuService.validarCheckout(
+    {
+      nome: 'Mariana Silva',
+      whatsapp: '11999998888',
+      tipoEntrega: 'Entrega',
+      endereco: {
+        logradouro: 'Rua Augusta',
+        numero: '',
+      },
+      dataDesejada: '2026-09-25',
+    },
+    carrinho
+  );
+  assert.equal(v2.valid, false);
+  assert.ok(v2.errors.numero);
+});
+
+

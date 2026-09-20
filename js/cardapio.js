@@ -52,6 +52,141 @@ async function init() {
   updateCartUi();
 }
 
+/* ---------- Gestão de Endereço Estruturado e Autocompletar CEP ---------- */
+
+function getStructuredAddress(prefix) {
+  const cep = document.getElementById(`${prefix}Cep`)?.value || '';
+  const logradouro = document.getElementById(`${prefix}Street`)?.value || '';
+  const numero = document.getElementById(`${prefix}Number`)?.value || '';
+  const bairro = document.getElementById(`${prefix}Neighborhood`)?.value || '';
+  const complemento = document.getElementById(`${prefix}Complement`)?.value || '';
+  const cidadeUf = document.getElementById(`${prefix}City`)?.value || '';
+  const referencia = document.getElementById(`${prefix}Reference`)?.value || '';
+
+  const [cidade, uf] = cidadeUf.split('/').map((s) => s.trim());
+
+  return {
+    cep,
+    logradouro,
+    numero,
+    complemento,
+    bairro,
+    cidade: cidade || cidadeUf,
+    uf: uf || '',
+    referencia,
+  };
+}
+
+function setStructuredAddress(prefix, endereco) {
+  if (!endereco) return;
+  const data = typeof endereco === 'object' ? endereco : menuService.decomporEndereco(endereco);
+
+  const cepEl = document.getElementById(`${prefix}Cep`);
+  const streetEl = document.getElementById(`${prefix}Street`);
+  const numEl = document.getElementById(`${prefix}Number`);
+  const neighEl = document.getElementById(`${prefix}Neighborhood`);
+  const compEl = document.getElementById(`${prefix}Complement`);
+  const cityEl = document.getElementById(`${prefix}City`);
+  const refEl = document.getElementById(`${prefix}Reference`);
+
+  if (cepEl && data.cep) cepEl.value = menuService.formatarCep(data.cep);
+  if (streetEl && (data.logradouro || data.rua)) streetEl.value = data.logradouro || data.rua;
+  if (numEl && data.numero) numEl.value = data.numero;
+  if (neighEl && data.bairro) neighEl.value = data.bairro;
+  if (compEl && data.complemento) compEl.value = data.complemento;
+  if (cityEl) {
+    const cid = data.cidade || data.localidade || '';
+    const uf = data.uf || '';
+    cityEl.value = cid && uf ? `${cid} / ${uf}` : cid;
+  }
+  if (refEl && data.referencia) refEl.value = data.referencia;
+}
+
+function setupCepLookup(prefix) {
+  const cepInput = document.getElementById(`${prefix}Cep`);
+  const spinnerEl = document.getElementById(`${prefix}CepLoading`);
+  const msgEl = document.getElementById(`${prefix}CepMsg`);
+  const streetInput = document.getElementById(`${prefix}Street`);
+  const numInput = document.getElementById(`${prefix}Number`);
+  const neighInput = document.getElementById(`${prefix}Neighborhood`);
+  const cityInput = document.getElementById(`${prefix}City`);
+
+  if (!cepInput) return;
+
+  let lastCepConsultado = '';
+
+  const doLookup = async () => {
+    const raw = cepInput.value;
+    const clean = menuService.sanitizarCep(raw);
+
+    if (clean.length === 8) {
+      cepInput.value = menuService.formatarCep(clean);
+    }
+
+    if (clean.length !== 8) {
+      if (msgEl) {
+        msgEl.className = 'field-helper-msg';
+        msgEl.textContent = '';
+      }
+      return;
+    }
+
+    if (clean === lastCepConsultado) return;
+    lastCepConsultado = clean;
+
+    if (spinnerEl) spinnerEl.hidden = false;
+    if (msgEl) {
+      msgEl.className = 'field-helper-msg info';
+      msgEl.textContent = 'Buscando endereço...';
+    }
+
+    try {
+      const res = await menuService.consultarCepViaCep(clean);
+      if (res.sucesso) {
+        if (streetInput && res.logradouro) streetInput.value = res.logradouro;
+        if (neighInput && res.bairro) neighInput.value = res.bairro;
+        if (cityInput) cityInput.value = `${res.localidade || ''} / ${res.uf || ''}`;
+
+        if (msgEl) {
+          msgEl.className = 'field-helper-msg success';
+          msgEl.textContent = '✓ Endereço localizado!';
+        }
+
+        if (numInput && !numInput.value) {
+          numInput.focus();
+        }
+      } else {
+        if (msgEl) {
+          msgEl.className = 'field-helper-msg error';
+          msgEl.textContent = res.erro || 'CEP não encontrado. Preencha manualmente.';
+        }
+      }
+    } catch {
+      if (msgEl) {
+        msgEl.className = 'field-helper-msg error';
+        msgEl.textContent = 'Erro ao consultar CEP.';
+      }
+    } finally {
+      if (spinnerEl) spinnerEl.hidden = true;
+    }
+  };
+
+  cepInput.addEventListener('input', (e) => {
+    const digits = menuService.sanitizarCep(e.target.value);
+    if (digits.length <= 5) {
+      e.target.value = digits;
+    } else {
+      e.target.value = `${digits.slice(0, 5)}-${digits.slice(5, 8)}`;
+    }
+
+    if (digits.length === 8) {
+      doLookup();
+    }
+  });
+
+  cepInput.addEventListener('blur', doLookup);
+}
+
 /* ---------- Gestão de Autenticação / Sessão na Interface ---------- */
 
 function updateAuthUi() {
@@ -75,12 +210,11 @@ function updateAuthUi() {
     // Preenche os campos do checkout se estiverem vazios
     const nameInput = document.getElementById('clientName');
     const phoneInput = document.getElementById('clientPhone');
-    const addressInput = document.getElementById('clientAddress');
 
     if (nameInput && !nameInput.value) nameInput.value = currentCustomer.nome;
     if (phoneInput && !phoneInput.value) phoneInput.value = menuService.formatarTelefone(currentCustomer.contato);
-    if (addressInput && !addressInput.value && currentCustomer.endereco) {
-      addressInput.value = currentCustomer.endereco;
+    if (currentCustomer.endereco) {
+      setStructuredAddress('client', currentCustomer.endereco);
     }
   } else {
     if (userLabel) userLabel.textContent = 'Entrar / Criar Conta';
@@ -195,10 +329,11 @@ async function handleRegisterSubmit(e) {
   e.preventDefault();
   const nome = document.getElementById('regCustomerName')?.value || '';
   const contato = document.getElementById('regCustomerPhone')?.value || '';
-  const endereco = document.getElementById('regCustomerAddress')?.value || '';
+  const enderecoObj = getStructuredAddress('regCustomer');
+  const endereco = menuService.montarEnderecoCompleto(enderecoObj);
   const dataNascimento = document.getElementById('regCustomerBirthday')?.value || null;
 
-  const validacao = menuService.validarCadastroCliente({ nome, contato, endereco });
+  const validacao = menuService.validarCadastroCliente({ nome, contato, endereco: enderecoObj });
   if (!validacao.valid) {
     const primeiroErro = Object.values(validacao.errors)[0];
     alert(primeiroErro);
@@ -325,13 +460,14 @@ function prefillProfileForm() {
   if (!currentCustomer) return;
   const nameEl = document.getElementById('profCustomerName');
   const phoneEl = document.getElementById('profCustomerPhone');
-  const addressEl = document.getElementById('profCustomerAddress');
   const birthdayEl = document.getElementById('profCustomerBirthday');
 
   if (nameEl) nameEl.value = currentCustomer.nome || '';
   if (phoneEl) phoneEl.value = menuService.formatarTelefone(currentCustomer.contato);
-  if (addressEl) addressEl.value = currentCustomer.endereco || '';
   if (birthdayEl) birthdayEl.value = currentCustomer.dataNascimento || currentCustomer.data_nascimento || '';
+  if (currentCustomer.endereco) {
+    setStructuredAddress('profCustomer', currentCustomer.endereco);
+  }
 }
 
 async function handleProfileSave(e) {
@@ -339,13 +475,14 @@ async function handleProfileSave(e) {
   if (!currentCustomer) return;
 
   const nome = document.getElementById('profCustomerName')?.value || '';
-  const endereco = document.getElementById('profCustomerAddress')?.value || '';
+  const enderecoObj = getStructuredAddress('profCustomer');
+  const endereco = menuService.montarEnderecoCompleto(enderecoObj);
   const dataNascimento = document.getElementById('profCustomerBirthday')?.value || null;
 
   const validacao = menuService.validarCadastroCliente({
     nome,
     contato: currentCustomer.contato,
-    endereco,
+    endereco: enderecoObj,
   });
 
   if (!validacao.valid) {
@@ -820,7 +957,8 @@ function closeCartModal() {
 async function handleCheckout() {
   const nome = document.getElementById('clientName')?.value || '';
   const whatsapp = document.getElementById('clientPhone')?.value || '';
-  const endereco = document.getElementById('clientAddress')?.value || '';
+  const enderecoObj = currentDeliveryType === 'Entrega' ? getStructuredAddress('client') : null;
+  const endereco = enderecoObj ? menuService.montarEnderecoCompleto(enderecoObj) : '';
   const dataDesejada = document.getElementById('deliveryDate')?.value || '';
   const periodo = document.getElementById('deliveryPeriod')?.value || '';
   const pagamento = document.getElementById('paymentMethod')?.value || 'PIX';
@@ -830,7 +968,7 @@ async function handleCheckout() {
     nome,
     whatsapp,
     tipoEntrega: currentDeliveryType,
-    endereco,
+    endereco: enderecoObj || endereco,
     dataDesejada,
     periodo,
     pagamento,
@@ -845,7 +983,12 @@ async function handleCheckout() {
   }
 
   const totais = menuService.calcularTotaisCarrinho(cart);
-  const msg = menuService.gerarMensagemPedidoWhatsapp(dadosCliente, cart, totais.totalValor, 'Punk Bolos');
+  const msg = menuService.gerarMensagemPedidoWhatsapp(
+    { ...dadosCliente, endereco },
+    cart,
+    totais.totalValor,
+    'Punk Bolos'
+  );
 
   // Grava o pedido no banco/storage interno como "Pendente"
   try {
@@ -918,6 +1061,11 @@ async function handleCheckout() {
 
 /* ---------- Listeners de Eventos ---------- */
 function setupEventListeners() {
+  // Inicializa a escuta de CEP com auto-complete nos 3 formulários
+  setupCepLookup('client');
+  setupCepLookup('regCustomer');
+  setupCepLookup('profCustomer');
+
   // Busca
   const searchInput = document.getElementById('menuSearch');
   if (searchInput) {

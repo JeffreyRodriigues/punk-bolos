@@ -894,6 +894,92 @@ html.dark .status-pronta {
   color: var(--menu-primary);
 }
 
+/* Bloco de Endereço Estruturado (Fieldset Visual) */
+.address-fieldset {
+  background: var(--menu-surface-alt);
+  border: 1.5px solid var(--menu-border);
+  border-radius: 12px;
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.address-fieldset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.address-fieldset-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--menu-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.address-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 520px) {
+  .address-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.address-field-full {
+  grid-column: 1 / -1;
+}
+
+.input-with-action {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.input-action-spinner {
+  position: absolute;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--menu-border);
+  border-top-color: var(--menu-primary);
+  border-radius: 50%;
+  animation: menu-spin 0.6s linear infinite;
+  pointer-events: none;
+}
+
+.field-helper-msg {
+  font-size: 0.76rem;
+  font-weight: 600;
+  min-height: 14px;
+  line-height: 1.2;
+}
+
+.field-helper-msg.success {
+  color: #16a34a;
+}
+
+.field-helper-msg.error {
+  color: #dc2626;
+}
+
+.field-helper-msg.info {
+  color: var(--menu-text-muted);
+}
+
 /* Footer do Carrinho com Botão WhatsApp */
 .cart-footer {
   padding: 14px 20px 18px;

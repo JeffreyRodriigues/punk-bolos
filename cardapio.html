@@ -14,6 +14,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1001,6 +1002,92 @@ html.dark .status-pronta {
   color: var(--menu-primary);
 }
 
+/* Bloco de Endereço Estruturado (Fieldset Visual) */
+.address-fieldset {
+  background: var(--menu-surface-alt);
+  border: 1.5px solid var(--menu-border);
+  border-radius: 12px;
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.address-fieldset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.address-fieldset-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--menu-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.address-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 520px) {
+  .address-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.address-field-full {
+  grid-column: 1 / -1;
+}
+
+.input-with-action {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.input-action-spinner {
+  position: absolute;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--menu-border);
+  border-top-color: var(--menu-primary);
+  border-radius: 50%;
+  animation: menu-spin 0.6s linear infinite;
+  pointer-events: none;
+}
+
+.field-helper-msg {
+  font-size: 0.76rem;
+  font-weight: 600;
+  min-height: 14px;
+  line-height: 1.2;
+}
+
+.field-helper-msg.success {
+  color: #16a34a;
+}
+
+.field-helper-msg.error {
+  color: #dc2626;
+}
+
+.field-helper-msg.info {
+  color: var(--menu-text-muted);
+}
+
 /* Footer do Carrinho com Botão WhatsApp */
 .cart-footer {
   padding: 14px 20px 18px;
@@ -1486,6 +1573,7 @@ html.dark .status-pronta {
 
 
 
+
 </head>
 <body class="menu-page">
 
@@ -1622,9 +1710,52 @@ html.dark .status-pronta {
               </div>
             </div>
 
-            <div class="cart-field cart-field-full" id="fieldAddressWrap" hidden>
-              <label for="clientAddress">Endereço Completo de Entrega *</label>
-              <input type="text" id="clientAddress" placeholder="Rua, número, complemento e bairro">
+            <!-- Bloco de Endereço Estruturado para Entrega -->
+            <div id="fieldAddressWrap" class="cart-field-full address-fieldset" hidden>
+              <div class="address-fieldset-header">
+                <span class="address-fieldset-title">📍 Endereço de Entrega</span>
+              </div>
+              
+              <div class="address-grid">
+                <div class="cart-field address-field-cep">
+                  <label for="clientCep">CEP *</label>
+                  <div class="input-with-action">
+                    <input type="tel" id="clientCep" placeholder="00000-000" maxlength="9" autocomplete="postal-code">
+                    <span id="clientCepLoading" class="input-action-spinner" hidden></span>
+                  </div>
+                  <span id="clientCepMsg" class="field-helper-msg"></span>
+                </div>
+
+                <div class="cart-field address-field-city">
+                  <label for="clientCity">Cidade / UF</label>
+                  <input type="text" id="clientCity" placeholder="Cidade / UF" readonly>
+                </div>
+
+                <div class="cart-field address-field-street">
+                  <label for="clientStreet">Rua / Logradouro *</label>
+                  <input type="text" id="clientStreet" placeholder="Ex.: Rua das Flores" autocomplete="street-address">
+                </div>
+
+                <div class="cart-field address-field-num">
+                  <label for="clientNumber">Número *</label>
+                  <input type="text" id="clientNumber" placeholder="Ex.: 123">
+                </div>
+
+                <div class="cart-field address-field-neigh">
+                  <label for="clientNeighborhood">Bairro *</label>
+                  <input type="text" id="clientNeighborhood" placeholder="Ex.: Centro">
+                </div>
+
+                <div class="cart-field address-field-comp">
+                  <label for="clientComplement">Complemento</label>
+                  <input type="text" id="clientComplement" placeholder="Apto 42, Bloco B">
+                </div>
+
+                <div class="cart-field address-field-full">
+                  <label for="clientReference">Ponto de Referência (Opcional)</label>
+                  <input type="text" id="clientReference" placeholder="Ex.: Próximo à padaria, portaria 2">
+                </div>
+              </div>
             </div>
 
             <div class="cart-field">
@@ -1711,9 +1842,51 @@ html.dark .status-pronta {
               <span class="auth-form-help">Usado para localizar seus pedidos e enviar confirmações.</span>
             </div>
 
-            <div class="cart-field">
-              <label for="regCustomerAddress">Endereço Completo de Entrega *</label>
-              <input type="text" id="regCustomerAddress" placeholder="Rua, número, complemento e bairro" required autocomplete="street-address">
+            <!-- Endereço Estruturado no Cadastro -->
+            <div class="address-fieldset">
+              <div class="address-fieldset-header">
+                <span class="address-fieldset-title">📍 Seu Endereço de Entrega</span>
+              </div>
+              <div class="address-grid">
+                <div class="cart-field address-field-cep">
+                  <label for="regCustomerCep">CEP *</label>
+                  <div class="input-with-action">
+                    <input type="tel" id="regCustomerCep" placeholder="00000-000" maxlength="9" autocomplete="postal-code">
+                    <span id="regCustomerCepLoading" class="input-action-spinner" hidden></span>
+                  </div>
+                  <span id="regCustomerCepMsg" class="field-helper-msg"></span>
+                </div>
+
+                <div class="cart-field address-field-city">
+                  <label for="regCustomerCity">Cidade / UF</label>
+                  <input type="text" id="regCustomerCity" placeholder="Cidade / UF" readonly>
+                </div>
+
+                <div class="cart-field address-field-street">
+                  <label for="regCustomerStreet">Rua / Logradouro *</label>
+                  <input type="text" id="regCustomerStreet" placeholder="Ex.: Rua das Flores" required autocomplete="street-address">
+                </div>
+
+                <div class="cart-field address-field-num">
+                  <label for="regCustomerNumber">Número *</label>
+                  <input type="text" id="regCustomerNumber" placeholder="Ex.: 123" required>
+                </div>
+
+                <div class="cart-field address-field-neigh">
+                  <label for="regCustomerNeighborhood">Bairro *</label>
+                  <input type="text" id="regCustomerNeighborhood" placeholder="Ex.: Centro" required>
+                </div>
+
+                <div class="cart-field address-field-comp">
+                  <label for="regCustomerComplement">Complemento</label>
+                  <input type="text" id="regCustomerComplement" placeholder="Apto 42, Bloco B">
+                </div>
+
+                <div class="cart-field address-field-full">
+                  <label for="regCustomerReference">Ponto de Referência (Opcional)</label>
+                  <input type="text" id="regCustomerReference" placeholder="Ex.: Próximo à padaria">
+                </div>
+              </div>
             </div>
 
             <div class="cart-field">
@@ -1816,9 +1989,51 @@ html.dark .status-pronta {
               <input type="tel" id="profCustomerPhone" disabled title="Para alterar o WhatsApp, faça um novo cadastro ou contate a confeitaria.">
             </div>
 
-            <div class="cart-field">
-              <label for="profCustomerAddress">Endereço Completo de Entrega</label>
-              <input type="text" id="profCustomerAddress" placeholder="Rua, número, complemento e bairro">
+            <!-- Endereço Estruturado no Perfil -->
+            <div class="address-fieldset">
+              <div class="address-fieldset-header">
+                <span class="address-fieldset-title">📍 Endereço de Entrega</span>
+              </div>
+              <div class="address-grid">
+                <div class="cart-field address-field-cep">
+                  <label for="profCustomerCep">CEP</label>
+                  <div class="input-with-action">
+                    <input type="tel" id="profCustomerCep" placeholder="00000-000" maxlength="9" autocomplete="postal-code">
+                    <span id="profCustomerCepLoading" class="input-action-spinner" hidden></span>
+                  </div>
+                  <span id="profCustomerCepMsg" class="field-helper-msg"></span>
+                </div>
+
+                <div class="cart-field address-field-city">
+                  <label for="profCustomerCity">Cidade / UF</label>
+                  <input type="text" id="profCustomerCity" placeholder="Cidade / UF" readonly>
+                </div>
+
+                <div class="cart-field address-field-street">
+                  <label for="profCustomerStreet">Rua / Logradouro</label>
+                  <input type="text" id="profCustomerStreet" placeholder="Ex.: Rua das Flores">
+                </div>
+
+                <div class="cart-field address-field-num">
+                  <label for="profCustomerNumber">Número</label>
+                  <input type="text" id="profCustomerNumber" placeholder="Ex.: 123">
+                </div>
+
+                <div class="cart-field address-field-neigh">
+                  <label for="profCustomerNeighborhood">Bairro</label>
+                  <input type="text" id="profCustomerNeighborhood" placeholder="Ex.: Centro">
+                </div>
+
+                <div class="cart-field address-field-comp">
+                  <label for="profCustomerComplement">Complemento</label>
+                  <input type="text" id="profCustomerComplement" placeholder="Apto 42, Bloco B">
+                </div>
+
+                <div class="cart-field address-field-full">
+                  <label for="profCustomerReference">Ponto de Referência</label>
+                  <input type="text" id="profCustomerReference" placeholder="Ex.: Próximo à padaria">
+                </div>
+              </div>
             </div>
 
             <div class="cart-field">
@@ -1836,7 +2051,7 @@ html.dark .status-pronta {
   </div>
 
   <!-- Módulos ES6 -->
-  <script type="module" src="js/cardapio.js?v=5"></script>
+  <script type="module" src="js/cardapio.js?v=6"></script>
 </body>
 </html>
 
