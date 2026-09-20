@@ -565,3 +565,49 @@ export async function upsertCustomerProfilePublic(customerData = {}) {
   });
 }
 
+/** Grava um pedido vindo do Cardápio Digital (calcula número sequencial atomicamente no Supabase). */
+export async function createPublicOrder(orderData = {}) {
+  try {
+    return await request('/rest/v1/rpc/create_public_order', {
+      method: 'POST',
+      body: {
+        p_id: orderData.id || '',
+        p_data: orderData.data || null,
+        p_cliente: orderData.cliente || '',
+        p_contato: orderData.contato || '',
+        p_itens: Array.isArray(orderData.itens) ? orderData.itens : [],
+        p_quantidade: Number(orderData.quantidadeTotal) || Number(orderData.quantidade) || 1,
+        p_valor_total: Number(orderData.valorTotal) || 0,
+        p_pagamento: orderData.pagamento || 'PIX',
+        p_entrega: orderData.entrega || 'Retirada',
+        p_observacoes: orderData.observacoes || '',
+      },
+    });
+  } catch (err) {
+    console.warn('[supabase] RPC create_public_order falhou, tentando fallback via REST direto:', err);
+    const row = {
+      id: orderData.id,
+      numero: Number(orderData.numero) || 1001,
+      data: orderData.data || null,
+      cliente: orderData.cliente || '',
+      contato: orderData.contato || '',
+      itens: Array.isArray(orderData.itens) ? orderData.itens : [],
+      quantidade: Number(orderData.quantidadeTotal) || Number(orderData.quantidade) || 1,
+      valor_total: Number(orderData.valorTotal) || 0,
+      status: 'Pendente',
+      pagamento: orderData.pagamento || 'PIX',
+      entrega: orderData.entrega || 'Retirada',
+      observacoes: orderData.observacoes || '',
+      consome_estoque: true,
+    };
+
+    return request('/rest/v1/orders', {
+      method: 'POST',
+      auth: false,
+      headers: { Prefer: 'return=representation' },
+      body: row,
+    });
+  }
+}
+
+

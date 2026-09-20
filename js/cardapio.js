@@ -1318,6 +1318,19 @@ async function handleCheckout() {
       consomeEstoque: true,
     };
 
+    // Grava o pedido diretamente no Supabase (com numeração sequencial atômica)
+    if (supabase.isConfigured()) {
+      try {
+        const dbResult = await supabase.createPublicOrder(novoPedido);
+        if (dbResult && dbResult.numero) {
+          novoPedido.numero = Number(dbResult.numero);
+          novoPedido.id = dbResult.id || novoPedido.id;
+        }
+      } catch (err) {
+        console.warn('[cardapio] Falha ao enviar pedido para o Supabase:', err);
+      }
+    }
+
     orders.push(novoPedido);
     storage.save(orders);
 

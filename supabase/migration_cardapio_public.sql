@@ -188,3 +188,74 @@ $$;
 
 grant execute on function public.upsert_customer_profile(text, text, text, text, date, text) to anon, authenticated;
 
+-- 5.4 Criação atômica de pedidos pelo Cardápio Digital (gera número sequencial #1001+)
+create or replace function public.create_public_order(
+  p_id text default '',
+  p_data date default null,
+  p_cliente text default '',
+  p_contato text default '',
+  p_itens jsonb default '[]'::jsonb,
+  p_quantidade bigint default 1,
+  p_valor_total numeric default 0,
+  p_pagamento text default 'PIX',
+  p_entrega text default 'Retirada',
+  p_observacoes text default ''
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_next_num bigint;
+  v_order_id text;
+  v_result jsonb;
+begin
+  -- Calcula atomicamente o próximo número de pedido
+  select coalesce(max(numero), 1000) + 1 into v_next_num
+  from public.orders;
+
+  v_order_id := coalesce(nullif(trim(p_id), ''), 'ped_' || extract(epoch from now())::bigint || '_' || substr(md5(random()::text), 1, 4));
+
+  insert into public.orders (
+    id,
+    numero,
+    data,
+    cliente,
+    contato,
+    itens,
+    quantidade,
+    valor_total,
+    status,
+    pagamento,
+    entrega,
+    observacoes,
+    consome_estoque,
+    created_at,
+    updated_at
+  ) values (
+    v_order_id,
+    v_next_num,
+    coalesce(p_data, current_date),
+    trim(p_cliente),
+    trim(p_contato),
+    coalesce(p_itens, '[]'::jsonb),
+    coalesce(p_quantidade, 1),
+    coalesce(p_valor_total, 0),
+    'Pendente',
+    coalesce(nullif(trim(p_pagamento), ''), 'PIX'),
+    coalesce(nullif(trim(p_entrega), ''), 'Retirada'),
+    trim(p_observacoes),
+    true,
+    now(),
+    now()
+  )
+  returning to_jsonb(orders.*) into v_result;
+
+  return v_result;
+end;
+$$;
+
+grant execute on function public.create_public_order(text, date, text, text, jsonb, bigint, numeric, text, text, text) to anon, authenticated;
+
+
