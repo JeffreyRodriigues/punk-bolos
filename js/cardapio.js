@@ -73,12 +73,6 @@ function showCardapioToast(message, type = 'success', durationMs = 3200) {
     document.body.appendChild(container);
   }
 
-  try {
-    if (navigator && typeof navigator.vibrate === 'function') {
-      navigator.vibrate(type === 'error' ? [40, 40, 40] : 30);
-    }
-  } catch (_) {}
-
   const icons = {
     success: '✓',
     error: '✕',
@@ -94,19 +88,14 @@ function showCardapioToast(message, type = 'success', durationMs = 3200) {
   `;
 
   container.appendChild(toast);
-  void toast.offsetHeight;
-
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
-  });
 
   setTimeout(() => {
-    toast.classList.remove('show');
+    toast.classList.add('hiding');
     setTimeout(() => {
       try {
         toast.remove();
       } catch (_) {}
-    }, 280);
+    }, 240);
   }, durationMs);
 }
 
