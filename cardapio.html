@@ -16,6 +16,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -379,7 +380,7 @@ html.dark .menu-badge-status {
   border: 1px solid var(--menu-border);
   background-color: var(--menu-surface);
   color: var(--menu-text);
-  font-size: 0.95rem;
+  font-size: 16px; /* 16px previne zoom no iOS Safari */
   box-sizing: border-box;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -1032,6 +1033,13 @@ html.dark .status-pronta {
   gap: 6px;
 }
 
+.address-fieldset-tip {
+  font-size: 0.8rem;
+  color: var(--menu-text-muted);
+  margin: 2px 0 6px 0;
+  line-height: 1.35;
+}
+
 .address-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1559,14 +1567,19 @@ html.dark .status-pronta {
     opacity: 1;
   }
 
-  .drawer-handle {
-    display: none;
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* Previne auto-zoom indesejado no iOS Safari */
   }
 }
 
 
+
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
 
@@ -1717,6 +1730,7 @@ html.dark .status-pronta {
               <div class="address-fieldset-header">
                 <span class="address-fieldset-title">📍 Endereço de Entrega</span>
               </div>
+              <p class="address-fieldset-tip">💡 <strong>Entregar neste endereço?</strong> Se estiver em outro local hoje (trabalho, evento, etc.), basta atualizar os campos abaixo.</p>
               
               <div class="address-grid">
                 <div class="cart-field address-field-cep">
@@ -1730,7 +1744,7 @@ html.dark .status-pronta {
 
                 <div class="cart-field address-field-city">
                   <label for="clientCity">Cidade / UF</label>
-                  <input type="text" id="clientCity" placeholder="Cidade / UF" readonly>
+                  <input type="text" id="clientCity" placeholder="Cidade / UF">
                 </div>
 
                 <div class="cart-field address-field-street">
@@ -1861,7 +1875,7 @@ html.dark .status-pronta {
 
                 <div class="cart-field address-field-city">
                   <label for="regCustomerCity">Cidade / UF</label>
-                  <input type="text" id="regCustomerCity" placeholder="Cidade / UF" readonly>
+                  <input type="text" id="regCustomerCity" placeholder="Cidade / UF">
                 </div>
 
                 <div class="cart-field address-field-street">
@@ -2008,7 +2022,7 @@ html.dark .status-pronta {
 
                 <div class="cart-field address-field-city">
                   <label for="profCustomerCity">Cidade / UF</label>
-                  <input type="text" id="profCustomerCity" placeholder="Cidade / UF" readonly>
+                  <input type="text" id="profCustomerCity" placeholder="Cidade / UF">
                 </div>
 
                 <div class="cart-field address-field-street">

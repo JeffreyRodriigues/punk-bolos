@@ -270,7 +270,7 @@ html.dark .menu-badge-status {
   border: 1px solid var(--menu-border);
   background-color: var(--menu-surface);
   color: var(--menu-text);
-  font-size: 0.95rem;
+  font-size: 16px; /* 16px previne zoom no iOS Safari */
   box-sizing: border-box;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -923,6 +923,13 @@ html.dark .status-pronta {
   gap: 6px;
 }
 
+.address-fieldset-tip {
+  font-size: 0.8rem;
+  color: var(--menu-text-muted);
+  margin: 2px 0 6px 0;
+  line-height: 1.35;
+}
+
 .address-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1450,8 +1457,12 @@ html.dark .status-pronta {
     opacity: 1;
   }
 
-  .drawer-handle {
-    display: none;
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* Previne auto-zoom indesejado no iOS Safari */
   }
 }
+
 

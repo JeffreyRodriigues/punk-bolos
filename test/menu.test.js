@@ -203,11 +203,24 @@ test('montarEnderecoCompleto — gera texto de endereço estruturado e legível'
 });
 
 test('decomporEndereco — extrai campos de uma string legada ou composta', () => {
-  const texto = 'Avenida Paulista, 1578 - Bela Vista - São Paulo/SP [CEP: 01310-100] (Ref: Perto do MASP)';
+  const texto = 'Avenida Paulista, 1578 (Apto 42) - Bela Vista - São Paulo/SP [CEP: 01310-100] (Ref: Perto do MASP)';
   const d = menuService.decomporEndereco(texto);
   assert.equal(d.cep, '01310-100');
   assert.equal(d.referencia, 'Perto do MASP');
-  assert.ok(d.logradouro.includes('Avenida Paulista'));
+  assert.equal(d.logradouro, 'Avenida Paulista');
+  assert.equal(d.numero, '1578');
+  assert.equal(d.complemento, 'Apto 42');
+  assert.equal(d.bairro, 'Bela Vista');
+  assert.equal(d.cidade, 'São Paulo');
+  assert.equal(d.uf, 'SP');
+
+  // Formato simples de 2 partes
+  const simples = menuService.decomporEndereco('Rua das Flores, 100 - Centro - Guarulhos/SP');
+  assert.equal(simples.logradouro, 'Rua das Flores');
+  assert.equal(simples.numero, '100');
+  assert.equal(simples.bairro, 'Centro');
+  assert.equal(simples.cidade, 'Guarulhos');
+  assert.equal(simples.uf, 'SP');
 });
 
 test('validarCheckout e validarCadastroCliente com objeto de endereço estruturado', () => {

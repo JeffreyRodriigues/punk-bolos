@@ -445,7 +445,7 @@ export function montarEnderecoCompleto(partes = {}) {
 }
 
 /**
- * Decompõe uma string de endereço em campos estruturados básicos (fallback/parse inteligente).
+ * Decompõe uma string de endereço em campos estruturados básicos (parse inteligente com fallback).
  * @param {string} enderecoTexto
  * @returns {{ cep: string, logradouro: string, numero: string, complemento: string, bairro: string, cidade: string, uf: string, referencia: string }}
  */
@@ -462,28 +462,78 @@ export function decomporEndereco(enderecoTexto) {
   };
 
   if (!enderecoTexto || typeof enderecoTexto !== 'string') return res;
-  const texto = enderecoTexto.trim();
+  let texto = enderecoTexto.trim();
 
-  // Extrai CEP se houver (00000-000 ou CEP: 00000-000)
-  const cepMatch = texto.match(/(?:CEP:?\s*)?(\d{5}-?\d{3})/i);
+  // 1. Extrai CEP se houver [CEP: 00000-000] ou (CEP: ...) ou 00000-000
+  const cepMatch = texto.match(/(?:\[|\()?(?:CEP:?\s*)?(\d{5}-?\d{3})(?:\]|\))?/i);
   if (cepMatch) {
     res.cep = formatarCep(cepMatch[1]);
+    texto = texto.replace(/(?:\[|\()?(?:CEP:?\s*)?\d{5}-?\d{3}(?:\]|\))?/gi, '').trim();
   }
 
-  // Extrai Referência se houver [Ref: ...] ou (Ref: ...)
+  // 2. Extrai Referência se houver [Ref: ...] ou (Ref: ...)
   const refMatch = texto.match(/(?:\[|\()Ref:?\s*([^\]\)]+)(?:\]|\))/i);
   if (refMatch) {
     res.referencia = refMatch[1].trim();
+    texto = texto.replace(/(?:\[|\()Ref:?\s*[^\]\)]+(?:\]|\))/gi, '').trim();
   }
 
-  // Limpa CEP e Referência do texto base
-  res.logradouro = texto
-    .replace(/\[CEP:[^\]]+\]/gi, '')
-    .replace(/\(Ref:[^\)]+\)/gi, '')
-    .replace(/\[Ref:[^\]]+\]/gi, '')
-    .trim();
+  // 3. Remove pontuações/traços soltos no final
+  texto = texto.replace(/[\s\-\,]+$/, '').trim();
+
+  // 4. Divide por separador " - "
+  // Padrão montado: "Logradouro, Numero (Complemento) - Bairro - Cidade/UF"
+  const partes = texto.split(/\s+-\s+/);
+
+  if (partes.length >= 3) {
+    const linhaRua = partes[0].trim();
+    res.bairro = partes[1].trim();
+    const cidadeUf = partes.slice(2).join(' - ').trim();
+    if (cidadeUf.includes('/')) {
+      const [cid, uf] = cidadeUf.split('/');
+      res.cidade = (cid || '').trim();
+      res.uf = (uf || '').trim().toUpperCase();
+    } else {
+      res.cidade = cidadeUf;
+    }
+    extrairRuaNumeroCompl(linhaRua, res);
+  } else if (partes.length === 2) {
+    const linhaRua = partes[0].trim();
+    const part2 = partes[1].trim();
+    if (part2.includes('/')) {
+      const [cid, uf] = part2.split('/');
+      res.cidade = (cid || '').trim();
+      res.uf = (uf || '').trim().toUpperCase();
+    } else {
+      res.bairro = part2;
+    }
+    extrairRuaNumeroCompl(linhaRua, res);
+  } else {
+    extrairRuaNumeroCompl(texto, res);
+  }
 
   return res;
+}
+
+function extrairRuaNumeroCompl(linhaRua, res) {
+  if (!linhaRua) return;
+  let s = linhaRua;
+
+  // Extrai Complemento entre parênteses: (Apto 42, Bloco B)
+  const complMatch = s.match(/\(([^)]+)\)/);
+  if (complMatch) {
+    res.complemento = complMatch[1].trim();
+    s = s.replace(/\([^)]+\)/, '').trim();
+  }
+
+  // Extrai Número após vírgula: "Rua das Flores, 123" ou "Rua das Flores, nº 123" ou "Rua das Flores, S/N"
+  const numMatch = s.match(/,\s*(?:n[ºo°]?\s*)?(\d+[a-zA-Z]?|\bS\/?N\b)\s*$/i);
+  if (numMatch) {
+    res.numero = numMatch[1].trim();
+    s = s.replace(/,\s*(?:n[ºo°]?\s*)?(\d+[a-zA-Z]?|\bS\/?N\b)\s*$/i, '').trim();
+  }
+
+  res.logradouro = s.trim();
 }
 
 /**
