@@ -258,3 +258,134 @@ export function formatarLinkWhatsapp(telefone, mensagem) {
   const phone = digits.length <= 11 && !digits.startsWith('55') ? `55${digits}` : digits;
   return `https://wa.me/${phone}?text=${encodeURIComponent(mensagem)}`;
 }
+
+/* ---------- Gestão de Conta & Fidelidade do Cliente ---------- */
+
+const CUSTOMER_SESSION_KEY = 'punk_cardapio_customer';
+
+/**
+ * Limpa e extrai apenas os números de um telefone.
+ * @param {string} telefone
+ * @returns {string}
+ */
+export function sanitizarTelefone(telefone) {
+  return String(telefone || '').replace(/\D/g, '');
+}
+
+/**
+ * Formata um número de telefone no padrão brasileiro (11) 99999-9999.
+ * @param {string} telefone
+ * @returns {string}
+ */
+export function formatarTelefone(telefone) {
+  const d = sanitizarTelefone(telefone);
+  if (d.length === 11) {
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+  if (d.length === 10) {
+    return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  }
+  return telefone || '';
+}
+
+/**
+ * Extrai o primeiro nome de um nome completo.
+ * @param {string} nomeCompleto
+ * @returns {string}
+ */
+export function extrairPrimeiroNome(nomeCompleto) {
+  const n = String(nomeCompleto || '').trim();
+  if (!n) return 'Cliente';
+  return n.split(/\s+/)[0];
+}
+
+/**
+ * Valida o formulário de cadastro / identificação do cliente no cardápio.
+ * @param {Object} dados - { nome, contato, endereco, dataNascimento }
+ * @returns {{ valid: boolean, errors: Object }}
+ */
+export function validarCadastroCliente(dados = {}) {
+  const errors = {};
+  const nome = String(dados.nome || '').trim();
+  const phone = sanitizarTelefone(dados.contato || dados.whatsapp);
+
+  if (!nome) {
+    errors.nome = 'Por favor, informe seu nome completo.';
+  } else if (nome.length < 3) {
+    errors.nome = 'O nome deve ter ao menos 3 caracteres.';
+  }
+
+  if (!phone || phone.length < 10) {
+    errors.contato = 'Informe um número de WhatsApp válido com DDD.';
+  }
+
+  if (dados.endereco !== undefined) {
+    const endereco = String(dados.endereco || '').trim();
+    if (!endereco) {
+      errors.endereco = 'Por favor, informe seu endereço para entrega.';
+    }
+  }
+
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+/**
+ * Calcula os selos de fidelidade com base no histórico de pedidos do cliente.
+ * Cada pedido válido (não cancelado) rende 1 selo. A cada 10 selos = 1 recompensa.
+ * @param {Array<Object>} pedidos - Lista de pedidos do cliente.
+ * @returns {{ totalPedidos: number, selos: number, selosRestantes: number, recompensas: number }}
+ */
+export function calcularFidelidadeCliente(pedidos = []) {
+  const validOrders = (pedidos || []).filter((p) => p && p.status !== 'Cancelado');
+  const total = validOrders.length;
+  const selos = total % 10;
+  const recompensas = Math.floor(total / 10);
+  const selosRestantes = 10 - selos;
+
+  return {
+    totalPedidos: total,
+    selos,
+    selosRestantes: selos === 0 && total > 0 ? 0 : selosRestantes,
+    recompensas,
+  };
+}
+
+/**
+ * Lê a sessão salva do cliente no navegador (localStorage).
+ * @returns {Object|null}
+ */
+export function obterSessaoCliente() {
+  try {
+    const raw = localStorage.getItem(CUSTOMER_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Salva a sessão do cliente no navegador.
+ * @param {Object} cliente
+ */
+export function salvarSessaoCliente(cliente) {
+  if (!cliente) return;
+  try {
+    localStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify(cliente));
+  } catch (e) {
+    console.warn('[menuService] Não foi possível salvar sessão no localStorage:', e);
+  }
+}
+
+/**
+ * Remove a sessão do cliente (logout).
+ */
+export function limparSessaoCliente() {
+  try {
+    localStorage.removeItem(CUSTOMER_SESSION_KEY);
+  } catch {
+    // no-op
+  }
+}

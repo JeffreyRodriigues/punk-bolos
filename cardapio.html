@@ -10,6 +10,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -151,14 +153,122 @@ body.menu-page {
 .menu-header {
   background: linear-gradient(135deg, rgba(233, 30, 99, 0.15), rgba(139, 92, 246, 0.12));
   border-bottom: 1px solid var(--menu-border);
-  padding: 24px 16px 20px;
-  text-align: center;
+  padding: 16px 16px 20px;
 }
 
 .menu-header-content {
   max-width: 680px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
 }
+
+.menu-top-bar {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.btn-user-auth {
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
+  color: var(--menu-text);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+}
+
+.btn-user-auth:hover {
+  border-color: var(--menu-primary);
+  color: var(--menu-primary);
+  transform: translateY(-1px);
+}
+
+.btn-user-logged {
+  background: var(--menu-primary-soft);
+  border-color: var(--menu-primary);
+  color: var(--menu-primary);
+}
+
+.user-avatar-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--menu-primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+/* Dropdown Menu do Usuário */
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
+  border-radius: var(--menu-radius);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 150;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  animation: menu-fade-in 0.15s ease-out;
+}
+
+.user-dropdown-menu.open {
+  display: flex;
+}
+
+@keyframes menu-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.user-dropdown-item {
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--menu-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.15s;
+}
+
+.user-dropdown-item:hover {
+  background-color: var(--menu-surface-alt);
+  color: var(--menu-primary);
+}
+
+.user-dropdown-item.danger {
+  color: #ef4444;
+  border-top: 1px solid var(--menu-border);
+}
+
+.user-dropdown-item.danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
 
 .menu-brand {
   display: flex;
@@ -844,8 +954,331 @@ html.dark .status-pronta {
   to { transform: rotate(360deg); }
 }
 
+/* ============================================================
+   MODAIS DO CLIENTE (Login, Cadastro, Minha Conta, Fidelidade)
+   ============================================================ */
+
+/* Navegação por Abas em Modais */
+.modal-tabs-nav {
+  display: flex;
+  border-bottom: 1px solid var(--menu-border);
+  background: var(--menu-surface-alt);
+  padding: 0 16px;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.modal-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--menu-text-muted);
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-tab-btn:hover {
+  color: var(--menu-primary);
+}
+
+.modal-tab-btn.active {
+  color: var(--menu-primary);
+  border-bottom-color: var(--menu-primary);
+  background: transparent;
+}
+
+.modal-tab-content {
+  display: none;
+  padding: 20px;
+}
+
+.modal-tab-content.active {
+  display: block;
+}
+
+/* Formulário de Autenticação / Cadastro */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-form-help {
+  font-size: 0.82rem;
+  color: var(--menu-text-muted);
+  margin-top: -2px;
+}
+
+.btn-primary-block {
+  background-color: var(--menu-primary);
+  color: #ffffff;
+  border: none;
+  padding: 12px 18px;
+  border-radius: var(--menu-radius-sm);
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 6px;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-primary-block:hover {
+  background-color: var(--menu-primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-primary-block:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Banner de Usuário Logado no Carrinho */
+.cart-user-badge {
+  background: var(--menu-primary-soft);
+  border: 1px solid var(--menu-primary);
+  border-radius: var(--menu-radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: var(--menu-text);
+}
+
+.cart-user-badge-change {
+  color: var(--menu-primary);
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Cartão Fidelidade */
+.loyalty-card-box {
+  background: linear-gradient(135deg, #e91e63, #8b5cf6);
+  color: #ffffff;
+  border-radius: var(--menu-radius);
+  padding: 20px;
+  box-shadow: 0 8px 25px rgba(233, 30, 99, 0.3);
+  margin-bottom: 20px;
+}
+
+.loyalty-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.loyalty-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+}
+
+.loyalty-card-subtitle {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.loyalty-reward-badge {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.loyalty-stamps-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.loyalty-stamp-slot {
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffffff;
+  transition: all 0.3s;
+}
+
+.loyalty-stamp-slot.stamped {
+  background: #ffffff;
+  color: var(--menu-primary);
+  border-style: solid;
+  border-color: #ffffff;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  animation: stamp-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.loyalty-stamp-slot.reward-slot {
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+.loyalty-stamp-slot.reward-slot.stamped {
+  background: #fbbf24;
+  color: #1e293b;
+  border-color: #fbbf24;
+}
+
+@keyframes stamp-pop {
+  0% { transform: scale(0.5); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.loyalty-info-text {
+  font-size: 0.82rem;
+  opacity: 0.95;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Histórico de Pedidos */
+.order-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-history-card {
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
+  border-radius: var(--menu-radius);
+  padding: 16px;
+  box-shadow: var(--menu-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed var(--menu-border);
+  padding-bottom: 8px;
+}
+
+.order-history-number {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--menu-text);
+}
+
+.order-history-date {
+  font-size: 0.8rem;
+  color: var(--menu-text-muted);
+}
+
+.order-history-items {
+  font-size: 0.85rem;
+  color: var(--menu-text);
+  line-height: 1.4;
+}
+
+.order-history-item-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.order-history-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--menu-border);
+}
+
+.order-history-total {
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--menu-primary);
+}
+
+.btn-repeat-order {
+  background: var(--menu-surface-alt);
+  border: 1px solid var(--menu-border);
+  color: var(--menu-text);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.btn-repeat-order:hover {
+  background: var(--menu-primary);
+  color: #ffffff;
+  border-color: var(--menu-primary);
+}
+
+/* Status Badges nos Pedidos */
+.order-status-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.badge-status-pendente {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.badge-status-producao {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
+}
+
+.badge-status-pronto {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.badge-status-entregue {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.badge-status-cancelado {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+
 </style>
 <!-- CSS_INLINE:END -->
+
+
 
 
 
@@ -855,6 +1288,28 @@ html.dark .status-pronta {
   <!-- Cabeçalho do Cardápio -->
   <header class="menu-header">
     <div class="menu-header-content">
+      <!-- Barra Superior com Identificação / Login do Cliente -->
+      <div class="menu-top-bar">
+        <button type="button" id="btnUserAuth" class="btn-user-auth" aria-haspopup="true" aria-expanded="false">
+          <span id="userAuthIcon">👤</span>
+          <span id="userAuthLabel">Entrar / Criar Conta</span>
+        </button>
+        <div id="userDropdown" class="user-dropdown-menu" role="menu">
+          <button type="button" class="user-dropdown-item" id="btnNavOrders" role="menuitem">
+            <span>📋</span> Meus Pedidos
+          </button>
+          <button type="button" class="user-dropdown-item" id="btnNavLoyalty" role="menuitem">
+            <span>🎁</span> Cartão Fidelidade
+          </button>
+          <button type="button" class="user-dropdown-item" id="btnNavProfile" role="menuitem">
+            <span>⚙️</span> Meus Dados
+          </button>
+          <button type="button" class="user-dropdown-item danger" id="btnLogoutCustomer" role="menuitem">
+            <span>🚪</span> Sair da Conta
+          </button>
+        </div>
+      </div>
+
       <div class="menu-brand">
         <span class="menu-logo-icon">🧁</span>
         <h1 class="menu-title">Punk Bolos</h1>
@@ -937,6 +1392,11 @@ html.dark .status-pronta {
 
         <!-- Formulário de Identificação e Entrega -->
         <div id="cartFormSection">
+          <div id="cartUserSessionBanner" class="cart-user-badge" hidden>
+            <span>👤 Logado como: <strong id="cartLoggedUserName"></strong></span>
+            <button type="button" id="btnCartSwitchUser" class="cart-user-badge-change">Trocar</button>
+          </div>
+
           <h3 class="cart-section-title">Dados para Entrega</h3>
           <form id="checkoutForm" class="cart-form-grid" novalidate>
             <div class="cart-field cart-field-full">
@@ -1009,7 +1469,167 @@ html.dark .status-pronta {
     </div>
   </div>
 
+  <!-- Modal de Identificação / Login / Cadastro de Cliente -->
+  <div id="authModal" class="cart-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="cart-backdrop" id="authBackdrop"></div>
+    <div class="cart-drawer">
+      <div class="cart-header">
+        <h2 id="authModalTitle" class="cart-title">
+          <span>👤</span> Minha Conta
+        </h2>
+        <button type="button" id="btnAuthClose" class="cart-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <!-- Abas: Entrar / Criar Conta -->
+      <div class="modal-tabs-nav" role="tablist">
+        <button type="button" class="modal-tab-btn active" id="tabBtnRegister" data-target="tabContentRegister" role="tab">
+          <span>✨</span> Criar Conta (1º Acesso)
+        </button>
+        <button type="button" class="modal-tab-btn" id="tabBtnLogin" data-target="tabContentLogin" role="tab">
+          <span>🔑</span> Já tenho cadastro
+        </button>
+      </div>
+
+      <div class="cart-body">
+        <!-- Aba 1: Criar Conta -->
+        <div id="tabContentRegister" class="modal-tab-content active" role="tabpanel">
+          <form id="customerRegisterForm" class="auth-form" novalidate>
+            <div class="cart-field">
+              <label for="regCustomerName">Nome Completo *</label>
+              <input type="text" id="regCustomerName" placeholder="Ex.: Mariana Silva" required autocomplete="name">
+            </div>
+
+            <div class="cart-field">
+              <label for="regCustomerPhone">WhatsApp com DDD *</label>
+              <input type="tel" id="regCustomerPhone" placeholder="(11) 99999-9999" required autocomplete="tel">
+              <span class="auth-form-help">Usado para localizar seus pedidos e enviar confirmações.</span>
+            </div>
+
+            <div class="cart-field">
+              <label for="regCustomerAddress">Endereço Completo de Entrega *</label>
+              <input type="text" id="regCustomerAddress" placeholder="Rua, número, complemento e bairro" required autocomplete="street-address">
+            </div>
+
+            <div class="cart-field">
+              <label for="regCustomerBirthday">Data de Nascimento (Aniversário) 🎂</label>
+              <input type="date" id="regCustomerBirthday">
+              <span class="auth-form-help">Para te mimarmos com presentes e descontos especiais no seu dia! 🎁</span>
+            </div>
+
+            <button type="submit" id="btnSubmitRegister" class="btn-primary-block">
+              <span>Salvar Dados e Continuar</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Aba 2: Já Tenho Cadastro -->
+        <div id="tabContentLogin" class="modal-tab-content" role="tabpanel">
+          <form id="customerLoginForm" class="auth-form" novalidate>
+            <div class="cart-field">
+              <label for="loginCustomerPhone">Seu WhatsApp com DDD *</label>
+              <input type="tel" id="loginCustomerPhone" placeholder="(11) 99999-9999" required autocomplete="tel">
+              <span class="auth-form-help">Informe o mesmo telefone usado no seu cadastro.</span>
+            </div>
+
+            <button type="submit" id="btnSubmitLogin" class="btn-primary-block">
+              <span>Acessar Minha Conta</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Gestão da Conta do Cliente (Pedidos, Fidelidade, Meus Dados) -->
+  <div id="accountModal" class="cart-modal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+    <div class="cart-backdrop" id="accountBackdrop"></div>
+    <div class="cart-drawer">
+      <div class="cart-header">
+        <h2 id="accountModalTitle" class="cart-title">
+          <span>🧁</span> <span id="accountCustomerName">Minha Conta</span>
+        </h2>
+        <button type="button" id="btnAccountClose" class="cart-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <!-- Abas: Meus Pedidos / Fidelidade / Meus Dados -->
+      <div class="modal-tabs-nav" role="tablist">
+        <button type="button" class="modal-tab-btn active" id="tabBtnAccountOrders" data-target="tabContentOrders" role="tab">
+          <span>📋</span> Meus Pedidos
+        </button>
+        <button type="button" class="modal-tab-btn" id="tabBtnAccountLoyalty" data-target="tabContentLoyalty" role="tab">
+          <span>🎁</span> Cartão Fidelidade
+        </button>
+        <button type="button" class="modal-tab-btn" id="tabBtnAccountProfile" data-target="tabContentProfile" role="tab">
+          <span>⚙️</span> Meus Dados
+        </button>
+      </div>
+
+      <div class="cart-body">
+        <!-- Aba: Meus Pedidos -->
+        <div id="tabContentOrders" class="modal-tab-content active" role="tabpanel">
+          <div id="accountOrdersLoading" class="menu-loading-state" hidden>
+            <div class="menu-spinner"></div>
+            <p>Buscando seus pedidos...</p>
+          </div>
+          <div id="accountOrdersList" class="order-history-list"></div>
+          <div id="accountOrdersEmpty" class="cart-empty-state" hidden>
+            <span class="cart-empty-icon">🍰</span>
+            <p>Você ainda não fez nenhum pedido conosco.<br>Aproveite nossas delícias!</p>
+          </div>
+        </div>
+
+        <!-- Aba: Cartão Fidelidade -->
+        <div id="tabContentLoyalty" class="modal-tab-content" role="tabpanel">
+          <div class="loyalty-card-box">
+            <div class="loyalty-card-header">
+              <div>
+                <h3 class="loyalty-card-title">Punk Fidelidade ⭐</h3>
+                <p class="loyalty-card-subtitle">A cada 10 pedidos, ganhe 1 recompensa deliciosa!</p>
+              </div>
+              <div class="loyalty-reward-badge" id="loyaltyStampsCount">0 / 10</div>
+            </div>
+
+            <!-- Grade com os 10 selos -->
+            <div class="loyalty-stamps-grid" id="loyaltyStampsGrid"></div>
+
+            <p class="loyalty-info-text" id="loyaltyProgressMsg">Faça seu primeiro pedido para começar a acumular selos!</p>
+          </div>
+        </div>
+
+        <!-- Aba: Meus Dados -->
+        <div id="tabContentProfile" class="modal-tab-content" role="tabpanel">
+          <form id="customerProfileForm" class="auth-form" novalidate>
+            <div class="cart-field">
+              <label for="profCustomerName">Nome Completo *</label>
+              <input type="text" id="profCustomerName" required autocomplete="name">
+            </div>
+
+            <div class="cart-field">
+              <label for="profCustomerPhone">WhatsApp com DDD</label>
+              <input type="tel" id="profCustomerPhone" disabled title="Para alterar o WhatsApp, faça um novo cadastro ou contate a confeitaria.">
+            </div>
+
+            <div class="cart-field">
+              <label for="profCustomerAddress">Endereço Completo de Entrega</label>
+              <input type="text" id="profCustomerAddress" placeholder="Rua, número, complemento e bairro">
+            </div>
+
+            <div class="cart-field">
+              <label for="profCustomerBirthday">Data de Nascimento (Aniversário) 🎂</label>
+              <input type="date" id="profCustomerBirthday">
+            </div>
+
+            <button type="submit" id="btnSubmitSaveProfile" class="btn-primary-block">
+              <span>Salvar Alterações</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Módulos ES6 -->
-  <script type="module" src="js/cardapio.js?v=4"></script>
+  <script type="module" src="js/cardapio.js?v=5"></script>
 </body>
 </html>
+

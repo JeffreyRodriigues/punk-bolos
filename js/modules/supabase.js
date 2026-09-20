@@ -514,10 +514,42 @@ export async function deleteCustomer(id) {
   });
 }
 
-/* ---------- Cardápio Digital Público (View Segura) ---------- */
+/* ---------- Cardápio Digital Público (View Segura & RPCs do Cliente) ---------- */
 
 /** Lista os produtos com o estoque em tempo real para o cardápio público. */
 export async function listPublicMenu() {
   return request('/rest/v1/vw_cardapio_produtos?select=*');
+}
+
+/** Busca os pedidos do próprio cliente por telefone no Cardápio Digital. */
+export async function getCustomerOrdersPublic(phone) {
+  return request('/rest/v1/rpc/get_customer_orders', {
+    method: 'POST',
+    body: { p_contato: phone },
+  });
+}
+
+/** Busca o cadastro do cliente pelo número de telefone. */
+export async function getCustomerByPhonePublic(phone) {
+  const list = await request('/rest/v1/rpc/get_customer_by_phone', {
+    method: 'POST',
+    body: { p_contato: phone },
+  });
+  return Array.isArray(list) && list.length > 0 ? list[0] : null;
+}
+
+/** Cria ou atualiza o perfil do cliente a partir do Cardápio Digital. */
+export async function upsertCustomerProfilePublic(customerData = {}) {
+  return request('/rest/v1/rpc/upsert_customer_profile', {
+    method: 'POST',
+    body: {
+      p_id: customerData.id || '',
+      p_nome: customerData.nome || '',
+      p_contato: customerData.contato || customerData.whatsapp || '',
+      p_endereco: customerData.endereco || '',
+      p_data_nascimento: customerData.dataNascimento || customerData.data_nascimento || null,
+      p_observacoes: customerData.observacoes || '',
+    },
+  });
 }
 

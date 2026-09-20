@@ -2,19 +2,23 @@
    CARDAPIO.JS — Controlador do Cardápio Digital Público
    ------------------------------------------------------------
    Ponto de entrada de cardapio.html. Gerencia catálogo, carrinho,
-   filtros, estoque de pronta entrega e envio do pedido para o WhatsApp.
+   autenticação/perfil do cliente, histórico de pedidos, fidelidade
+   e envio do pedido para o WhatsApp.
    ============================================================ */
 
 import * as storage from './modules/storage.js';
 import * as menuService from './modules/menuService.js';
 import * as orderModule from './modules/order.js';
 import * as estoque from './modules/estoque.js';
+import * as supabase from './modules/supabase.js';
 
 // Estado local da página
 let cart = [];
 let currentCategory = 'todos';
 let currentSearch = '';
 let currentDeliveryType = 'Retirada';
+let currentCustomer = null;
+let currentCustomerOrders = [];
 
 // Telefone da confeitaria
 const STORE_PHONE = '11999999999';
@@ -23,6 +27,9 @@ const STORE_PHONE = '11999999999';
 async function init() {
   const loadingEl = document.getElementById('menuLoadingState');
   if (loadingEl) loadingEl.hidden = false;
+
+  // Carrega sessão existente do cliente no navegador
+  currentCustomer = menuService.obterSessaoCliente();
 
   try {
     await storage.initPublicMenu();
@@ -40,8 +47,554 @@ async function init() {
   }
 
   setupEventListeners();
+  updateAuthUi();
   renderProducts();
   updateCartUi();
+}
+
+/* ---------- Gestão de Autenticação / Sessão na Interface ---------- */
+
+function updateAuthUi() {
+  const btnAuth = document.getElementById('btnUserAuth');
+  const userIcon = document.getElementById('userAuthIcon');
+  const userLabel = document.getElementById('userAuthLabel');
+  const banner = document.getElementById('cartUserSessionBanner');
+  const loggedName = document.getElementById('cartLoggedUserName');
+
+  if (currentCustomer && currentCustomer.nome) {
+    const firstName = menuService.extrairPrimeiroNome(currentCustomer.nome);
+    if (userLabel) userLabel.textContent = `Olá, ${firstName} ▾`;
+    if (userIcon) userIcon.textContent = '👤';
+    if (btnAuth) btnAuth.classList.add('btn-user-logged');
+
+    if (banner && loggedName) {
+      banner.hidden = false;
+      loggedName.textContent = `${currentCustomer.nome} (${menuService.formatarTelefone(currentCustomer.contato)})`;
+    }
+
+    // Preenche os campos do checkout se estiverem vazios
+    const nameInput = document.getElementById('clientName');
+    const phoneInput = document.getElementById('clientPhone');
+    const addressInput = document.getElementById('clientAddress');
+
+    if (nameInput && !nameInput.value) nameInput.value = currentCustomer.nome;
+    if (phoneInput && !phoneInput.value) phoneInput.value = menuService.formatarTelefone(currentCustomer.contato);
+    if (addressInput && !addressInput.value && currentCustomer.endereco) {
+      addressInput.value = currentCustomer.endereco;
+    }
+  } else {
+    if (userLabel) userLabel.textContent = 'Entrar / Criar Conta';
+    if (userIcon) userIcon.textContent = '👤';
+    if (btnAuth) btnAuth.classList.remove('btn-user-logged');
+    if (banner) banner.hidden = true;
+  }
+}
+
+function toggleUserDropdown(forceState) {
+  const dropdown = document.getElementById('userDropdown');
+  const btnAuth = document.getElementById('btnUserAuth');
+  if (!dropdown) return;
+
+  const isOpen = forceState !== undefined ? forceState : !dropdown.classList.contains('open');
+  if (isOpen) {
+    dropdown.classList.add('open');
+    if (btnAuth) btnAuth.setAttribute('aria-expanded', 'true');
+  } else {
+    dropdown.classList.remove('open');
+    if (btnAuth) btnAuth.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function handleUserAuthClick() {
+  if (currentCustomer) {
+    toggleUserDropdown();
+  } else {
+    openAuthModal('tabContentRegister');
+  }
+}
+
+/* ---------- Controle dos Modais (Auth & Account) ---------- */
+
+function openAuthModal(defaultTabId = 'tabContentRegister') {
+  toggleUserDropdown(false);
+  const modal = document.getElementById('authModal');
+  if (!modal) return;
+
+  switchModalTab('authModal', defaultTabId);
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('authModal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+async function openAccountModal(defaultTabId = 'tabContentOrders') {
+  toggleUserDropdown(false);
+  if (!currentCustomer) {
+    openAuthModal('tabContentRegister');
+    return;
+  }
+
+  const modal = document.getElementById('accountModal');
+  if (!modal) return;
+
+  const nameEl = document.getElementById('accountCustomerName');
+  if (nameEl) {
+    nameEl.textContent = currentCustomer.nome || 'Minha Conta';
+  }
+
+  switchModalTab('accountModal', defaultTabId);
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Carrega os pedidos do cliente
+  await loadCustomerOrdersAndFidelity();
+  prefillProfileForm();
+}
+
+function closeAccountModal() {
+  const modal = document.getElementById('accountModal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+function switchModalTab(modalId, targetContentId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  const tabs = modal.querySelectorAll('.modal-tab-btn');
+  const contents = modal.querySelectorAll('.modal-tab-content');
+
+  tabs.forEach((tab) => {
+    if (tab.dataset.target === targetContentId) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+
+  contents.forEach((content) => {
+    if (content.id === targetContentId) {
+      content.classList.add('active');
+    } else {
+      content.classList.remove('active');
+    }
+  });
+}
+
+/* ---------- Operações de Login, Cadastro e Perfil ---------- */
+
+async function handleRegisterSubmit(e) {
+  e.preventDefault();
+  const nome = document.getElementById('regCustomerName')?.value || '';
+  const contato = document.getElementById('regCustomerPhone')?.value || '';
+  const endereco = document.getElementById('regCustomerAddress')?.value || '';
+  const dataNascimento = document.getElementById('regCustomerBirthday')?.value || null;
+
+  const validacao = menuService.validarCadastroCliente({ nome, contato, endereco });
+  if (!validacao.valid) {
+    const primeiroErro = Object.values(validacao.errors)[0];
+    alert(primeiroErro);
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmitRegister');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Salvando dados...';
+  }
+
+  try {
+    let savedCustomer = null;
+    if (supabase.isConfigured()) {
+      try {
+        savedCustomer = await supabase.upsertCustomerProfilePublic({
+          nome,
+          contato,
+          endereco,
+          dataNascimento,
+        });
+      } catch (err) {
+        console.warn('[cardapio] Falha ao gravar no Supabase via RPC, usando local:', err);
+      }
+    }
+
+    if (!savedCustomer) {
+      const cleanPhone = menuService.sanitizarTelefone(contato);
+      const existing = storage.getAllCustomers().find(
+        (c) => menuService.sanitizarTelefone(c.contato) === cleanPhone
+      );
+      savedCustomer = {
+        id: existing ? existing.id : `cli_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        nome: nome.trim(),
+        contato: contato.trim(),
+        endereco: endereco.trim(),
+        dataNascimento: dataNascimento || '',
+      };
+      storage.saveCustomer(savedCustomer);
+    }
+
+    currentCustomer = savedCustomer;
+    menuService.salvarSessaoCliente(currentCustomer);
+    updateAuthUi();
+    closeAuthModal();
+    alert(`Conta criada com sucesso! Bem-vinda(o), ${menuService.extrairPrimeiroNome(currentCustomer.nome)}! 🧁`);
+  } catch (err) {
+    alert(`Erro ao salvar cadastro: ${err.message || err}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Dados e Continuar';
+    }
+  }
+}
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  const phone = document.getElementById('loginCustomerPhone')?.value || '';
+  const cleanPhone = menuService.sanitizarTelefone(phone);
+
+  if (!cleanPhone || cleanPhone.length < 10) {
+    alert('Informe um número de WhatsApp válido com DDD.');
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmitLogin');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+  }
+
+  try {
+    let found = null;
+    if (supabase.isConfigured()) {
+      try {
+        found = await supabase.getCustomerByPhonePublic(cleanPhone);
+      } catch (err) {
+        console.warn('[cardapio] getCustomerByPhonePublic falhou, buscando local:', err);
+      }
+    }
+
+    if (!found) {
+      found = storage.getAllCustomers().find(
+        (c) => menuService.sanitizarTelefone(c.contato) === cleanPhone
+      );
+    }
+
+    if (found) {
+      currentCustomer = found;
+      menuService.salvarSessaoCliente(currentCustomer);
+      updateAuthUi();
+      closeAuthModal();
+      alert(`Olá de volta, ${menuService.extrairPrimeiroNome(currentCustomer.nome)}! 👋`);
+    } else {
+      alert('Telefone não encontrado. Vamos criar sua conta agora em menos de 1 minuto!');
+      const regPhone = document.getElementById('regCustomerPhone');
+      if (regPhone) regPhone.value = phone;
+      switchModalTab('authModal', 'tabContentRegister');
+    }
+  } catch (err) {
+    alert(`Erro ao entrar: ${err.message || err}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Acessar Minha Conta';
+    }
+  }
+}
+
+function handleLogout() {
+  if (confirm('Deseja sair da sua conta neste dispositivo?')) {
+    menuService.limparSessaoCliente();
+    currentCustomer = null;
+    currentCustomerOrders = [];
+    updateAuthUi();
+    toggleUserDropdown(false);
+    closeAccountModal();
+  }
+}
+
+function prefillProfileForm() {
+  if (!currentCustomer) return;
+  const nameEl = document.getElementById('profCustomerName');
+  const phoneEl = document.getElementById('profCustomerPhone');
+  const addressEl = document.getElementById('profCustomerAddress');
+  const birthdayEl = document.getElementById('profCustomerBirthday');
+
+  if (nameEl) nameEl.value = currentCustomer.nome || '';
+  if (phoneEl) phoneEl.value = menuService.formatarTelefone(currentCustomer.contato);
+  if (addressEl) addressEl.value = currentCustomer.endereco || '';
+  if (birthdayEl) birthdayEl.value = currentCustomer.dataNascimento || currentCustomer.data_nascimento || '';
+}
+
+async function handleProfileSave(e) {
+  e.preventDefault();
+  if (!currentCustomer) return;
+
+  const nome = document.getElementById('profCustomerName')?.value || '';
+  const endereco = document.getElementById('profCustomerAddress')?.value || '';
+  const dataNascimento = document.getElementById('profCustomerBirthday')?.value || null;
+
+  const validacao = menuService.validarCadastroCliente({
+    nome,
+    contato: currentCustomer.contato,
+    endereco,
+  });
+
+  if (!validacao.valid) {
+    const primeiroErro = Object.values(validacao.errors)[0];
+    alert(primeiroErro);
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmitSaveProfile');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+  }
+
+  try {
+    let updated = null;
+    if (supabase.isConfigured()) {
+      try {
+        updated = await supabase.upsertCustomerProfilePublic({
+          id: currentCustomer.id,
+          nome,
+          contato: currentCustomer.contato,
+          endereco,
+          dataNascimento,
+        });
+      } catch (err) {
+        console.warn('[cardapio] updateProfile via RPC falhou:', err);
+      }
+    }
+
+    if (!updated) {
+      updated = {
+        ...currentCustomer,
+        nome: nome.trim(),
+        endereco: endereco.trim(),
+        dataNascimento: dataNascimento || '',
+      };
+      storage.saveCustomer(updated);
+    }
+
+    currentCustomer = updated;
+    menuService.salvarSessaoCliente(currentCustomer);
+    updateAuthUi();
+    alert('Dados atualizados com sucesso!');
+  } catch (err) {
+    alert(`Erro ao salvar dados: ${err.message || err}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Alterações';
+    }
+  }
+}
+
+/* ---------- Carregamento de Pedidos e Fidelidade ---------- */
+
+async function loadCustomerOrdersAndFidelity() {
+  const loadingEl = document.getElementById('accountOrdersLoading');
+  const listEl = document.getElementById('accountOrdersList');
+  const emptyEl = document.getElementById('accountOrdersEmpty');
+
+  if (!currentCustomer || !currentCustomer.contato) return;
+
+  if (loadingEl) loadingEl.hidden = false;
+  if (listEl) listEl.innerHTML = '';
+  if (emptyEl) emptyEl.hidden = true;
+
+  const cleanPhone = menuService.sanitizarTelefone(currentCustomer.contato);
+  let orders = [];
+
+  try {
+    if (supabase.isConfigured()) {
+      try {
+        orders = await supabase.getCustomerOrdersPublic(cleanPhone);
+      } catch (err) {
+        console.warn('[cardapio] getCustomerOrdersPublic falhou, lendo local:', err);
+      }
+    }
+
+    if (!Array.isArray(orders) || orders.length === 0) {
+      const allOrders = storage.getAll();
+      orders = allOrders.filter((o) => menuService.sanitizarTelefone(o.contato) === cleanPhone);
+    }
+  } catch (err) {
+    console.error('[cardapio] Erro ao carregar histórico:', err);
+  } finally {
+    if (loadingEl) loadingEl.hidden = true;
+  }
+
+  currentCustomerOrders = orders || [];
+  renderCustomerOrders(currentCustomerOrders);
+  renderCustomerLoyalty(currentCustomerOrders);
+}
+
+function renderCustomerOrders(orders = []) {
+  const listEl = document.getElementById('accountOrdersList');
+  const emptyEl = document.getElementById('accountOrdersEmpty');
+  if (!listEl) return;
+
+  if (orders.length === 0) {
+    listEl.innerHTML = '';
+    if (emptyEl) emptyEl.hidden = false;
+    return;
+  }
+
+  if (emptyEl) emptyEl.hidden = true;
+  listEl.innerHTML = '';
+
+  orders.forEach((order) => {
+    const card = document.createElement('div');
+    card.className = 'order-history-card';
+
+    const statusBadgeClass = getStatusBadgeClass(order.status);
+    const dateFormatted = formatDateBr(order.data || order.created_at);
+    const totalVal = order.valor_total !== undefined ? Number(order.valor_total) : Number(order.valorTotal) || 0;
+    const orderNum = order.numero ? `#${order.numero}` : 'Pedido';
+
+    const items = Array.isArray(order.itens) ? order.itens : [];
+    const itemsHtml = items.map((item) => {
+      const nome = item.sabor || item.titulo || item.tipoProduto || 'Produto';
+      const tam = item.tamanho ? ` (${item.tamanho})` : '';
+      const qtd = item.quantidade || 1;
+      const unitVal = item.valorUnitario !== undefined ? Number(item.valorUnitario) : Number(item.valor) || 0;
+      const itemSubtotal = qtd * unitVal;
+      return `
+        <div class="order-history-item-line">
+          <span>${qtd}x ${escapeHtml(nome)}${escapeHtml(tam)}</span>
+          <strong>${menuService.formatarMoeda(itemSubtotal)}</strong>
+        </div>
+      `;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="order-history-header">
+        <div>
+          <span class="order-history-number">${orderNum}</span>
+          <span class="order-history-date">• ${dateFormatted}</span>
+        </div>
+        <span class="order-status-badge ${statusBadgeClass}">${escapeHtml(order.status || 'Pendente')}</span>
+      </div>
+      <div class="order-history-items">
+        ${itemsHtml || '<p style="margin:0;color:var(--menu-text-muted);">Itens do pedido</p>'}
+      </div>
+      <div class="order-history-footer">
+        <span class="order-history-total">Total: ${menuService.formatarMoeda(totalVal)}</span>
+        <button type="button" class="btn-repeat-order" data-id="${order.id}">
+          <span>🔁</span> Repetir Pedido
+        </button>
+      </div>
+    `;
+
+    card.querySelector('.btn-repeat-order')?.addEventListener('click', () => {
+      repeatOrder(order);
+    });
+
+    listEl.appendChild(card);
+  });
+}
+
+function renderCustomerLoyalty(orders = []) {
+  const countBadge = document.getElementById('loyaltyStampsCount');
+  const gridEl = document.getElementById('loyaltyStampsGrid');
+  const msgEl = document.getElementById('loyaltyProgressMsg');
+  if (!gridEl) return;
+
+  const fidelidade = menuService.calcularFidelidadeCliente(orders);
+
+  if (countBadge) {
+    countBadge.textContent = `${fidelidade.selos} / 10`;
+  }
+
+  if (msgEl) {
+    if (fidelidade.selos === 0 && fidelidade.totalPedidos === 0) {
+      msgEl.textContent = 'Faça seu primeiro pedido para começar a acumular selos e ganhar recompensas!';
+    } else if (fidelidade.selosRestantes === 0 || fidelidade.selos === 10) {
+      msgEl.innerHTML = '🎉 <strong>Parabéns!</strong> Você completou 10 selos e ganhou 1 recompensa deliciosa no seu próximo pedido!';
+    } else {
+      msgEl.textContent = `Você tem ${fidelidade.selos} selo${fidelidade.selos > 1 ? 's' : ''}. Faltam apenas ${fidelidade.selosRestantes} pedido${fidelidade.selosRestantes > 1 ? 's' : ''} para sua próxima recompensa! 🎁`;
+    }
+  }
+
+  gridEl.innerHTML = '';
+  for (let i = 1; i <= 10; i++) {
+    const slot = document.createElement('div');
+    const isStamped = i <= fidelidade.selos;
+    const isRewardSlot = i === 10;
+
+    slot.className = `loyalty-stamp-slot${isRewardSlot ? ' reward-slot' : ''}${isStamped ? ' stamped' : ''}`;
+
+    if (isStamped) {
+      slot.textContent = isRewardSlot ? '🎁' : '🧁';
+      slot.title = `Selo ${i} conquistado!`;
+    } else {
+      slot.textContent = isRewardSlot ? '10 🎁' : String(i);
+      slot.title = `Selo ${i}`;
+    }
+
+    gridEl.appendChild(slot);
+  }
+}
+
+function repeatOrder(order) {
+  const items = Array.isArray(order.itens) ? order.itens : [];
+  if (items.length === 0) {
+    alert('Este pedido não contém itens para repetir.');
+    return;
+  }
+
+  const allProducts = storage.getAllProducts() || [];
+
+  items.forEach((item) => {
+    // Tenta encontrar produto no catálogo atual
+    let prod = allProducts.find((p) => p.id === item.produtoId || p.titulo === item.sabor);
+    if (!prod) {
+      prod = {
+        id: item.produtoId || `prod_custom_${Date.now()}_${Math.random().toString(36).slice(2, 4)}`,
+        titulo: item.sabor || item.titulo || item.tipoProduto,
+        tipoProduto: item.tipoProduto || 'Fatia',
+        tamanho: item.tamanho || '',
+        valor: item.valorUnitario || item.valor || 0,
+      };
+    }
+    const saldoEstoque = prod.estoqueDisponivel !== undefined ? prod.estoqueDisponivel : estoque.disponivel(prod);
+    const disp = menuService.verificarDisponibilidadeCardapio(prod, saldoEstoque);
+    cart = menuService.adicionarItemCarrinho(cart, prod, item.quantidade || 1, disp.estoqueMax);
+  });
+
+  updateCartUi();
+  renderProducts();
+  closeAccountModal();
+  openCartModal();
+}
+
+function getStatusBadgeClass(status) {
+  const s = String(status || '').toLowerCase();
+  if (s.includes('produ') || s.includes('preparo')) return 'badge-status-producao';
+  if (s.includes('pronto')) return 'badge-status-pronto';
+  if (s.includes('entregue') || s.includes('concl')) return 'badge-status-entregue';
+  if (s.includes('cancel')) return 'badge-status-cancelado';
+  return 'badge-status-pendente';
+}
+
+function formatDateBr(dateStr) {
+  if (!dateStr) return '';
+  const parts = String(dateStr).slice(0, 10).split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
 }
 
 /* ---------- Renderização do Catálogo ---------- */
@@ -249,6 +802,7 @@ function renderCartDrawerItems() {
 function openCartModal() {
   const modal = document.getElementById('cartModal');
   if (modal) {
+    updateAuthUi();
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
@@ -263,7 +817,7 @@ function closeCartModal() {
 }
 
 /* ---------- Envio do Pedido via WhatsApp ---------- */
-function handleCheckout() {
+async function handleCheckout() {
   const nome = document.getElementById('clientName')?.value || '';
   const whatsapp = document.getElementById('clientPhone')?.value || '';
   const endereco = document.getElementById('clientAddress')?.value || '';
@@ -324,18 +878,32 @@ function handleCheckout() {
     orders.push(novoPedido);
     storage.save(orders);
 
-    // Sincroniza cliente no cadastro
-    const allCust = storage.getAllCustomers();
-    const matchCust = allCust.find((c) => c.nome.trim().toLowerCase() === nome.trim().toLowerCase());
-    if (!matchCust) {
-      storage.saveCustomer({
-        id: `cli_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        nome: nome.trim(),
-        contato: whatsapp.trim(),
-        endereco: currentDeliveryType === 'Entrega' ? endereco.trim() : '',
-        dataNascimento: '',
-        observacoes: observacoes.trim(),
-      });
+    // Se o cliente não estava logado, cria a sessão com esses dados para ele
+    if (!currentCustomer) {
+      const cleanPhone = menuService.sanitizarTelefone(whatsapp);
+      const allCust = storage.getAllCustomers();
+      let matchCust = allCust.find((c) => menuService.sanitizarTelefone(c.contato) === cleanPhone);
+
+      if (!matchCust) {
+        matchCust = {
+          id: `cli_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          nome: nome.trim(),
+          contato: whatsapp.trim(),
+          endereco: currentDeliveryType === 'Entrega' ? endereco.trim() : '',
+          dataNascimento: '',
+          observacoes: observacoes.trim(),
+        };
+        storage.saveCustomer(matchCust);
+
+        if (supabase.isConfigured()) {
+          supabase.upsertCustomerProfilePublic(matchCust).catch((e) =>
+            console.warn('[cardapio] upsertCustomerProfilePublic falhou em checkout:', e)
+          );
+        }
+      }
+      currentCustomer = matchCust;
+      menuService.salvarSessaoCliente(currentCustomer);
+      updateAuthUi();
     }
   } catch (e) {
     console.error('[cardapio] Erro ao salvar pedido interno:', e);
@@ -370,13 +938,52 @@ function setupEventListeners() {
     });
   });
 
-  // Barra flutuante
-  const floatingBar = document.getElementById('floatingCartBar');
-  if (floatingBar) {
-    floatingBar.addEventListener('click', openCartModal);
-  }
+  // Autenticação & Dropdown
+  document.getElementById('btnUserAuth')?.addEventListener('click', handleUserAuthClick);
+  document.getElementById('btnNavOrders')?.addEventListener('click', () => openAccountModal('tabContentOrders'));
+  document.getElementById('btnNavLoyalty')?.addEventListener('click', () => openAccountModal('tabContentLoyalty'));
+  document.getElementById('btnNavProfile')?.addEventListener('click', () => openAccountModal('tabContentProfile'));
+  document.getElementById('btnLogoutCustomer')?.addEventListener('click', handleLogout);
 
-  // Fechar modal
+  // Fecha dropdown ao clicar fora
+  document.addEventListener('click', (e) => {
+    const btnAuth = document.getElementById('btnUserAuth');
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown && btnAuth && !btnAuth.contains(e.target) && !dropdown.contains(e.target)) {
+      toggleUserDropdown(false);
+    }
+  });
+
+  // Modais de Auth & Conta
+  document.getElementById('btnAuthClose')?.addEventListener('click', closeAuthModal);
+  document.getElementById('authBackdrop')?.addEventListener('click', closeAuthModal);
+  document.getElementById('btnAccountClose')?.addEventListener('click', closeAccountModal);
+  document.getElementById('accountBackdrop')?.addEventListener('click', closeAccountModal);
+
+  // Abas do Modal Auth
+  document.getElementById('tabBtnRegister')?.addEventListener('click', () => switchModalTab('authModal', 'tabContentRegister'));
+  document.getElementById('tabBtnLogin')?.addEventListener('click', () => switchModalTab('authModal', 'tabContentLogin'));
+
+  // Abas do Modal Account
+  document.getElementById('tabBtnAccountOrders')?.addEventListener('click', () => switchModalTab('accountModal', 'tabContentOrders'));
+  document.getElementById('tabBtnAccountLoyalty')?.addEventListener('click', () => switchModalTab('accountModal', 'tabContentLoyalty'));
+  document.getElementById('tabBtnAccountProfile')?.addEventListener('click', () => switchModalTab('accountModal', 'tabContentProfile'));
+
+  // Formulários
+  document.getElementById('customerRegisterForm')?.addEventListener('submit', handleRegisterSubmit);
+  document.getElementById('customerLoginForm')?.addEventListener('submit', handleLoginSubmit);
+  document.getElementById('customerProfileForm')?.addEventListener('submit', handleProfileSave);
+
+  // Trocar usuário no carrinho
+  document.getElementById('btnCartSwitchUser')?.addEventListener('click', () => {
+    closeCartModal();
+    openAuthModal('tabContentRegister');
+  });
+
+  // Barra flutuante
+  document.getElementById('floatingCartBar')?.addEventListener('click', openCartModal);
+
+  // Fechar modal do carrinho
   document.getElementById('btnCartClose')?.addEventListener('click', closeCartModal);
   document.getElementById('cartBackdrop')?.addEventListener('click', closeCartModal);
 

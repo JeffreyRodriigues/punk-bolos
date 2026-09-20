@@ -108,3 +108,61 @@ test('gerarMensagemPedidoWhatsapp — adiciona aviso de alinhamento para Bolo so
   assert.ok(msg.includes('IMPORTANTE:'));
   assert.ok(msg.includes('alinhar e confirmar o horario exato'));
 });
+
+test('sanitizarTelefone e formatarTelefone — formata e limpa telefones corretamente', () => {
+  assert.equal(menuService.sanitizarTelefone('(11) 98765-4321'), '11987654321');
+  assert.equal(menuService.sanitizarTelefone('11 98765 4321'), '11987654321');
+  assert.equal(menuService.formatarTelefone('11987654321'), '(11) 98765-4321');
+  assert.equal(menuService.formatarTelefone('1187654321'), '(11) 8765-4321');
+});
+
+test('extrairPrimeiroNome — extrai primeiro nome ou fallback', () => {
+  assert.equal(menuService.extrairPrimeiroNome('Mariana Silva Pereira'), 'Mariana');
+  assert.equal(menuService.extrairPrimeiroNome('Carlos'), 'Carlos');
+  assert.equal(menuService.extrairPrimeiroNome(''), 'Cliente');
+});
+
+test('validarCadastroCliente — valida nome, whatsapp e endereço obrigatório', () => {
+  const v1 = menuService.validarCadastroCliente({
+    nome: 'Mariana Silva',
+    contato: '11999998888',
+    endereco: 'Rua das Flores, 123',
+  });
+  assert.equal(v1.valid, true);
+
+  const v2 = menuService.validarCadastroCliente({
+    nome: 'M',
+    contato: '119',
+    endereco: '',
+  });
+  assert.equal(v2.valid, false);
+  assert.ok(v2.errors.nome);
+  assert.ok(v2.errors.contato);
+  assert.ok(v2.errors.endereco);
+});
+
+test('calcularFidelidadeCliente — calcula selos e recompensas a cada 10 pedidos', () => {
+  // Sem pedidos
+  const f0 = menuService.calcularFidelidadeCliente([]);
+  assert.equal(f0.totalPedidos, 0);
+  assert.equal(f0.selos, 0);
+  assert.equal(f0.recompensas, 0);
+  assert.equal(f0.selosRestantes, 10);
+
+  // 3 pedidos
+  const pedidos3 = [{ status: 'Entregue' }, { status: 'Pendente' }, { status: 'Em produção' }];
+  const f3 = menuService.calcularFidelidadeCliente(pedidos3);
+  assert.equal(f3.totalPedidos, 3);
+  assert.equal(f3.selos, 3);
+  assert.equal(f3.selosRestantes, 7);
+  assert.equal(f3.recompensas, 0);
+
+  // 12 pedidos com 1 cancelado (11 válidos)
+  const pedidos12 = Array.from({ length: 11 }, () => ({ status: 'Entregue' })).concat([{ status: 'Cancelado' }]);
+  const f11 = menuService.calcularFidelidadeCliente(pedidos12);
+  assert.equal(f11.totalPedidos, 11);
+  assert.equal(f11.selos, 1);
+  assert.equal(f11.recompensas, 1);
+  assert.equal(f11.selosRestantes, 9);
+});
+
