@@ -540,13 +540,25 @@ export async function getCustomerByPhonePublic(phone) {
 
 /** Cria ou atualiza o perfil do cliente a partir do Cardápio Digital. */
 export async function upsertCustomerProfilePublic(customerData = {}) {
+  const end = customerData.endereco;
+  let endStr = '';
+  if (typeof end === 'object' && end !== null) {
+    if (end.logradouro) {
+      endStr = `${end.logradouro}, ${end.numero || 'S/N'}${end.complemento ? ' - ' + end.complemento : ''} - ${end.bairro || ''}, ${end.cidade || ''} - ${end.uf || ''} (CEP: ${end.cep || ''})${end.referencia ? ' | Ref: ' + end.referencia : ''}`;
+    } else {
+      endStr = JSON.stringify(end);
+    }
+  } else {
+    endStr = String(end || '').trim();
+  }
+
   return request('/rest/v1/rpc/upsert_customer_profile', {
     method: 'POST',
     body: {
       p_id: customerData.id || '',
       p_nome: customerData.nome || '',
       p_contato: customerData.contato || customerData.whatsapp || '',
-      p_endereco: customerData.endereco || '',
+      p_endereco: endStr,
       p_data_nascimento: customerData.dataNascimento || customerData.data_nascimento || null,
       p_observacoes: customerData.observacoes || '',
     },

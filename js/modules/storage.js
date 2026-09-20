@@ -504,12 +504,24 @@ function fromPrecificacaoRow(row) {
 
 /** Cliente (app) → linha do banco. */
 function toCustomerRow(customer) {
+  const end = customer.endereco;
+  let endStr = '';
+  if (typeof end === 'object' && end !== null) {
+    if (end.logradouro) {
+      endStr = `${end.logradouro}, ${end.numero || 'S/N'}${end.complemento ? ' - ' + end.complemento : ''} - ${end.bairro || ''}, ${end.cidade || ''} - ${end.uf || ''} (CEP: ${end.cep || ''})${end.referencia ? ' | Ref: ' + end.referencia : ''}`;
+    } else {
+      endStr = JSON.stringify(end);
+    }
+  } else {
+    endStr = String(end || '').trim();
+  }
+
   return {
     id: customer.id,
     nome: customer.nome || '',
     contato: customer.contato || '',
     data_nascimento: customer.dataNascimento || null,
-    endereco: customer.endereco || '',
+    endereco: endStr,
     observacoes: customer.observacoes || '',
   };
 }
