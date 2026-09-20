@@ -1153,11 +1153,17 @@ async function handleCheckout() {
     console.error('[cardapio] Erro ao salvar pedido interno:', e);
   }
 
+  // Salva notificação pendente para reexibir quando o cliente retornar do WhatsApp
+  try {
+    sessionStorage.setItem('punk_order_toast', 'Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp. 🎉');
+  } catch (_) {}
+
   // Limpa o carrinho e reseta a interface para a tela principal
   cart = [];
   updateCartUi();
   renderProducts();
   closeCartModal();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Reseta estado de entrega para Retirada padrão
   currentDeliveryType = 'Retirada';
@@ -1173,7 +1179,7 @@ async function handleCheckout() {
   if (notesEl) notesEl.value = '';
 
   // Notifica o cliente com toast de sucesso
-  showCardapioToast('Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp. 🎉', 'success', 5000);
+  showCardapioToast('Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp. 🎉', 'success', 6000);
 
   // Redireciona para o WhatsApp
   const waLink = menuService.formatarLinkWhatsapp(STORE_PHONE, msg);
@@ -1184,6 +1190,25 @@ async function handleCheckout() {
 
 /* ---------- Listeners de Eventos ---------- */
 function setupEventListeners() {
+  // Exibe toast de confirmação quando o cliente retorna do WhatsApp
+  const checkPendingOrderToast = () => {
+    try {
+      const pendingToast = sessionStorage.getItem('punk_order_toast');
+      if (pendingToast) {
+        sessionStorage.removeItem('punk_order_toast');
+        closeCartModal();
+        showCardapioToast(pendingToast, 'success', 5000);
+      }
+    } catch (_) {}
+  };
+
+  window.addEventListener('focus', checkPendingOrderToast);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkPendingOrderToast();
+    }
+  });
+
   // Inicializa a escuta de CEP com auto-complete nos 3 formulários
   setupCepLookup('client');
   setupCepLookup('regCustomer');

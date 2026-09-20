@@ -18,6 +18,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -154,6 +155,10 @@ html {
 
 *, *::before, *::after {
   box-sizing: inherit;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 body.menu-page {
@@ -1018,6 +1023,10 @@ html.dark .status-pronta {
   width: 100%;
 }
 
+.address-fieldset[hidden] {
+  display: none !important;
+}
+
 .address-fieldset-header {
   display: flex;
   align-items: center;
@@ -1773,6 +1782,7 @@ html.dark .status-pronta {
 
 
 
+
 </head>
 <body class="menu-page">
 
@@ -1889,7 +1899,7 @@ html.dark .status-pronta {
             <button type="button" id="btnCartSwitchUser" class="cart-user-badge-change">Trocar</button>
           </div>
 
-          <h3 class="cart-section-title">Dados para Entrega</h3>
+          <h3 class="cart-section-title">Dados do Pedido</h3>
           <form id="checkoutForm" class="cart-form-grid" novalidate>
             <div class="cart-field cart-field-full">
               <label for="clientName">Seu Nome Completo *</label>
@@ -2268,6 +2278,6 @@ html.dark .status-pronta {
   <div id="menuToastContainer" class="menu-toast-container" aria-live="polite"></div>
 
   <!-- Módulos ES6 -->
-  <script type="module" src="js/cardapio.js?v=9"></script>
+  <script type="module" src="js/cardapio.js?v=10"></script>
 </body>
 </html>

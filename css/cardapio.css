@@ -45,6 +45,10 @@ html {
   box-sizing: inherit;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body.menu-page {
   background-color: var(--menu-bg);
   color: var(--menu-text);
@@ -905,6 +909,10 @@ html.dark .status-pronta {
   gap: 12px;
   box-sizing: border-box;
   width: 100%;
+}
+
+.address-fieldset[hidden] {
+  display: none !important;
 }
 
 .address-fieldset-header {
