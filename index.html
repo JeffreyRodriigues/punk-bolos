@@ -53,6 +53,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -3032,6 +3033,30 @@ html.dark .badge-fidelidade {
     display: none !important;
   }
 
+  .header-right {
+    gap: 6px;
+  }
+
+  .theme-toggle {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .header-link-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 1rem;
+    gap: 0;
+  }
+
+  .header-link-text {
+    display: none;
+  }
+
   .app-layout {
     display: block;
     min-height: auto;
@@ -3186,7 +3211,12 @@ html.dark .badge-fidelidade {
 /* ---------- Celular (<= 480px) ---------- */
 @media (max-width: 480px) {
   .app-header {
-    padding: 10px 14px;
+    padding: 8px 12px;
+  }
+
+  .logout-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
   }
 
   .app-nav {
@@ -3281,6 +3311,7 @@ html.dark .badge-fidelidade {
 
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
 
@@ -3448,7 +3479,7 @@ html.dark .badge-fidelidade {
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Alternar tema claro/escuro">
         <span class="theme-toggle-icon">🌙</span>
       </button>
-      <a href="cardapio.html" target="_blank" rel="noopener" class="header-link-btn" title="Abrir Cardápio Digital Público">🛍️ Cardápio</a>
+      <a href="cardapio.html" target="_blank" rel="noopener" class="header-link-btn" title="Abrir Cardápio Digital Público"><span class="header-link-icon">🛍️</span><span class="header-link-text"> Cardápio</span></a>
       <button id="refreshBtn" class="header-btn" type="button" title="Atualizar dados da nuvem" aria-label="Atualizar dados da nuvem">⟳</button>
       <button id="logoutBtn" class="logout-btn" type="button" title="Sair do sistema" aria-label="Sair do sistema">Sair</button>
     </div>
