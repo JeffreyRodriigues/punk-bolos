@@ -852,28 +852,79 @@ function repeatOrder(order) {
   }
 
   const allProducts = storage.getAllProducts() || [];
+  let newCart = [];
+  const itemsNaoDisponiveis = [];
 
   items.forEach((item) => {
-    // Tenta encontrar produto no catálogo atual
-    let prod = allProducts.find((p) => p.id === item.produtoId || p.titulo === item.sabor);
+    // 1. Tenta encontrar pelo ID exato do produto se existir
+    let prod = item.produtoId ? allProducts.find((p) => p.id === item.produtoId) : null;
+
+    // 2. Se não encontrou por ID, casa estritamente por Tipo + Sabor + Tamanho
+    if (!prod) {
+      const itemTipo = String(item.tipoProduto || '').trim().toLowerCase();
+      const itemSabor = String(item.sabor || item.titulo || '').trim().toLowerCase();
+      const itemTamanho = String(item.tamanho || '').trim().toLowerCase();
+
+      prod = allProducts.find((p) => {
+        const pTipo = String(p.tipoProduto || '').trim().toLowerCase();
+        const pTitulo = String(p.titulo || '').trim().toLowerCase();
+        const pTamanho = String(p.tamanho || '').trim().toLowerCase();
+
+        const matchTipo = pTipo === itemTipo;
+        const matchTitulo = pTitulo === itemSabor;
+        const matchTamanho = pTipo !== 'bolo inteiro' || pTamanho === itemTamanho;
+
+        return matchTipo && matchTitulo && matchTamanho;
+      });
+    }
+
+    // 3. Fallback inteligente por Tipo + Tamanho + Valor
+    if (!prod) {
+      prod = allProducts.find((p) =>
+        p.tipoProduto === item.tipoProduto &&
+        (p.tamanho || '') === (item.tamanho || '') &&
+        Number(p.valor) === Number(item.valorUnitario || item.valor)
+      );
+    }
+
+    // 4. Se o produto não existe mais no catálogo, monta o item preservando todos os atributos originais
     if (!prod) {
       prod = {
-        id: item.produtoId || `prod_custom_${Date.now()}_${Math.random().toString(36).slice(2, 4)}`,
+        id: item.produtoId || `prod_custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         titulo: item.sabor || item.titulo || item.tipoProduto,
         tipoProduto: item.tipoProduto || 'Fatia',
         tamanho: item.tamanho || '',
         valor: item.valorUnitario || item.valor || 0,
       };
     }
+
     const saldoEstoque = prod.estoqueDisponivel !== undefined ? prod.estoqueDisponivel : estoque.disponivel(prod);
     const disp = menuService.verificarDisponibilidadeCardapio(prod, saldoEstoque);
-    cart = menuService.adicionarItemCarrinho(cart, prod, item.quantidade || 1, disp.estoqueMax);
+
+    if (disp.disponivel) {
+      const qtdToAdd = Math.min(item.quantidade || 1, disp.estoqueMax || 99);
+      newCart = menuService.adicionarItemCarrinho(newCart, prod, qtdToAdd, disp.estoqueMax);
+    } else {
+      itemsNaoDisponiveis.push(`${prod.tipoProduto} (${prod.titulo})`);
+    }
   });
 
+  if (newCart.length === 0 && itemsNaoDisponiveis.length > 0) {
+    showCardapioToast(`Itens indisponíveis no momento: ${itemsNaoDisponiveis.join(', ')}`, 'warn', 5000);
+    return;
+  }
+
+  cart = newCart;
   updateCartUi();
   renderProducts();
   closeAccountModal();
   openCartModal();
+
+  if (itemsNaoDisponiveis.length > 0) {
+    showCardapioToast(`Pedido carregado! Alguns itens estavam esgotados: ${itemsNaoDisponiveis.join(', ')}`, 'warn', 5000);
+  } else {
+    showCardapioToast('Itens do pedido carregados na sua sacola! 🛍️', 'success');
+  }
 }
 
 function getStatusBadgeClass(status) {
