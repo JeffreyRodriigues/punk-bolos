@@ -35,6 +35,16 @@ html.dark {
   --menu-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
 }
 
+html {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
 body.menu-page {
   background-color: var(--menu-bg);
   color: var(--menu-text);
@@ -42,6 +52,9 @@ body.menu-page {
   margin: 0;
   padding: 0 0 100px 0; /* Espaço para o botão flutuante */
   line-height: 1.5;
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
 }
 
 /* Header */
@@ -647,11 +660,14 @@ html.dark .status-pronta {
 .cart-body {
   flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .cart-body:has(.modal-tab-content) {
@@ -671,6 +687,8 @@ html.dark .status-pronta {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .cart-item-row {
@@ -680,10 +698,12 @@ html.dark .status-pronta {
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px dashed var(--menu-border);
+  box-sizing: border-box;
 }
 
 .cart-item-info {
   flex: 1;
+  min-width: 0;
 }
 
 .cart-item-name {
@@ -691,6 +711,7 @@ html.dark .status-pronta {
   font-weight: 700;
   color: var(--menu-text);
   margin: 0;
+  word-break: break-word;
 }
 
 .cart-item-desc {
@@ -705,24 +726,29 @@ html.dark .status-pronta {
   color: var(--menu-primary);
   min-width: 70px;
   text-align: right;
+  flex-shrink: 0;
 }
 
 .cart-item-controls {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 /* Formulário do Cliente */
 .cart-form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-@media (max-width: 540px) {
+@media (max-width: 640px) {
   .cart-form-grid {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
 
@@ -730,6 +756,9 @@ html.dark .status-pronta {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .cart-field-full {
@@ -744,21 +773,28 @@ html.dark .status-pronta {
   letter-spacing: 0.4px;
 }
 
+/* Padronização de altura idêntica para inputs, selects e textareas */
 .cart-field input,
 .cart-field select,
 .cart-field textarea {
   width: 100%;
-  min-height: 46px;
-  padding: 12px 14px;
+  max-width: 100%;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 14px;
   border: 1.5px solid var(--menu-border);
   border-radius: 10px;
   background-color: var(--menu-surface-alt);
   color: var(--menu-text);
-  font-size: 16px; /* 16px previne zoom no iOS */
+  font-size: 16px; /* 16px previne zoom no iOS Safari */
   box-sizing: border-box;
   font-family: inherit;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .cart-field input:focus,
@@ -776,23 +812,69 @@ html.dark .status-pronta {
   background-color: var(--menu-surface-alt);
 }
 
+/* Ajustes milimétricos para Date inputs (resolve problema de altura maior e sambada) */
+.cart-field input[type="date"] {
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  line-height: 46px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+}
+
+.cart-field input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  line-height: 46px;
+  min-height: 46px;
+  margin: 0;
+  padding: 0;
+}
+
+.cart-field input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.75;
+  padding: 0;
+  margin-left: auto;
+  transition: opacity 0.2s;
+}
+
+.cart-field input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Select com setinha customizada alinhada */
+.cart-field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 38px;
+  cursor: pointer;
+}
+
 .cart-field textarea {
+  height: auto;
+  min-height: 72px;
+  padding: 12px 14px;
+  line-height: 1.4;
   resize: vertical;
-  min-height: 60px;
 }
 
 /* Seletor Tipo de Entrega */
 .delivery-toggle {
   display: flex;
   gap: 8px;
+  width: 100%;
 }
 
 .delivery-opt {
   flex: 1;
-  min-height: 44px;
+  min-height: 48px;
+  height: 48px;
   border: 1.5px solid var(--menu-border);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 0 12px;
   text-align: center;
   font-size: 0.88rem;
   font-weight: 700;
@@ -803,6 +885,7 @@ html.dark .status-pronta {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .delivery-opt.active {
@@ -950,6 +1033,7 @@ html.dark .status-pronta {
   width: 100%;
   box-sizing: border-box;
   padding: 18px 20px 24px;
+  overflow-x: hidden;
 }
 
 .modal-tab-content.active {
@@ -967,6 +1051,8 @@ html.dark .status-pronta {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .auth-form-help {
