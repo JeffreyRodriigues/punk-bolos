@@ -543,7 +543,7 @@ html.dark .status-pronta {
   color: #fff;
 }
 
-/* Modal / Gaveta do Carrinho */
+/* Modal / Gaveta (Bottom Sheet no Mobile, Dialog Central no Desktop) */
 .cart-modal {
   position: fixed;
   top: 0;
@@ -579,7 +579,9 @@ html.dark .status-pronta {
   background: var(--menu-surface);
   width: 100%;
   max-width: 640px;
-  max-height: 90vh;
+  height: 85vh;
+  height: calc(100dvh - 54px);
+  max-height: 88vh;
   border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
@@ -587,22 +589,35 @@ html.dark .status-pronta {
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .cart-modal.open .cart-drawer {
   transform: translateY(0);
 }
 
+.drawer-handle {
+  width: 44px;
+  height: 5px;
+  background-color: var(--menu-border);
+  border-radius: 999px;
+  margin: 10px auto 4px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
 .cart-header {
-  padding: 16px 20px;
+  padding: 12px 20px 14px;
   border-bottom: 1px solid var(--menu-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
+  background-color: var(--menu-surface);
 }
 
 .cart-title {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
   margin: 0;
   display: flex;
@@ -616,20 +631,38 @@ html.dark .status-pronta {
   font-size: 1.3rem;
   color: var(--menu-text-muted);
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.cart-close:hover {
+  color: var(--menu-text);
+  background-color: var(--menu-surface-alt);
 }
 
 .cart-body {
-  padding: 16px 20px;
+  flex: 1 1 auto;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+.cart-body:has(.modal-tab-content) {
+  padding: 0;
+  gap: 0;
+}
+
 .cart-section-title {
   font-size: 0.95rem;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   color: var(--menu-text);
 }
 
@@ -667,7 +700,7 @@ html.dark .status-pronta {
 }
 
 .cart-item-price {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--menu-primary);
   min-width: 70px;
@@ -696,7 +729,7 @@ html.dark .status-pronta {
 .cart-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .cart-field-full {
@@ -704,7 +737,7 @@ html.dark .status-pronta {
 }
 
 .cart-field label {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--menu-text-muted);
   text-transform: uppercase;
@@ -715,27 +748,37 @@ html.dark .status-pronta {
 .cart-field select,
 .cart-field textarea {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--menu-border);
-  border-radius: var(--menu-radius-sm);
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--menu-border);
+  border-radius: 10px;
   background-color: var(--menu-surface-alt);
   color: var(--menu-text);
-  font-size: 0.9rem;
+  font-size: 16px; /* 16px previne zoom no iOS */
   box-sizing: border-box;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
 .cart-field input:focus,
 .cart-field select:focus,
 .cart-field textarea:focus {
   border-color: var(--menu-primary);
+  background-color: var(--menu-surface);
+  box-shadow: 0 0 0 3px var(--menu-primary-soft);
+}
+
+.cart-field input:disabled,
+.cart-field select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background-color: var(--menu-surface-alt);
 }
 
 .cart-field textarea {
   resize: vertical;
-  min-height: 50px;
+  min-height: 60px;
 }
 
 /* Seletor Tipo de Entrega */
@@ -746,14 +789,19 @@ html.dark .status-pronta {
 
 .delivery-opt {
   flex: 1;
-  border: 1px solid var(--menu-border);
-  border-radius: var(--menu-radius-sm);
-  padding: 8px;
+  min-height: 44px;
+  border: 1.5px solid var(--menu-border);
+  border-radius: 10px;
+  padding: 10px 12px;
   text-align: center;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
   background: var(--menu-surface);
+  color: var(--menu-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
 }
 
@@ -765,12 +813,13 @@ html.dark .status-pronta {
 
 /* Footer do Carrinho com Botão WhatsApp */
 .cart-footer {
-  padding: 16px 20px;
+  padding: 14px 20px 18px;
   border-top: 1px solid var(--menu-border);
   background-color: var(--menu-surface);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .cart-summary-row {
@@ -794,8 +843,9 @@ html.dark .status-pronta {
   background-color: var(--menu-whatsapp);
   color: #ffffff !important;
   border: none;
+  min-height: 48px;
   padding: 14px 20px;
-  border-radius: var(--menu-radius-sm);
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
@@ -804,12 +854,13 @@ html.dark .status-pronta {
   justify-content: center;
   gap: 8px;
   text-decoration: none;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
 }
 
 .btn-checkout-wa:hover {
   background-color: var(--menu-whatsapp-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
 }
 
 .btn-checkout-wa:active {
@@ -858,25 +909,30 @@ html.dark .status-pronta {
   display: flex;
   border-bottom: 1px solid var(--menu-border);
   background: var(--menu-surface-alt);
-  padding: 0 16px;
-  gap: 8px;
+  padding: 0 8px;
+  gap: 4px;
+  flex-shrink: 0;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-tab-btn {
+  flex: 1 1 0;
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
   color: var(--menu-text-muted);
-  padding: 12px 14px;
-  font-size: 0.9rem;
+  padding: 12px 8px;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  text-align: center;
 }
 
 .modal-tab-btn:hover {
@@ -886,16 +942,24 @@ html.dark .status-pronta {
 .modal-tab-btn.active {
   color: var(--menu-primary);
   border-bottom-color: var(--menu-primary);
-  background: transparent;
+  background: rgba(233, 30, 99, 0.05);
 }
 
 .modal-tab-content {
   display: none;
-  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 18px 20px 24px;
 }
 
 .modal-tab-content.active {
   display: block;
+  animation: tab-fade-in 0.2s ease-out;
+}
+
+@keyframes tab-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Formulário de Autenticação / Cadastro */
@@ -915,37 +979,48 @@ html.dark .status-pronta {
   background-color: var(--menu-primary);
   color: #ffffff;
   border: none;
-  padding: 12px 18px;
-  border-radius: var(--menu-radius-sm);
-  font-size: 0.95rem;
+  min-height: 48px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 0.98rem;
   font-weight: 800;
   cursor: pointer;
   width: 100%;
-  margin-top: 6px;
-  transition: background-color 0.2s, transform 0.1s;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
 }
 
 .btn-primary-block:hover {
   background-color: var(--menu-primary-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.25);
+}
+
+.btn-primary-block:active {
+  transform: translateY(1px);
 }
 
 .btn-primary-block:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* Banner de Usuário Logado no Carrinho */
 .cart-user-badge {
   background: var(--menu-primary-soft);
   border: 1px solid var(--menu-primary);
-  border-radius: var(--menu-radius-sm);
+  border-radius: 10px;
   padding: 10px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--menu-text);
 }
 
@@ -956,6 +1031,7 @@ html.dark .status-pronta {
   border: none;
   cursor: pointer;
   text-decoration: underline;
+  padding: 4px 8px;
 }
 
 /* Cartão Fidelidade */
@@ -982,7 +1058,7 @@ html.dark .status-pronta {
 }
 
 .loyalty-card-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   opacity: 0.9;
   margin: 0;
 }
@@ -999,12 +1075,14 @@ html.dark .status-pronta {
 .loyalty-stamps-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 14px;
 }
 
 .loyalty-stamp-slot {
   aspect-ratio: 1;
+  width: 100%;
+  min-height: 40px;
   background: rgba(255, 255, 255, 0.2);
   border: 2px dashed rgba(255, 255, 255, 0.5);
   border-radius: 50%;
@@ -1060,13 +1138,18 @@ html.dark .status-pronta {
 
 .order-history-card {
   background: var(--menu-surface);
-  border: 1px solid var(--menu-border);
+  border: 1.5px solid var(--menu-border);
   border-radius: var(--menu-radius);
   padding: 16px;
   box-shadow: var(--menu-shadow);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  transition: border-color 0.15s ease;
+}
+
+.order-history-card:hover {
+  border-color: var(--menu-primary);
 }
 
 .order-history-header {
@@ -1119,9 +1202,9 @@ html.dark .status-pronta {
   background: var(--menu-surface-alt);
   border: 1px solid var(--menu-border);
   color: var(--menu-text);
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
@@ -1167,5 +1250,36 @@ html.dark .status-pronta {
 .badge-status-cancelado {
   background: rgba(239, 68, 68, 0.15);
   color: #dc2626;
+}
+
+/* ============================================================
+   RESPONSIVIDADE DESKTOP (> 768px)
+   ============================================================ */
+@media (min-width: 769px) {
+  .cart-modal {
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .cart-drawer {
+    border-radius: 20px;
+    height: 620px;
+    max-height: 85vh;
+    max-width: 580px;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  }
+
+  .cart-modal.open .cart-drawer {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .drawer-handle {
+    display: none;
+  }
 }
 
