@@ -56,6 +56,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -3929,6 +3930,7 @@ html.dark .badge-fidelidade {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4164,201 +4166,6 @@ html.dark .badge-fidelidade {
       <div class="stat-card stat-money" id="stat-ticket">
         <span class="stat-icon">📈</span>
         <span class="stat-label">Ticket Médio</span>
-        <span class="stat-value">--</span>
-      </div>
-
-      <div class="stat-card" id="stat-cortesia">
-        <span class="stat-icon">🎁</span>
-        <span class="stat-label">Cortesias</span>
-        <span class="stat-value">--</span>
-      </div>
-    </section>
-
-    <p class="dashboard-note">
-      * Lucro bruto = receita − custo dos produtos vendidos (calculado a partir das receitas cadastradas na aba Precificação).
-    </p>
-
-    <!-- Cards de resumo por tipo (Ideia 2) -->
-    <section class="type-summary-section" aria-label="Resumo por tipo de produto">
-      <h2>Por tipo de produto</h2>
-      <div id="type-summary-grid" class="type-summary-grid"></div>
-    </section>
-
-    <!-- ============================================================
-         GRÁFICOS E RANKINGS (Chart.js) — renderizados por dashboard.js
-         ============================================================ -->
-    <section class="dashboard-charts" aria-label="Gráficos e rankings">
-      <div class="chart-card chart-full">
-        <h2>Faturamento Diário</h2>
-        <p id="charts-empty" class="charts-empty" hidden>Nenhum dado no período selecionado.</p>
-        <div class="chart-wrap"><canvas id="chart-faturamento"></canvas></div>
-      </div>
-
-      <div class="chart-card">
-        <h2>Quantidade por Status</h2>
-        <div class="chart-wrap chart-wrap-sm"><canvas id="chart-status"></canvas></div>
-      </div>
-
-      <div class="chart-card">
-        <h2>Ranking de Sabores</h2>
-        <div id="ranking-sabores" class="ranking"></div>
-      </div>
-    </section>
-
-    <!-- Rankings por tipo (Ideia 3) -->
-    <section class="type-rankings-section dashboard-charts" aria-label="Rankings por tipo de produto">
-      <h2>Ranking de sabores por tipo</h2>
-      <div class="type-rankings-grid">
-        <div class="type-rank-col fatia-col">
-          <h3><span>🍰</span> Fatias</h3>
-          <div id="ranking-fatias" class="ranking"></div>
-        </div>
-        <div class="type-rank-col punkitos-col">
-          <h3><span>🧁</span> Punkitos</h3>
-          <div id="ranking-punkitos" class="ranking"></div>
-        </div>
-        <div class="type-rank-col bolo-col">
-          <h3><span>🎂</span> Bolos</h3>
-          <div id="ranking-bolos" class="ranking"></div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- ============================================================
-       TELA 2 — LISTA DE PEDIDOS (busca, filtros e cards)
-       Conteúdo dos cards será gerado por orderList.js (Etapa 4)
-       ============================================================ -->
-  <main id="view-orders" class="view">
-    <div class="page-title">
-      <h1>Pedidos</h1>
-      <span id="orderCount" class="count-badge">0</span>
-    </div>
-
-    <!-- Importar / exportar planilha (CSV) -->
-    <div class="csv-actions" aria-label="Importar e exportar planilha">
-      <button id="btnModeloCsv" class="btn btn-ghost" type="button" title="Baixar arquivo-modelo para preencher no Excel">⬇ Modelo</button>
-      <button id="btnExportOrders" class="btn btn-ghost" type="button" title="Exportar todos os pedidos em CSV">⬆ Exportar</button>
-      <button id="btnImportOrders" class="btn btn-ghost" type="button" title="Importar pedidos de um arquivo CSV">⬇ Importar</button>
-      <input type="file" id="orderImportFile" accept=".csv,text/csv" hidden>
-    </div>
-
-    <!-- Pesquisa instantânea -->
-    <div class="search-bar">
-      <span class="search-icon" aria-hidden="true">🔎</span>
-      <input id="orderSearch" type="search" placeholder="Pesquisar pedido..." autocomplete="off">
-    </div>
-
-    <!-- Filtros -->
-    <div class="filters" aria-label="Filtros">
-      <select id="filter-cliente" class="filter" aria-label="Filtrar por cliente">
-        <option value="">Cliente: Todos</option>
-      </select>
-      <select id="filter-produto" class="filter" aria-label="Filtrar por produto">
-        <option value="">Produto: Todos</option>
-        <option value="Fatia">Fatia</option>
-        <option value="Punkitos">Punkitos</option>
-        <option value="Bolo Inteiro">Bolo Inteiro</option>
-      </select>
-      <select id="filter-status" class="filter" aria-label="Filtrar por status">
-        <option value="">Status: Todos</option>
-        <option value="Pendente">Pendente</option>
-        <option value="Em Produção">Em Produção</option>
-        <option value="Embalado">Embalado</option>
-        <option value="Concluído">Concluído</option>
-        <option value="Cancelado">Cancelado</option>
-      </select>
-    </div>
-
-    <div id="orderList" class="order-list" aria-live="polite">
-      <!-- Cards de pedidos serão renderizados aqui -->
-    </div>
-
-    <div id="emptyState" class="empty-state" hidden>
-      <span class="empty-icon" aria-hidden="true">🍩</span>
-      <p>Nenhum pedido encontrado.</p>
-    </div>
-  </main>
-
-  <!-- ============================================================
-       VIEW — Produtos (catálogo com preço)
-       Controlada por js/modules/productList.js e productForm.js
-       ============================================================ -->
-  <main id="view-produtos" class="view">
-    <div class="page-title">
-      <h1>Produtos</h1>
-      <span id="productCount" class="count-badge">0</span>
-      <button id="btnAddProduct" class="btn btn-primary page-action" type="button">＋ Novo produto</button>
-    </div>
-
-    <p class="view-subtitle">Cadastre os produtos com preço para agilizar a criação de pedidos — o valor é preenchido automaticamente.</p>
-
-    <div class="product-filter-bar">
-      <label class="filter-label" for="productTypeFilter">Filtrar por tipo:</label>
-      <select id="productTypeFilter" class="filter-select" aria-label="Filtrar por tipo de produto">
-        <option value="">Todos os tipos</option>
-      </select>
-    </div>
-
-    <div id="productList" class="product-grid" aria-live="polite">
-      <!-- Cards de produtos serão renderizados aqui -->
-    </div>
-
-    <div id="productEmpty" class="empty-state" hidden>
-      <span class="empty-icon" aria-hidden="true">🧁</span>
-      <p>Nenhum produto cadastrado ainda.</p>
-    </div>
-  </main>
-
-  <!-- ============================================================
-       VIEW — Produção (produção + saldo por produto)
-       Controlada por js/modules/estoqueView.js
-       ============================================================ -->
-  <main id="view-estoque" class="view">
-    <div class="page-title">
-      <h1>Produção</h1>
-      <span id="estoqueCount" class="count-badge">0</span>
-    </div>
-
-    <p class="view-subtitle">
-      Registre aqui a quantidade produzida de cada produto. A produção é
-      OBRIGATÓRIA para vender: pedidos com produtos sem produção não podem
-      ser salvos nem concluídos. Ao CONCLUIR pedidos, o estoque é abatido.
-    </p>
-
-    <section class="estoque-panel">
-      <h2>Registrar produção</h2>
-      <form id="estoqueForm" class="estoque-form" novalidate>
-        <select id="estoqueFormTipo" aria-label="Tipo de produto">
-          <option value="">— Tipo de produto —</option>
-        </select>
-        <select id="estoqueFormProduto" required aria-label="Produto">
-          <option value="">— Escolha o produto —</option>
-        </select>
-        <input type="date" id="estoqueFormData" required aria-label="Data da produção">
-        <input type="number" id="estoqueFormQtd" min="1" step="1" placeholder="Quantidade" required
-               aria-label="Quantidade produzida" inputmode="numeric">
-        <input type="text" id="estoqueFormObs" placeholder="Observação (opcional)"
-               aria-label="Observação" autocomplete="off">
-        <button type="submit" class="btn btn-primary">Registrar</button>
-      </form>
-      <p id="estoqueFormAviso" class="estoque-aviso" hidden></p>
-    </section>
-
-    <section class="estoque-panel">
-      <h2>Saldo por produto</h2>
-      <div id="estoqueTableWrap">
-        <table class="estoque-table" aria-label="Saldo por produto">
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th>Produzido</th>
-              <th>Reservado</th>
-              <th>Vendido</th>
-              <th>Disponível</th>
-              <th></th>
-            </tr>
-          </thead>
         <span class="stat-value">--</span>
       </div>
 
