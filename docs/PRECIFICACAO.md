@@ -1,20 +1,20 @@
 # Punk Bolos — Especificação: Inventário + Precificação
 
-Documento de especificação funcional para a evolução do sistema com **cadastro de insumos (Inventário)** e **precificação de produtos** (cálculo do custo por unidade). Serve como base de implementação (seguindo padrão TDD do projeto).
+Documento funcional e técnico para o **cadastro de insumos (Inventário)** e **precificação de produtos** (cálculo do custo por unidade, rendimento e importador do Excel).
 
-> **Status:** especificação aprovada — aguardando implementação.
-> **Stack:** mesmas do sistema (HTML5 + CSS3 + JS ES6+, sem frameworks; regras puras + TDD).
+> **Status:** Implementado e em Produção (cobertura 100% via testes unitários em `node:test`).
+> **Stack:** HTML5 + CSS3 + JS ES6+ (módulos puros, sem frameworks).
 
 ---
 
 ## 1. Visão geral
 
-Duas novas abas, trabalhando em conjunto:
+Duas abas principais trabalhando de forma integrada:
 
 | Aba | Função |
 |---|---|
-| **Inventário** | Cadastro dos insumos (farinha, açúcar, leite, fermento, etc.) com **unidade de medida** e **histórico de compras** (data + preço total + quantidade). |
-| **Precificação** | Para cada produto do catálogo: montar a **receita** (insumos + quantidades). O sistema calcula o **custo por unidade** com margem e multiplicador, e exibe o preço como **sugestão** (o valor de venda continua sendo cadastrado à mão). |
+| **Inventário** | Cadastro de insumos e bases com **códigos de identificação únicos** (`PIN0001`, `PBA0001`), controle de **estoque físico** (`estoqueAtual`, `estoqueMinimo`), histórico de compras e semáforo de status (🟢 Normal, 🟡 Baixo, 🔴 Zerado). |
+| **Precificação** | Montagem da receita por produto (insumos + bases). O sistema calcula o **custo por unidade** com margem e multiplicador, oferece **importador direto do Excel** (colar 4 colunas) e exibe o preço sugerido. |
 
 ---
 
@@ -25,62 +25,81 @@ Duas novas abas, trabalhando em conjunto:
 ```js
 {
   id: "i<timestamp>-<rand>",
+  codigo: "PIN0001",      // Código sequencial único sem hífen (PIN0001, PIN0002...)
   nome: "Farinha de trigo",
-  unidade: "kg",          // kg | g | L | mL | un  (família de conversão)
+  unidade: "g",           // g | ml | unidade (unidades diretas para facilidade de pesagem)
   descricao: "",
-  compras: [               // histórico de compras (a última vira referência)
+  estoqueAtual: 5000,     // Quantidade física disponível em estoque
+  estoqueMinimo: 1000,    // Ponto de alerta para reposição de estoque
+  compras: [              // Histórico de compras (a mais recente vira a referência de custo)
     { id, data, custoTotal, quantidadeCompra }
   ]
 }
 ```
 
 Regras:
-- **Preço total + quantidade** (a primeira opção escolhida): você informa quanto pagou (ex.: R$ 35,00) e a quantidade comprada (ex.: 5 kg). O sistema **calcula o custo unitário** (35 ÷ 5 = R$ 7,00/kg) — e não faz diferença por Kg preenchido à mão.
-- **Unidade de medida** declarada por insumo (kg, L, unidade). A receita usa a unidade da família:
-  - `kg` → receita em **g** (converte ×1000)
-  - `L` → receita em **ml** (converte ×1000)
-  - `unidade` → receita em **un** (sem conversão)
-- O **último custo unitário** (última compra) é a referência usada na precificação.
+- **Código sequencial PIN:** gerado automaticamente (`nextInsumoCodigo`). Itens legados recebem o código no carregamento via `ensureCodigos()`.
+- **Preço total + quantidade:** você informa quanto pagou (ex.: R$ 35,00) e a quantidade comprada (ex.: 5000 g). O sistema calcula o custo unitário. Ao registrar uma compra, o `estoqueAtual` é incrementado automaticamente.
+- **Unidades:** `g`, `ml` e `unidade` são unidades nativas da receita.
+- **Alerta de Estoque:** 
+  - 🟢 **Normal:** `estoqueAtual > estoqueMinimo`
+  - 🟡 **Baixo:** `estoqueAtual <= estoqueMinimo`
+  - 🔴 **Zerado:** `estoqueAtual <= 0`
 
-### 2. Receita de precificação (por produto)
-
-```js
-{
-  id: "prc<timestamp>-<rand>",
-  produtoId: "p123-abc",          // 1 receita por produto (sem dupla)
-  itens: [                         // insumos OU bases utilizados
-    { insumoId: "i55-xyz", quantidade: 250 /* na unidade do insumo (g/ml/un) */ },
-    { baseId: "b12-abc", quantidade: 1 /* na unidade de rendimento da base */ }
-  ],
-  margem: 25,                      // % — custos incalculáveis (gás, energia)
-  multiplicador: 3,                // lucro + mão de obra
-  rendimento: 10,                  // quantidade de unidades produzidas
-  embalagem: 1.00,                 // custo de embalagem por unidade (0 se sem)
-  custoAdicional: "",              // custo extra por unidade (vazio = sem)
-  custoAdicionalObs: "",           // observação do custo adicional
-  // Snapshot (resultado calculado):
-  dataCalculo: "2026-08-08",
-   custoIngredientes: 9.03,         // Σ insumos + bases
-   custoPorUnidade: 4.39            // resultado final armazenado
-}
-```
-
-### 3. Base (componente reutilizável)
+### 2. Base (componente reutilizável)
 
 Bloco de insumos com quantidade, que pode ser usado como **item de receita** (ex.: "Massa de bolo", "Recheio de brigadeiro"):
 
 ```js
 {
-  id: "b12-abc",
+  id: "b<timestamp>-<rand>",
+  codigo: "PBA0001",           // Código sequencial único (PBA0001, PBA0002...)
   nome: "Massa de bolo",
   descricao: "",
-  rendimento: 1000,            // quantidade produzida pela base
-  rendimentoUnidade: "g",      // unidade do rendimento (g | ml | un)
-  componentes: [               // insumos que compõem a base
-    { insumoId: "i55-xyz", quantidade: 500 /* na unidade do insumo */ }
+  rendimento: 1000,            // Quantidade produzida pela base
+  rendimentoUnidade: "g",      // Unidade do rendimento (g | ml | unidade)
+  estoqueAtual: 2,             // Quantidade física em estoque
+  estoqueMinimo: 1,            // Alerta de reposição
+  componentes: [               // Insumos que compõem a base
+    { insumoId: "i55-xyz", quantidade: 500 }
   ]
 }
 ```
+
+### 3. Receita de precificação (por produto)
+
+```js
+{
+  id: "prc<timestamp>-<rand>",
+  produtoId: "p123-abc",          // 1 receita por produto (sem duplicatas)
+  itens: [                         // Insumos OU bases utilizados
+    { insumoId: "i55-xyz", quantidade: 250 },
+    { baseId: "b12-abc", quantidade: 1 }
+  ],
+  margem: 25,                      // % — custos incalculáveis (gás, energia)
+  multiplicador: 3,                // Lucro + mão de obra
+  rendimento: 10,                  // Quantidade de unidades produzidas
+  embalagem: 1.00,                 // Custo de embalagem por unidade (fora do multiplicador)
+  custoAdicional: "",              // Custo extra por unidade (fora do multiplicador)
+  custoAdicionalObs: "",           // Observação do custo adicional
+  // Snapshot (resultado calculado):
+  dataCalculo: "2026-08-08",
+  custoIngredientes: 9.03,         // Σ insumos + bases
+  custoPorUnidade: 4.39            // Resultado final armazenado
+}
+```
+
+---
+
+## 3. Importador do Excel (Colar 4 Colunas)
+
+O app possui importador em modal (`js/modules/excelModal.js` e `js/modules/excelImporter.js`):
+1. **4 Colunas aceitas:** `Ingrediente` | `Custo Embalagem` | `Gramas Embalagem` | `Gramas Utilizadas`.
+2. **Reconhecimento Inteligente:**
+   - Detecta e casa com insumos existentes (por nome exato ou similaridade).
+   - Compara o preço da planilha com a última compra no sistema.
+   - Permite criar novos insumos automaticamente com a primeira compra preenchida.
+   - Permite atualizar o preço de compra do insumo caso tenha variado.
 
 - **Custo total da base** = soma do custo de cada componente (mesma regra de custo de insumo: `custoItem(componente, última compra)`).
 - **Custo por unidade de rendimento** = custo total ÷ rendimento.

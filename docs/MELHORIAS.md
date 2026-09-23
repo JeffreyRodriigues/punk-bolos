@@ -124,6 +124,39 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 ### 20. Servidor padrão da planilha
 - `server.js`: servidor estático **Node puro** (sem dependências) com MIME, cache, ETag, compressão, proteção contra path traversal e injeção de env no `js/config.js`. Substitui o `npx serve`.
 
+### 21. CRM de Clientes, Busca de CEP e Cartão Fidelidade
+- Nova aba **Clientes** (`customerView.js`, `customerService.js`): visualização em tabela de clientes com histórico de compras, ticket médio e badges (VIP, Recorrente, Inativo, Aniversariante).
+- **Busca de CEP Automática (ViaCEP)** no modal de cadastro com preenchimento instantâneo de logradouro, bairro, cidade e estado.
+- **Cartão Fidelidade Digital**: a cada 10 pedidos o cliente conquista selos e recompensas automáticas.
+- Ações rápidas de **resgate de clientes inativos** e parabéns com mensagens personalizadas no WhatsApp.
+
+### 22. Cardápio Digital Público para Clientes (`cardapio.html`)
+- Interface pública independente voltada para os clientes finais da confeitaria.
+- **Pronta Entrega vs. Encomenda**: controle em tempo real de fatias e punkitos (com bloqueio por estoque) e bolos inteiros por encomenda.
+- **Sacola Flutuante**: adição de itens, cálculo de taxa de entrega/retirada e envio estruturado para o Supabase e WhatsApp formatado.
+- **Área do Cliente**: login por WhatsApp, histórico de pedidos e botão "Repetir Pedido".
+
+### 23. Códigos Únicos PIN e PBA no Inventário
+- Insumos identificados pelo padrão **`PIN0001`**, **`PIN0002`**...
+- Bases identificadas pelo padrão **`PBA0001`**, **`PBA0002`**...
+- Migração automática de itens legados (`ensureCodigos()`) sem duplicidades ou perda de histórico.
+
+### 24. Controle de Estoque Físico de Insumos e Bases
+- Adicionados campos **`Estoque Atual`** e **`Estoque Mínimo`** (ponto de reposição).
+- Ao registrar uma nova compra de insumo, a quantidade comprada incrementa automaticamente o estoque atual.
+- Semáforo visual de status: 🟢 **Normal**, 🟡 **Baixo** (atingiu ou ficou abaixo do mínimo) e 🔴 **Zerado**.
+
+### 25. Filtros Rápidos por Categoria no Inventário
+- Barra com pílulas interativas e contadores em tempo real: `[ Todos ]`, `[ 🥣 Ingredientes ]`, `[ 🍰 Bases ]` e `[ ⚠️ Estoque Baixo ]`.
+
+### 26. Importador Inteligente do Excel na Precificação
+- Modal dedicado (`excelModal.js`, `excelImporter.js`) para colar 4 colunas copiadas diretamente de planilhas do Excel.
+- Reconhecimento automático de insumos existentes, novos insumos e variações de preços com prévia e confirmação.
+- Grid de receitas e componentes calibrado com alinhamento pixel-perfect para pesagem em gramas, ml ou unidades.
+
+### 27. Expansão da Suíte de Testes Automatizados
+- Expansão de 124 para **224 testes unitários automatizados** com `node:test`, cobrindo 100% das novas regras de cardápio, checkout, clientes, fidelidade, insumos, bases e importador do Excel.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).
