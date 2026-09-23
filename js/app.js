@@ -34,6 +34,7 @@ import * as inventoryView from './modules/inventoryView.js';
 import * as pricingView from './modules/pricingView.js';
 import * as customerForm from './modules/customerForm.js';
 import * as customerView from './modules/customerView.js';
+import { initExcelModal } from './modules/excelModal.js';
 import { showToast } from './modules/toast.js';
 
 /* ---------- Navegação entre telas ---------- */
@@ -328,6 +329,9 @@ function init() {
       fileInput.value = '';
     }
   });
+
+  // Inicializa modal de importação do Excel
+  initExcelModal();
 
   // 1. Render inicial INSTANTÂNEO (0ms) a partir do cache local
   dashboard.render();
