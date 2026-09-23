@@ -44,6 +44,16 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -2600,6 +2610,201 @@ html.dark .badge-vip {
 .timeline-card-footer {
   display: flex;
   justify-content: space-between;
+  margin: 0;
+}
+
+.cust-hist-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cust-hist-profile-card {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.cust-hist-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.cust-hist-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cust-hist-info-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+.cust-hist-info-val {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cust-hist-phone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cust-hist-obs-val {
+  font-style: italic;
+  font-weight: normal;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: inline-block;
+}
+
+.cust-hist-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.cust-stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.cust-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.cust-stat-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.cust-hist-timeline-section {
+  margin-top: 10px;
+}
+
+.cust-hist-timeline-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.cust-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.cust-timeline-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  border-left: 4px solid var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.cust-timeline-card.status-Concluído {
+  border-left-color: var(--color-ok);
+}
+
+.cust-timeline-card.status-Cancelado {
+  border-left-color: var(--color-danger);
+  opacity: 0.75;
+}
+
+.cust-timeline-card.status-Pendente {
+  border-left-color: var(--color-warn);
+}
+
+.cust-timeline-card.status-Em-Produção {
+  border-left-color: var(--color-info);
+}
+
+.cust-timeline-card.status-Embalado {
+  border-left-color: #8b5cf6;
+}
+
+.timeline-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.timeline-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timeline-order-num {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.timeline-order-date {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.timeline-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-item-row {
+  font-size: 0.88rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--color-text);
+  padding: 2px 0;
+}
+
+.timeline-item-desc {
+  font-weight: 500;
+}
+
+.timeline-item-price {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.timeline-card-footer {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   font-size: 0.82rem;
   border-top: 1px solid var(--color-border);
@@ -2634,7 +2839,353 @@ html.dark .badge-vip {
   align-items: center;
 }
 
+/* ---------- Excel Importer Modal ---------- */
+#modalImportExcel .modal-card {
+  width: 95vw;
+  max-width: 1200px;
+  height: 92vh;
+  max-height: 92vh;
+  border-radius: var(--radius);
+}
 
+#modalImportExcel .modal-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: hidden;
+  padding: 16px 20px;
+}
+
+#modalImportExcel .excel-preview-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin-top: 10px;
+}
+
+#modalImportExcel .table-container {
+  flex: 1;
+  max-height: calc(92vh - 310px) !important;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.btn-paste-excel {
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.btn-paste-excel:hover {
+  background-color: var(--color-surface-alt);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.excel-row-same_price td {
+  background-color: rgba(34, 197, 94, 0.05);
+}
+
+.excel-row-diff_price td {
+  background-color: rgba(234, 179, 8, 0.08);
+}
+
+.excel-row-similar_name td {
+  background-color: rgba(249, 115, 22, 0.07);
+}
+
+.excel-row-new_insumo td {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.excel-action-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+}
+
+.excel-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.excel-radio-label input[type="radio"] {
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.badge-success {
+  background-color: var(--color-ok-soft, rgba(34, 197, 94, 0.15));
+  color: var(--color-ok, #15803d);
+}
+
+.badge-warning {
+  background-color: var(--color-warn-soft, rgba(234, 179, 8, 0.15));
+  color: var(--color-warn, #b45309);
+}
+
+.badge-danger {
+  background-color: var(--color-danger-soft, rgba(239, 68, 68, 0.15));
+  color: var(--color-danger, #b91c1c);
+}
+
+.badge-orange {
+  background-color: rgba(249, 115, 22, 0.15);
+  color: #ea580c;
+}
+
+.badge-info {
+  background-color: var(--color-info-soft, rgba(59, 130, 246, 0.15));
+  color: var(--color-info, #1d4ed8);
+}
+
+.badge-secondary {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+.code-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* ---------- Novo Layout Precificação (2 Colunas) ---------- */
+.precificacao-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .precificacao-container {
+    grid-template-columns: 1.45fr 1fr;
+    gap: 24px;
+  }
+
+  .precificacao-side-col {
+    position: sticky;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.precificacao-card {
+  margin-bottom: 0;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.prec-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.prec-fatores-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.prec-preview-panel {
+  background: var(--color-surface);
+}
+
+.prec-actions-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Modo somente leitura na Precificação */
+.prec-readonly input:not([type="search"]),
+.prec-readonly select:not(#precTipoFilter):not(#precificacaoProduto) {
+  background-color: var(--color-surface-alt) !important;
+  color: var(--color-text) !important;
+  cursor: default !important;
+  border-color: var(--color-border) !important;
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+.prec-readonly .item-remove {
+  display: none !important;
+}
+
+.prec-readonly #precEditActions {
+  display: none !important;
+}
+
+.prec-preview-final {
+  color: var(--color-primary) !important;
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+}
+
+/* ---------- Tabela de Receita (Ingredientes e Bases) ---------- */
+.base-componentes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.base-componentes-head {
+  display: grid;
+  grid-template-columns: minmax(180px, 2.2fr) minmax(130px, 1.2fr) minmax(160px, 1.5fr) minmax(100px, 1fr) 36px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 4px;
+}
+
+.base-componentes-head .base-col-cost,
+.base-componentes-head .base-col-custo,
+.base-componentes-head .base-col-preco {
+  text-align: right;
+}
+
+.base-componentes-head .base-col-act {
+  width: 36px;
+  text-align: center;
+}
+
+.base-componente-row.item-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2.2fr) minmax(130px, 1.2fr) minmax(160px, 1.5fr) minmax(100px, 1fr) 36px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.base-componente-row.item-row:hover {
+  border-color: var(--color-primary-soft, var(--color-border));
+}
+
+.base-componente-row .base-componente-select {
+  width: 100%;
+  height: 38px;
+  font-size: 0.88rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.base-componente-row .base-componente-uso {
+  display: grid;
+  grid-template-columns: 1fr 28px;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.base-componente-row .base-componente-qtd {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  font-size: 0.88rem;
+  text-align: right;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.base-componente-row .base-componente-unit {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  width: 28px;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+.base-componente-row .base-componente-preco {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 4px;
+}
+
+.base-componente-row .base-componente-cost {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.base-componente-row .item-remove {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.95rem;
+  margin: 0 auto;
+}
+
+.base-componente-row .item-remove:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
 
 
 </style>
@@ -2803,6 +3354,39 @@ html.dark .badge-vip {
   .chart-wrap-sm {
     height: 220px;
   }
+
+  /* Tabela de receita no mobile / modal */
+  .base-componentes-head {
+    display: none;
+  }
+
+  .base-componente-row.item-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+    position: relative;
+  }
+
+  .base-componente-row .base-componente-preco,
+  .base-componente-row .base-componente-cost {
+    text-align: left;
+  }
+
+  .base-componente-row .base-componente-preco::before,
+  .base-componente-row .base-componente-cost::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+  }
+
+  .base-componente-row .item-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
 }
 
 /* ---------- Celular (<= 480px) ---------- */
@@ -2903,6 +3487,16 @@ html.dark .badge-vip {
 
 </style>
 <!-- CSS_INLINE:END -->
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3362,6 +3956,201 @@ html.dark .badge-vip {
               <th></th>
             </tr>
           </thead>
+        <span class="stat-value">--</span>
+      </div>
+
+      <div class="stat-card" id="stat-cortesia">
+        <span class="stat-icon">🎁</span>
+        <span class="stat-label">Cortesias</span>
+        <span class="stat-value">--</span>
+      </div>
+    </section>
+
+    <p class="dashboard-note">
+      * Lucro bruto = receita − custo dos produtos vendidos (calculado a partir das receitas cadastradas na aba Precificação).
+    </p>
+
+    <!-- Cards de resumo por tipo (Ideia 2) -->
+    <section class="type-summary-section" aria-label="Resumo por tipo de produto">
+      <h2>Por tipo de produto</h2>
+      <div id="type-summary-grid" class="type-summary-grid"></div>
+    </section>
+
+    <!-- ============================================================
+         GRÁFICOS E RANKINGS (Chart.js) — renderizados por dashboard.js
+         ============================================================ -->
+    <section class="dashboard-charts" aria-label="Gráficos e rankings">
+      <div class="chart-card chart-full">
+        <h2>Faturamento Diário</h2>
+        <p id="charts-empty" class="charts-empty" hidden>Nenhum dado no período selecionado.</p>
+        <div class="chart-wrap"><canvas id="chart-faturamento"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Quantidade por Status</h2>
+        <div class="chart-wrap chart-wrap-sm"><canvas id="chart-status"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Ranking de Sabores</h2>
+        <div id="ranking-sabores" class="ranking"></div>
+      </div>
+    </section>
+
+    <!-- Rankings por tipo (Ideia 3) -->
+    <section class="type-rankings-section dashboard-charts" aria-label="Rankings por tipo de produto">
+      <h2>Ranking de sabores por tipo</h2>
+      <div class="type-rankings-grid">
+        <div class="type-rank-col fatia-col">
+          <h3><span>🍰</span> Fatias</h3>
+          <div id="ranking-fatias" class="ranking"></div>
+        </div>
+        <div class="type-rank-col punkitos-col">
+          <h3><span>🧁</span> Punkitos</h3>
+          <div id="ranking-punkitos" class="ranking"></div>
+        </div>
+        <div class="type-rank-col bolo-col">
+          <h3><span>🎂</span> Bolos</h3>
+          <div id="ranking-bolos" class="ranking"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================
+       TELA 2 — LISTA DE PEDIDOS (busca, filtros e cards)
+       Conteúdo dos cards será gerado por orderList.js (Etapa 4)
+       ============================================================ -->
+  <main id="view-orders" class="view">
+    <div class="page-title">
+      <h1>Pedidos</h1>
+      <span id="orderCount" class="count-badge">0</span>
+    </div>
+
+    <!-- Importar / exportar planilha (CSV) -->
+    <div class="csv-actions" aria-label="Importar e exportar planilha">
+      <button id="btnModeloCsv" class="btn btn-ghost" type="button" title="Baixar arquivo-modelo para preencher no Excel">⬇ Modelo</button>
+      <button id="btnExportOrders" class="btn btn-ghost" type="button" title="Exportar todos os pedidos em CSV">⬆ Exportar</button>
+      <button id="btnImportOrders" class="btn btn-ghost" type="button" title="Importar pedidos de um arquivo CSV">⬇ Importar</button>
+      <input type="file" id="orderImportFile" accept=".csv,text/csv" hidden>
+    </div>
+
+    <!-- Pesquisa instantânea -->
+    <div class="search-bar">
+      <span class="search-icon" aria-hidden="true">🔎</span>
+      <input id="orderSearch" type="search" placeholder="Pesquisar pedido..." autocomplete="off">
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters" aria-label="Filtros">
+      <select id="filter-cliente" class="filter" aria-label="Filtrar por cliente">
+        <option value="">Cliente: Todos</option>
+      </select>
+      <select id="filter-produto" class="filter" aria-label="Filtrar por produto">
+        <option value="">Produto: Todos</option>
+        <option value="Fatia">Fatia</option>
+        <option value="Punkitos">Punkitos</option>
+        <option value="Bolo Inteiro">Bolo Inteiro</option>
+      </select>
+      <select id="filter-status" class="filter" aria-label="Filtrar por status">
+        <option value="">Status: Todos</option>
+        <option value="Pendente">Pendente</option>
+        <option value="Em Produção">Em Produção</option>
+        <option value="Embalado">Embalado</option>
+        <option value="Concluído">Concluído</option>
+        <option value="Cancelado">Cancelado</option>
+      </select>
+    </div>
+
+    <div id="orderList" class="order-list" aria-live="polite">
+      <!-- Cards de pedidos serão renderizados aqui -->
+    </div>
+
+    <div id="emptyState" class="empty-state" hidden>
+      <span class="empty-icon" aria-hidden="true">🍩</span>
+      <p>Nenhum pedido encontrado.</p>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       VIEW — Produtos (catálogo com preço)
+       Controlada por js/modules/productList.js e productForm.js
+       ============================================================ -->
+  <main id="view-produtos" class="view">
+    <div class="page-title">
+      <h1>Produtos</h1>
+      <span id="productCount" class="count-badge">0</span>
+      <button id="btnAddProduct" class="btn btn-primary page-action" type="button">＋ Novo produto</button>
+    </div>
+
+    <p class="view-subtitle">Cadastre os produtos com preço para agilizar a criação de pedidos — o valor é preenchido automaticamente.</p>
+
+    <div class="product-filter-bar">
+      <label class="filter-label" for="productTypeFilter">Filtrar por tipo:</label>
+      <select id="productTypeFilter" class="filter-select" aria-label="Filtrar por tipo de produto">
+        <option value="">Todos os tipos</option>
+      </select>
+    </div>
+
+    <div id="productList" class="product-grid" aria-live="polite">
+      <!-- Cards de produtos serão renderizados aqui -->
+    </div>
+
+    <div id="productEmpty" class="empty-state" hidden>
+      <span class="empty-icon" aria-hidden="true">🧁</span>
+      <p>Nenhum produto cadastrado ainda.</p>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       VIEW — Produção (produção + saldo por produto)
+       Controlada por js/modules/estoqueView.js
+       ============================================================ -->
+  <main id="view-estoque" class="view">
+    <div class="page-title">
+      <h1>Produção</h1>
+      <span id="estoqueCount" class="count-badge">0</span>
+    </div>
+
+    <p class="view-subtitle">
+      Registre aqui a quantidade produzida de cada produto. A produção é
+      OBRIGATÓRIA para vender: pedidos com produtos sem produção não podem
+      ser salvos nem concluídos. Ao CONCLUIR pedidos, o estoque é abatido.
+    </p>
+
+    <section class="estoque-panel">
+      <h2>Registrar produção</h2>
+      <form id="estoqueForm" class="estoque-form" novalidate>
+        <select id="estoqueFormTipo" aria-label="Tipo de produto">
+          <option value="">— Tipo de produto —</option>
+        </select>
+        <select id="estoqueFormProduto" required aria-label="Produto">
+          <option value="">— Escolha o produto —</option>
+        </select>
+        <input type="date" id="estoqueFormData" required aria-label="Data da produção">
+        <input type="number" id="estoqueFormQtd" min="1" step="1" placeholder="Quantidade" required
+               aria-label="Quantidade produzida" inputmode="numeric">
+        <input type="text" id="estoqueFormObs" placeholder="Observação (opcional)"
+               aria-label="Observação" autocomplete="off">
+        <button type="submit" class="btn btn-primary">Registrar</button>
+      </form>
+      <p id="estoqueFormAviso" class="estoque-aviso" hidden></p>
+    </section>
+
+    <section class="estoque-panel">
+      <h2>Saldo por produto</h2>
+      <div id="estoqueTableWrap">
+        <table class="estoque-table" aria-label="Saldo por produto">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Produzido</th>
+              <th>Reservado</th>
+              <th>Vendido</th>
+              <th>Disponível</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody id="estoqueTableBody"></tbody>
         </table>
       </div>
@@ -3395,15 +4184,20 @@ html.dark .badge-vip {
     </div>
 
     <p class="view-subtitle">
-      Cadastre os insumos (farinha, açúcar, leite, fermento etc.) com a unidade de
-      medida e o histórico de compras. Crie também <strong>bases</strong> (receitas
-      de insumos, ex.: massa de bolo) — o sistema soma o custo de todos os componentes.
-      A coluna <strong>Categoria</strong> distingue Ingrediente de Base.
+      Cadastre os insumos com unidade de medida e histórico de compras. Crie também <strong>bases</strong> (receitas de insumos) — o sistema soma o custo de todos os componentes e monitora o estoque de cada item.
     </p>
 
-    <div class="search-bar">
-      <span class="search-icon" aria-hidden="true">🔎</span>
-      <input id="insumoSearch" type="search" placeholder="Pesquisar insumo..." autocomplete="off">
+    <div class="customer-toolbar inventory-toolbar" style="margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+      <div class="search-bar" style="flex: 1 1 280px; margin-bottom: 0;">
+        <span class="search-icon" aria-hidden="true">🔎</span>
+        <input id="insumoSearch" type="search" placeholder="Buscar por código (PIN0001, PBA0001) ou nome..." autocomplete="off">
+      </div>
+      <div class="customer-filters inventory-filters" role="group" aria-label="Filtros por categoria">
+        <button type="button" class="customer-filter-pill inventory-filter-pill active" data-filter="todos">Todos <span id="invPillTodos" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="ingredientes">🥣 Ingredientes <span id="invPillIngredientes" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="bases">🍰 Bases <span id="invPillBases" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="baixo">⚠️ Estoque Baixo <span id="invPillBaixo" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+      </div>
     </div>
 
     <div id="insumoList" class="inv-list" aria-live="polite">
@@ -3428,7 +4222,7 @@ html.dark .badge-vip {
     <p class="view-subtitle">
       Monte a receita de cada produto (insumos + quantidades) e o sistema calcula
       o <strong>custo por unidade</strong> com margem e multiplicador. O valor de
-      venda é sempre manual — use "Usar este preço" para copiar a sugestão.
+      venda é sempre manual.
     </p>
 
     <div id="precificacaoEmpty" class="empty-state" hidden>
@@ -3437,56 +4231,86 @@ html.dark .badge-vip {
         Cadastre produtos em <strong>Produtos</strong> para começar a precificar.</p>
     </div>
 
-    <div id="precificacaoForm" class="estoque-panel">
-      <h2>Produto</h2>
-      <div class="estoque-form">
-        <select id="precTipoFilter" aria-label="Filtrar por tipo de produto">
-          <option value="">Todos os tipos</option>
-        </select>
-        <select id="precificacaoProduto" aria-label="Produto a precificar"></select>
-      </div>
-      <p id="precificacaoStatus" class="prec-status prec-status-warn"></p>
+    <div id="precificacaoForm" class="precificacao-container">
+      <!-- Coluna da Esquerda: Seleção do Produto & Ficha de Ingredientes -->
+      <div class="precificacao-main-col">
+        <div class="estoque-panel precificacao-card">
+          <div class="prec-header-row">
+            <div>
+              <h2 style="margin-bottom: 4px;">Produto do Catálogo</h2>
+              <p class="view-subtitle" style="font-size: 0.85rem; margin-bottom: 0;">Selecione o produto para visualizar ou editar a ficha técnica:</p>
+            </div>
+            <span id="precificacaoStatusBadge" class="badge" style="font-size: 0.82rem;"></span>
+          </div>
 
-      <h2 class="insumo-section-title">Receita (insumos)</h2>
-      <div id="precInsumos" class="prec-insumos" aria-live="polite"></div>
-      <button type="button" id="btnAddPrecInsumo" class="btn-add-item">＋ Adicionar insumo</button>
+          <div class="estoque-form" style="margin-top: 12px;">
+            <select id="precTipoFilter" aria-label="Filtrar por tipo de produto">
+              <option value="">Todos os tipos</option>
+            </select>
+            <select id="precificacaoProduto" aria-label="Produto a precificar"></select>
+          </div>
+          <p id="precificacaoStatus" class="prec-status prec-status-warn"></p>
 
-      <h2 class="insumo-section-title">Fatores de custo</h2>
-      <div class="form-grid">
-        <div class="form-field">
-          <label for="precMargem">Margem (%)</label>
-          <input type="number" id="precMargem" min="0" step="0.01" value="25" aria-label="Margem percentual">
-        </div>
-        <div class="form-field">
-          <label for="precMultiplicador">Multiplicador</label>
-          <input type="number" id="precMultiplicador" min="0" step="0.01" value="3" aria-label="Multiplicador">
-        </div>
-        <div class="form-field">
-          <label for="precRendimento">Rendimento (unidades)</label>
-          <input type="number" id="precRendimento" min="1" step="1" value="10" aria-label="Rendimento em unidades">
-        </div>
-        <div class="form-field">
-          <label for="precEmbalagem">Embalagem (R$/un)</label>
-          <input type="number" id="precEmbalagem" min="0" step="0.01" value="1" aria-label="Custo de embalagem por unidade">
-        </div>
-        <div class="form-field form-field-full">
-          <label for="precCustoAdicional">Custo adicional (R$/un, opcional)</label>
-          <input type="number" id="precCustoAdicional" min="0" step="0.01" value="0" aria-label="Custo adicional por unidade">
-        </div>
-        <div class="form-field form-field-full">
-          <label for="precCustoAdicionalObs">Observação do custo adicional</label>
-          <input type="text" id="precCustoAdicionalObs" placeholder="Ex.: gás/energia" autocomplete="off">
+          <div class="prec-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-top: 22px; margin-bottom: 8px;">
+            <h2 class="insumo-section-title" style="margin: 0;">Receita (Ingredientes e Bases)</h2>
+            <div id="precEditActions" class="receita-actions-bar" style="display: flex; gap: 8px;">
+              <button type="button" id="btnAddPrecInsumo" class="btn-add-item">＋ Adicionar insumo</button>
+              <button type="button" id="btnPastePrecExcel" class="btn-paste-excel" title="Importar colunas do Excel">📋 Colar do Excel</button>
+            </div>
+          </div>
+
+          <div id="precInsumos" class="prec-insumos" aria-live="polite"></div>
         </div>
       </div>
 
-      <h2 class="insumo-section-title">Preview do custo</h2>
-      <div id="precPreview" class="prec-preview" aria-live="polite"></div>
+      <!-- Coluna da Direita: Fatores & Resumo Financeiro / Ações -->
+      <div class="precificacao-side-col">
+        <!-- Card de Fatores -->
+        <div class="estoque-panel precificacao-card">
+          <h2 class="insumo-section-title" style="margin-top: 0;">Fatores de Custo</h2>
+          <div class="form-grid prec-fatores-grid">
+            <div class="form-field">
+              <label for="precMargem">Margem (%)</label>
+              <input type="number" id="precMargem" min="0" step="0.01" value="25" aria-label="Margem percentual">
+            </div>
+            <div class="form-field">
+              <label for="precMultiplicador">Multiplicador</label>
+              <input type="number" id="precMultiplicador" min="0" step="0.01" value="3" aria-label="Multiplicador">
+            </div>
+            <div class="form-field">
+              <label for="precRendimento">Rendimento (un)</label>
+              <input type="number" id="precRendimento" min="1" step="1" value="10" aria-label="Rendimento em unidades">
+            </div>
+            <div class="form-field">
+              <label for="precEmbalagem">Embalagem (R$/un)</label>
+              <input type="number" id="precEmbalagem" min="0" step="0.01" value="1" aria-label="Custo de embalagem por unidade">
+            </div>
+            <div class="form-field form-field-full">
+              <label for="precCustoAdicional">Custo adicional (R$/un)</label>
+              <input type="number" id="precCustoAdicional" min="0" step="0.01" value="0" aria-label="Custo adicional por unidade">
+            </div>
+            <div class="form-field form-field-full">
+              <label for="precCustoAdicionalObs">Observação do custo adicional</label>
+              <input type="text" id="precCustoAdicionalObs" placeholder="Ex.: gás / energia / fita" autocomplete="off">
+            </div>
+          </div>
+        </div>
 
-      <p id="precAviso" class="estoque-aviso" hidden></p>
+        <!-- Card de Resultado / Preview -->
+        <div class="estoque-panel precificacao-card prec-preview-panel">
+          <h2 class="insumo-section-title" style="margin-top: 0;">Resumo de Custos</h2>
+          <div id="precPreview" class="prec-preview" aria-live="polite"></div>
 
-      <div class="modal-footer" style="position: static; padding: 16px 0 0; background: transparent;">
-        <button type="button" id="btnUsarPreco" class="btn btn-ghost">Usar este preço no catálogo</button>
-        <button type="button" id="btnSavePrecificacao" class="btn btn-primary">Salvar precificação</button>
+          <p id="precAviso" class="estoque-aviso" hidden></p>
+
+          <div class="prec-actions-footer">
+            <button type="button" id="btnEditPrecificacao" class="btn btn-primary" style="width: 100%;">✏️ Editar Precificação</button>
+            <div id="precEditingButtons" class="prec-editing-buttons" style="display: none; gap: 8px; width: 100%;">
+              <button type="button" id="btnCancelEditPrec" class="btn btn-ghost" style="flex: 1;">Cancelar</button>
+              <button type="button" id="btnSavePrecificacao" class="btn btn-primary" style="flex: 1;">💾 Salvar</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -3806,6 +4630,14 @@ html.dark .badge-vip {
               <label for="insumoFieldDescricao">Descrição (opcional)</label>
               <input type="text" id="insumoFieldDescricao" placeholder="Ex.: Marca X" autocomplete="off">
             </div>
+            <div class="form-field">
+              <label for="insumoFieldEstoqueAtual">Estoque Atual</label>
+              <input type="number" id="insumoFieldEstoqueAtual" min="0" step="0.001" placeholder="0" inputmode="decimal">
+            </div>
+            <div class="form-field">
+              <label for="insumoFieldEstoqueMinimo">Estoque Mínimo <small>(alerta)</small></label>
+              <input type="number" id="insumoFieldEstoqueMinimo" min="0" step="0.001" placeholder="Opcional" inputmode="decimal">
+            </div>
           </div>
 
           <h2 class="insumo-section-title">Compras</h2>
@@ -3830,6 +4662,25 @@ html.dark .badge-vip {
           <button type="button" id="btnSaveInsumo" class="btn btn-primary">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Escolha de Categoria (Ingrediente / Base)
+       Controlado por js/modules/inventoryView.js
+       ============================================================ -->
+  <div id="categoriaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="categoriaModalTitle">
+    <div class="modal-backdrop" data-close-categoria></div>
+    <div class="modal-card modal-card-sm" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 id="categoriaModalTitle">Criar como</h2>
+        <button type="button" class="modal-close" data-close-categoria aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body categoria-chooser" style="display: flex; flex-direction: column; gap: 12px; padding: 20px;">
+        <p class="view-subtitle" style="margin-bottom: 8px;">Selecione o tipo de item que deseja cadastrar no inventário:</p>
+        <button type="button" id="btnEscolherIngrediente" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1rem;">Ingrediente</button>
+        <button type="button" id="btnEscolherBase" class="btn btn-secondary" style="width: 100%; padding: 14px; font-size: 1rem; border: 1px solid var(--color-border);">Base (receita de insumos)</button>
+      </div>
     </div>
   </div>
 
@@ -3868,13 +4719,24 @@ html.dark .badge-vip {
               <label for="baseFieldDescricao">Descrição (opcional)</label>
               <input type="text" id="baseFieldDescricao" placeholder="Ex.: Massa base para bolos" autocomplete="off">
             </div>
+            <div class="form-field">
+              <label for="baseFieldEstoqueAtual">Estoque Atual</label>
+              <input type="number" id="baseFieldEstoqueAtual" min="0" step="0.001" placeholder="0" inputmode="decimal">
+            </div>
+            <div class="form-field">
+              <label for="baseFieldEstoqueMinimo">Estoque Mínimo <small>(alerta)</small></label>
+              <input type="number" id="baseFieldEstoqueMinimo" min="0" step="0.001" placeholder="Opcional" inputmode="decimal">
+            </div>
           </div>
 
           <h2 class="insumo-section-title">Componentes (insumos)</h2>
           <p class="view-subtitle">Adicione os insumos que compõem a base e suas quantidades. O sistema soma o custo de todos para calcular o preço da base.</p>
 
           <div id="baseComponentes" class="base-componentes" aria-live="polite"></div>
-          <button type="button" id="btnAddComponente" class="btn-add-item">＋ Adicionar insumo</button>
+          <div class="receita-actions-bar" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+            <button type="button" id="btnAddComponente" class="btn-add-item">＋ Adicionar insumo</button>
+            <button type="button" id="btnPasteBaseExcel" class="btn-paste-excel" title="Importar colunas do Excel">📋 Colar do Excel</button>
+          </div>
 
           <div id="baseCustoPreview" class="base-custo-preview" aria-live="polite"></div>
 
@@ -3886,6 +4748,58 @@ html.dark .badge-vip {
           <button type="button" id="btnSaveBase" class="btn btn-primary">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Colar / Importar do Excel (Precificação & Bases)
+       Controlado por js/modules/excelModal.js
+       ============================================================ -->
+  <div id="modalImportExcel" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalImportExcelTitle">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card modal-card-wide">
+      <div class="modal-header">
+        <h2 id="modalImportExcelTitle">📋 Colar Ingredientes do Excel</h2>
+        <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="view-subtitle" style="margin-bottom: 12px;">
+          Selecione as 4 colunas na sua planilha (<strong>Ingrediente</strong>, <strong>Custo Embalagem</strong>, <strong>Gramas Embalagem</strong> e <strong>Gramas Utilizadas</strong>), copie (<kbd>Ctrl+C</kbd>) e cole no campo abaixo (<kbd>Ctrl+V</kbd>):
+        </p>
+
+        <div class="form-field form-field-full">
+          <label for="excelPasteArea">Área de Colagem do Excel</label>
+          <textarea id="excelPasteArea" rows="4" placeholder="Cole aqui os dados copiados da planilha (Ctrl+V)..." style="font-family: monospace; font-size: 0.85rem; width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 10px;"></textarea>
+        </div>
+
+        <!-- Tabela de Prévia e Validação -->
+        <div id="excelPreviewSection" class="excel-preview-section" hidden style="margin-top: 14px;">
+          <h3 class="insumo-section-title" style="margin-top: 12px; margin-bottom: 6px;">Conferência de Insumos</h3>
+          <p class="view-subtitle" style="font-size: 0.85rem; margin-bottom: 8px;">
+            Confira o mapeamento antes de confirmar a importação:
+          </p>
+          <div class="table-container" style="max-height: 260px; overflow-y: auto;">
+            <table class="data-table excel-preview-table" aria-label="Prévia dos ingredientes colados">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Ingrediente na Planilha</th>
+                  <th>Ação / Inventário</th>
+                  <th>Qtd Utilizada</th>
+                  <th>Embalagem Informada</th>
+                </tr>
+              </thead>
+              <tbody id="excelPreviewBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <p id="excelImportAviso" class="estoque-aviso" hidden></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btnCancelExcelImport" class="btn btn-ghost" data-close-modal>Cancelar</button>
+        <button type="button" id="btnConfirmExcelImport" class="btn btn-primary" disabled>Confirmar e Inserir</button>
+      </div>
     </div>
   </div>
 
@@ -4026,6 +4940,6 @@ html.dark .badge-vip {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=44"></script>
+  <script type="module" src="js/app.js?v=46"></script>
 </body>
 </html>

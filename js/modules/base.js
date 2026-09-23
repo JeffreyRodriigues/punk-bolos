@@ -28,22 +28,51 @@ function generateId() {
 }
 
 /**
+ * Gera o próximo código sequencial de base (ex.: "PBA0001").
+ * @param {Array<Object>} [existingList=[]] - Lista atual de bases.
+ * @returns {string} Código no formato PBAXXXX.
+ */
+export function nextBaseCodigo(existingList = []) {
+  let maxNum = 0;
+  (existingList || []).forEach((item) => {
+    if (item && typeof item.codigo === 'string') {
+      const match = item.codigo.match(/^PBA(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+  });
+  return `PBA${String(maxNum + 1).padStart(4, '0')}`;
+}
+
+/**
  * Normaliza e cria uma base no formato padrão.
  * @param {Object} data - Dados crus do formulário.
+ * @param {Array<Object>} [existingList=[]] - Lista existente para gerar código automático.
  * @returns {Object} Base normalizada.
  */
-export function createBase(data = {}) {
+export function createBase(data = {}, existingList = []) {
   const componentes = Array.isArray(data.componentes)
     ? data.componentes
         .filter((c) => c && c.insumoId)
         .map((c) => ({ insumoId: String(c.insumoId), quantidade: Number(c.quantidade) || 0 }))
     : [];
+
+  let codigo = String(data.codigo || '').trim();
+  if (!codigo && Array.isArray(existingList)) {
+    codigo = nextBaseCodigo(existingList);
+  }
+
   return {
     id: typeof data.id === 'string' && data.id ? data.id : generateId(),
+    codigo: codigo || '',
     nome: String(data.nome || '').trim(),
     descricao: String(data.descricao || '').trim(),
     rendimento: Number(data.rendimento) || 0,
     rendimentoUnidade: BASE_REND_UNITS.includes(data.rendimentoUnidade) ? data.rendimentoUnidade : 'un',
+    estoqueAtual: Number(data.estoqueAtual) || 0,
+    estoqueMinimo: data.estoqueMinimo != null && data.estoqueMinimo !== '' ? Number(data.estoqueMinimo) : null,
     componentes,
   };
 }

@@ -12,6 +12,7 @@
 import * as storage from './storage.js';
 import * as inventory from './inventory.js';
 import * as base from './base.js';
+import { openExcelImportModal } from './excelModal.js';
 import { showToast } from './toast.js';
 import { formatCurrency, formatPrecise } from '../utils/money.js';
 import { formatDate } from '../utils/money.js';
@@ -59,10 +60,99 @@ function showAviso(message, ok = false) {
    LISTA DE INSUMOS
    ============================================================ */
 
+/** Filtro de categoria ativo ('todos' | 'ingredientes' | 'bases' | 'baixo'). */
+let currentCategoryFilter = 'todos';
+
+/**
+ * Garante que todos os insumos e bases tenham códigos PINXXXX e PBAXXXX persistidos.
+ */
+function ensureCodigos() {
+  let insumos = storage.getAllInsumos().slice();
+  let changedInsumos = false;
+  let nextInNum = 1;
+  insumos.forEach((item) => {
+    if (item && item.codigo) {
+      const m = String(item.codigo).match(/^PIN(\d+)$/i);
+      if (m) {
+        const val = parseInt(m[1], 10);
+        if (val >= nextInNum) nextInNum = val + 1;
+      }
+    }
+  });
+  insumos.forEach((item) => {
+    if (!item.codigo) {
+      item.codigo = `PIN${String(nextInNum++).padStart(4, '0')}`;
+      changedInsumos = true;
+    }
+  });
+  if (changedInsumos) storage.saveInsumos(insumos);
+
+  let bases = base.getBases().slice();
+  let changedBases = false;
+  let nextBaNum = 1;
+  bases.forEach((item) => {
+    if (item && item.codigo) {
+      const m = String(item.codigo).match(/^PBA(\d+)$/i);
+      if (m) {
+        const val = parseInt(m[1], 10);
+        if (val >= nextBaNum) nextBaNum = val + 1;
+      }
+    }
+  });
+  bases.forEach((item) => {
+    if (!item.codigo) {
+      item.codigo = `PBA${String(nextBaNum++).padStart(4, '0')}`;
+      changedBases = true;
+    }
+  });
+  if (changedBases) storage.saveBases(bases);
+}
+
+/**
+ * Verifica se um item está com estoque baixo ou zerado.
+ * @param {Object} item - Insumo ou base.
+ * @returns {boolean}
+ */
+function isEstoqueBaixo(item) {
+  const atual = Number(item.estoqueAtual) || 0;
+  const min = item.estoqueMinimo != null && item.estoqueMinimo !== '' ? Number(item.estoqueMinimo) : null;
+  if (atual <= 0) return true;
+  if (min != null && min > 0 && atual <= min) return true;
+  return false;
+}
+
+/**
+ * Renderiza o selo visual de status do estoque.
+ * @param {Object} item - Insumo ou base.
+ * @returns {HTMLElement} Badge.
+ */
+function renderStockBadge(item) {
+  const atual = Number(item.estoqueAtual) || 0;
+  const min = item.estoqueMinimo != null && item.estoqueMinimo !== '' ? Number(item.estoqueMinimo) : null;
+  const badge = document.createElement('span');
+  if (atual <= 0) {
+    badge.className = 'badge badge-danger';
+    badge.textContent = '🔴 Zerado';
+  } else if (min != null && min > 0 && atual <= min) {
+    badge.className = 'badge badge-warning';
+    badge.textContent = '🟡 Baixo';
+  } else {
+    badge.className = 'badge badge-success';
+    badge.textContent = '🟢 Normal';
+  }
+  return badge;
+}
+
+/* ============================================================
+   LISTA DE INSUMOS
+   ============================================================ */
+
 /**
  * Renderiza a lista de insumos na tela de Inventário.
  */
 export function render() {
+  ensureCodigos();
+
   const listEl = document.getElementById('insumoList');
   const countEl = document.getElementById('inventarioCount');
   const emptyEl = document.getElementById('insumoEmpty');
@@ -71,28 +161,61 @@ export function render() {
   const termo = (document.getElementById('insumoSearch') || {}).value || '';
   const normalizado = termo.trim().toLowerCase();
 
-  const insumos = storage
-    .getAllInsumos()
-    .filter((i) => !normalizado || (i.nome || '').toLowerCase().includes(normalizado))
-    .map((i) => ({ kind: 'insumo', data: i }));
+  const allInsumos = storage.getAllInsumos().map((i) => ({ kind: 'insumo', data: i }));
+  const allBases = base.getBases().map((b) => ({ kind: 'base', data: b }));
+  const allItens = [...allInsumos, ...allBases];
 
-  const bases = base
-    .getBases()
-    .filter((b) => !normalizado || (b.nome || '').toLowerCase().includes(normalizado))
-    .map((b) => ({ kind: 'base', data: b }));
+  // Atualiza os contadores das pílulas
+  const totalCount = allItens.length;
+  const ingCount = allInsumos.length;
+  const baseCount = allBases.length;
+  const baixoCount = allItens.filter((it) => isEstoqueBaixo(it.data)).length;
 
-  const itens = [...insumos, ...bases].sort((a, b) =>
-    sortKey(a.data.nome || '').localeCompare(sortKey(b.data.nome || ''))
-  );
+  const pillTodos = document.getElementById('invPillTodos');
+  const pillIng = document.getElementById('invPillIngredientes');
+  const pillBas = document.getElementById('invPillBases');
+  const pillBai = document.getElementById('invPillBaixo');
+
+  if (pillTodos) pillTodos.textContent = totalCount;
+  if (pillIng) pillIng.textContent = ingCount;
+  if (pillBas) pillBas.textContent = baseCount;
+  if (pillBai) pillBai.textContent = baixoCount;
+
+  // Filtragem por busca (nome, código ou descrição)
+  const matchesSearch = (item) => {
+    if (!normalizado) return true;
+    const nome = (item.data.nome || '').toLowerCase();
+    const codigo = (item.data.codigo || '').toLowerCase();
+    const desc = (item.data.descricao || '').toLowerCase();
+    return nome.includes(normalizado) || codigo.includes(normalizado) || desc.includes(normalizado);
+  };
+
+  // Filtragem por categoria
+  const matchesCategory = (item) => {
+    if (currentCategoryFilter === 'ingredientes') return item.kind === 'insumo';
+    if (currentCategoryFilter === 'bases') return item.kind === 'base';
+    if (currentCategoryFilter === 'baixo') return isEstoqueBaixo(item.data);
+    return true;
+  };
+
+  const itens = allItens
+    .filter((it) => matchesSearch(it) && matchesCategory(it))
+    .sort((a, b) =>
+      sortKey(a.data.codigo || a.data.nome || '').localeCompare(sortKey(b.data.codigo || b.data.nome || ''))
+    );
 
   if (countEl) countEl.textContent = itens.length;
 
   if (emptyEl) {
     const msg = emptyEl.querySelector('p');
     if (msg) {
-      msg.innerHTML = normalizado
-        ? `Nenhum item encontrado para "<strong>${termo}</strong>".`
-        : 'Nenhum insumo ou base cadastrado ainda.<br>Cadastre o primeiro clicando em <strong>＋ Novo insumo</strong> ou <strong>＋ Nova base</strong>.';
+      if (normalizado) {
+        msg.innerHTML = `Nenhum item encontrado para "<strong>${termo}</strong>".`;
+      } else if (currentCategoryFilter === 'baixo') {
+        msg.innerHTML = 'Nenhum item com estoque baixo no momento. Tudo abastecido! 🟢';
+      } else {
+        msg.innerHTML = 'Nenhum insumo ou base cadastrado ainda.<br>Cadastre o primeiro clicando em <strong>＋ Novo insumo</strong>.';
+      }
     }
     emptyEl.hidden = itens.length !== 0;
   }
@@ -103,18 +226,18 @@ export function render() {
   if (itens.length === 0) return;
 
   const table = document.createElement('table');
-  table.className = 'inv-table';
+  table.className = 'inv-table data-table';
 
   const thead = document.createElement('thead');
   thead.innerHTML = `
     <tr>
-      <th scope="col">Categoria</th>
-      <th scope="col">Data da compra</th>
-      <th scope="col">Ingrediente</th>
-      <th scope="col">Unidade</th>
-      <th scope="col">Descrição</th>
-      <th scope="col" class="inv-num">Preço</th>
-      <th scope="col" class="inv-num">Quantidade</th>
+      <th scope="col" style="width: 95px;">Código</th>
+      <th scope="col" style="width: 115px;">Categoria</th>
+      <th scope="col">Nome do Insumo / Base</th>
+      <th scope="col" class="inv-num">Custo Ref.</th>
+      <th scope="col">Última Compra</th>
+      <th scope="col" class="inv-num">Estoque Atual</th>
+      <th scope="col" style="width: 105px;">Status</th>
       <th scope="col" class="inv-actions-col">Ações</th>
     </tr>`;
   table.appendChild(thead);
@@ -129,37 +252,13 @@ export function render() {
 }
 
 /**
- * Monta as duas linhas de custo exibidas no card de inventário:
- * - principal: preço "de balcão" em L (para ml) ou kg (para g), 2 casas;
- * - sub: preço por 1 ml / 1 g, 4 casas (menor, abaixo do principal).
- * Para unidade, só há a linha principal.
- * @param {Object} insumo - Insumo.
- * @returns {{ principal: string, sub: ?string }}
+ * Formata um número eliminando decimais desnecessários (.00).
+ * @param {number|string} n - Número.
+ * @returns {string}
  */
-function custoDisplay(insumo) {
-  const sub = inventory.subunidade(insumo); // 'g' | 'ml' | 'un'
-  const custoSub = inventory.custoPorSubunidade(insumo);
-  if (sub === 'ml') {
-    return { principal: `${formatCurrency(custoSub * 1000)} / L`, sub: `${formatPrecise(custoSub)} / ml` };
-  }
-  if (sub === 'g') {
-    return { principal: `${formatCurrency(custoSub * 1000)} / kg`, sub: `${formatPrecise(custoSub)} / g` };
-  }
-  return { principal: `${formatCurrency(custoSub)} / unidade`, sub: null };
-}
-
-/**
- * Formata a quantidade de uma compra para exibição em kg/L com o
- * detalhe em gramas/ml (o dado é salvo em g/ml).
- * @param {Object} insumo - Insumo (define a unidade).
- * @param {Object} compra - Compra com quantidadeCompra.
- * @returns {{ main: string, sub: (?string) }}
- */
-function formatQuantidade(insumo, compra) {
-  const qtd = Number(compra && compra.quantidadeCompra) || 0;
-  if (insumo.unidade === 'g') return { main: `${qtd} g`, sub: null };
-  if (insumo.unidade === 'ml') return { main: `${qtd} ml`, sub: null };
-  return { main: `${qtd} un`, sub: null };
+function formatTrim(n) {
+  const num = Number(n) || 0;
+  return String(Math.round(num * 1000) / 1000);
 }
 
 /**
@@ -173,75 +272,84 @@ function renderRow(insumo) {
 
   const tr = document.createElement('tr');
 
+  // Código
+  const tdCod = document.createElement('td');
+  const codBadge = document.createElement('span');
+  codBadge.className = 'code-badge';
+  codBadge.textContent = insumo.codigo || '—';
+  tdCod.appendChild(codBadge);
+
+  // Categoria
   const tdCat = document.createElement('td');
   const catBadge = document.createElement('span');
   catBadge.className = 'product-type inv-cat-ingrediente';
   catBadge.textContent = 'Ingrediente';
   tdCat.appendChild(catBadge);
 
-  const tdData = document.createElement('td');
-  tdData.textContent = ultima ? formatDate(ultima.data) : '—';
-
+  // Nome + Descrição
   const tdNome = document.createElement('td');
   tdNome.className = 'inv-nome';
-  tdNome.textContent = insumo.nome || 'Sem nome';
+  const nomeStrong = document.createElement('strong');
+  nomeStrong.textContent = insumo.nome || 'Sem nome';
+  tdNome.appendChild(nomeStrong);
+  if (insumo.descricao) {
+    const descSub = document.createElement('div');
+    descSub.className = 'inv-cell-sub';
+    descSub.textContent = insumo.descricao;
+    tdNome.appendChild(descSub);
+  }
 
-  const tdUnidade = document.createElement('td');
-  const unBadge = document.createElement('span');
-  unBadge.className = 'product-type';
-  unBadge.textContent = insumo.unidade || 'unidade';
-  tdUnidade.appendChild(unBadge);
-
-  const tdDesc = document.createElement('td');
-  tdDesc.className = 'inv-desc';
-  tdDesc.textContent = insumo.descricao || '';
-
+  // Custo Ref
   const tdPreco = document.createElement('td');
   tdPreco.className = 'inv-num';
   if (nCompras > 0 && ultima) {
     const custoSub = inventory.custoPorSubunidade(insumo);
     const sub = inventory.subunidade(insumo);
-    const principal = formatCurrency(Number(ultima.custoTotal) || 0);
-    let detalhe = null;
     if (sub === 'g') {
-      detalhe = `${formatCurrency(custoSub * 1000)} / kg`;
+      tdPreco.textContent = `${formatCurrency(custoSub * 1000)} / kg`;
     } else if (sub === 'ml') {
-      detalhe = `${formatCurrency(custoSub * 1000)} / L`;
+      tdPreco.textContent = `${formatCurrency(custoSub * 1000)} / L`;
     } else {
-      detalhe = `${formatCurrency(custoSub)} / unidade`;
-    }
-    const main = document.createElement('div');
-    main.className = 'inv-cell-main';
-    main.textContent = principal;
-    tdPreco.appendChild(main);
-    if (detalhe) {
-      const subEl = document.createElement('div');
-      subEl.className = 'inv-cell-sub';
-      subEl.textContent = detalhe;
-      tdPreco.appendChild(subEl);
+      tdPreco.textContent = `${formatCurrency(custoSub)} / un`;
     }
   } else {
-    tdPreco.textContent = 'sem compras';
+    tdPreco.textContent = '—';
   }
 
-  const tdQtd = document.createElement('td');
-  tdQtd.className = 'inv-num';
+  // Última Compra
+  const tdData = document.createElement('td');
   if (nCompras > 0 && ultima) {
-    const q = formatQuantidade(insumo, ultima);
-    const main = document.createElement('div');
-    main.className = 'inv-cell-main';
-    main.textContent = q.main;
-    tdQtd.appendChild(main);
-    if (q.sub) {
-      const sub = document.createElement('div');
-      sub.className = 'inv-cell-sub';
-      sub.textContent = q.sub;
-      tdQtd.appendChild(sub);
-    }
+    const dataMain = document.createElement('div');
+    dataMain.className = 'inv-cell-main';
+    dataMain.textContent = formatDate(ultima.data);
+    const dataSub = document.createElement('div');
+    dataSub.className = 'inv-cell-sub';
+    const und = insumo.unidade === 'unidade' ? 'un' : insumo.unidade;
+    dataSub.textContent = `${formatCurrency(Number(ultima.custoTotal) || 0)} (${formatTrim(ultima.quantidadeCompra)} ${und})`;
+    tdData.append(dataMain, dataSub);
   } else {
-    tdQtd.textContent = '—';
+    tdData.textContent = 'Sem compras';
   }
 
+  // Estoque Atual
+  const tdEstoque = document.createElement('td');
+  tdEstoque.className = 'inv-num';
+  const und = insumo.unidade === 'unidade' ? 'un' : insumo.unidade;
+  const estoqueMain = document.createElement('strong');
+  estoqueMain.textContent = `${formatTrim(insumo.estoqueAtual || 0)} ${und}`;
+  tdEstoque.appendChild(estoqueMain);
+  if (insumo.estoqueMinimo != null && Number(insumo.estoqueMinimo) > 0) {
+    const minSub = document.createElement('div');
+    minSub.className = 'inv-cell-sub';
+    minSub.textContent = `Mín: ${formatTrim(insumo.estoqueMinimo)} ${und}`;
+    tdEstoque.appendChild(minSub);
+  }
+
+  // Status
+  const tdStatus = document.createElement('td');
+  tdStatus.appendChild(renderStockBadge(insumo));
+
+  // Ações
   const tdAcoes = document.createElement('td');
   tdAcoes.className = 'inv-actions';
   const btnEdit = document.createElement('button');
@@ -262,7 +370,7 @@ function renderRow(insumo) {
 
   tdAcoes.append(btnEdit, btnDel);
 
-  tr.append(tdCat, tdData, tdNome, tdUnidade, tdDesc, tdPreco, tdQtd, tdAcoes);
+  tr.append(tdCod, tdCat, tdNome, tdPreco, tdData, tdEstoque, tdStatus, tdAcoes);
   return tr;
 }
 
@@ -288,7 +396,7 @@ function renderBaseComponents(b, insumos) {
     const ins = byId.get(c.insumoId);
     const qtd = Number(c.quantidade) || 0;
     const custo = ins ? inventory.custoItem(ins, qtd) : 0;
-    const un = ins ? ins.unidade : '';
+    const un = ins ? (ins.unidade === 'unidade' ? 'un' : ins.unidade) : '';
     const li = document.createElement('li');
     li.textContent = `${ins ? ins.nome : 'Insumo removido'} — ${qtd} ${un} · ${formatCurrency(custo)}`;
     ul.appendChild(li);
@@ -311,6 +419,14 @@ function renderBaseRow(b) {
   const tr = document.createElement('tr');
   tr.className = 'inv-base-row';
 
+  // Código
+  const tdCod = document.createElement('td');
+  const codBadge = document.createElement('span');
+  codBadge.className = 'code-badge';
+  codBadge.textContent = b.codigo || '—';
+  tdCod.appendChild(codBadge);
+
+  // Categoria
   const tdCat = document.createElement('td');
   const catBadge = document.createElement('span');
   catBadge.className = 'product-type inv-cat-base';
@@ -324,37 +440,56 @@ function renderBaseRow(b) {
   toggle.setAttribute('aria-label', 'Ver componentes da base');
   tdCat.appendChild(toggle);
 
-  const tdData = document.createElement('td');
-  tdData.textContent = '—';
-
+  // Nome
   const tdNome = document.createElement('td');
   tdNome.className = 'inv-nome';
-  tdNome.textContent = b.nome || 'Sem nome';
+  const nomeStrong = document.createElement('strong');
+  nomeStrong.textContent = b.nome || 'Sem nome';
+  tdNome.appendChild(nomeStrong);
+  if (b.descricao) {
+    const descSub = document.createElement('div');
+    descSub.className = 'inv-cell-sub';
+    descSub.textContent = b.descricao;
+    tdNome.appendChild(descSub);
+  }
 
-  const tdUnidade = document.createElement('td');
-  const unBadge = document.createElement('span');
-  unBadge.className = 'product-type';
-  unBadge.textContent = b.rendimentoUnidade || 'un';
-  tdUnidade.appendChild(unBadge);
-
-  const tdDesc = document.createElement('td');
-  tdDesc.className = 'inv-desc';
-  tdDesc.textContent = b.descricao || '';
-
+  // Custo Ref
   const tdPreco = document.createElement('td');
   tdPreco.className = 'inv-num';
   const main = document.createElement('div');
   main.className = 'inv-cell-main';
-  main.textContent = formatCurrency(custoTotal);
+  const rendUn = b.rendimentoUnidade === 'unidade' ? 'un' : (b.rendimentoUnidade || 'un');
+  main.textContent = `${formatCurrency(custoUn)} / ${rendUn}`;
   tdPreco.appendChild(main);
 
-  const tdQtd = document.createElement('td');
-  tdQtd.className = 'inv-num';
-  const qtdMain = document.createElement('div');
-  qtdMain.className = 'inv-cell-main';
-  qtdMain.textContent = `${b.rendimento} ${b.rendimentoUnidade || 'un'}`;
-  tdQtd.appendChild(qtdMain);
+  // Última Compra (Calculado)
+  const tdData = document.createElement('td');
+  const dataMain = document.createElement('div');
+  dataMain.className = 'inv-cell-main';
+  dataMain.textContent = 'Receita de Base';
+  const dataSub = document.createElement('div');
+  dataSub.className = 'inv-cell-sub';
+  dataSub.textContent = `Total: ${formatCurrency(custoTotal)} (${b.componentes.length} itens)`;
+  tdData.append(dataMain, dataSub);
 
+  // Estoque Atual
+  const tdEstoque = document.createElement('td');
+  tdEstoque.className = 'inv-num';
+  const estoqueMain = document.createElement('strong');
+  estoqueMain.textContent = `${formatTrim(b.estoqueAtual || 0)} ${rendUn}`;
+  tdEstoque.appendChild(estoqueMain);
+  if (b.estoqueMinimo != null && Number(b.estoqueMinimo) > 0) {
+    const minSub = document.createElement('div');
+    minSub.className = 'inv-cell-sub';
+    minSub.textContent = `Mín: ${formatTrim(b.estoqueMinimo)} ${rendUn}`;
+    tdEstoque.appendChild(minSub);
+  }
+
+  // Status
+  const tdStatus = document.createElement('td');
+  tdStatus.appendChild(renderStockBadge(b));
+
+  // Ações
   const tdAcoes = document.createElement('td');
   tdAcoes.className = 'inv-actions';
   const btnEdit = document.createElement('button');
@@ -373,7 +508,7 @@ function renderBaseRow(b) {
   btnDel.addEventListener('click', () => removeBase(b));
   tdAcoes.append(btnEdit, btnDel);
 
-  tr.append(tdCat, tdData, tdNome, tdUnidade, tdDesc, tdPreco, tdQtd, tdAcoes);
+  tr.append(tdCod, tdCat, tdNome, tdPreco, tdData, tdEstoque, tdStatus, tdAcoes);
 
   const detailTr = document.createElement('tr');
   detailTr.className = 'inv-base-detail';
@@ -433,10 +568,14 @@ function openModal(insumo) {
   const nomeEl = document.getElementById('insumoFieldNome');
   const unidadeEl = document.getElementById('insumoFieldUnidade');
   const descEl = document.getElementById('insumoFieldDescricao');
+  const estAtualEl = document.getElementById('insumoFieldEstoqueAtual');
+  const estMinEl = document.getElementById('insumoFieldEstoqueMinimo');
 
   if (nomeEl) nomeEl.value = insumo ? (insumo.nome || '') : '';
   if (unidadeEl) unidadeEl.value = insumo ? (insumo.unidade || 'unidade') : 'g';
   if (descEl) descEl.value = insumo ? (insumo.descricao || '') : '';
+  if (estAtualEl) estAtualEl.value = insumo && insumo.estoqueAtual != null ? insumo.estoqueAtual : '';
+  if (estMinEl) estMinEl.value = insumo && insumo.estoqueMinimo != null ? insumo.estoqueMinimo : '';
 
   const dataEl = document.getElementById('insumoCompraData');
   if (dataEl && !dataEl.value) dataEl.value = new Date().toISOString().slice(0, 10);
@@ -540,6 +679,23 @@ function renderCompras() {
 }
 
 /**
+ * Monta as duas linhas de custo exibidas no card de inventário.
+ * @param {Object} insumo - Insumo.
+ * @returns {{ principal: string, sub: ?string }}
+ */
+function custoDisplay(insumo) {
+  const sub = inventory.subunidade(insumo);
+  const custoSub = inventory.custoPorSubunidade(insumo);
+  if (sub === 'ml') {
+    return { principal: `${formatCurrency(custoSub * 1000)} / L`, sub: `${formatPrecise(custoSub)} / ml` };
+  }
+  if (sub === 'g') {
+    return { principal: `${formatCurrency(custoSub * 1000)} / kg`, sub: `${formatPrecise(custoSub)} / g` };
+  }
+  return { principal: `${formatCurrency(custoSub)} / un`, sub: null };
+}
+
+/**
  * Adiciona uma compra ao rascunho do modal (validando os campos).
  * @returns {boolean} true se adicionou.
  */
@@ -547,6 +703,7 @@ function addCompra() {
   const dataEl = document.getElementById('insumoCompraData');
   const custoEl = document.getElementById('insumoCompraCusto');
   const qtdEl = document.getElementById('insumoCompraQtd');
+  const estAtualEl = document.getElementById('insumoFieldEstoqueAtual');
 
   const data = dataEl ? dataEl.value : '';
   const custoTotal = custoEl ? Number(custoEl.value) : NaN;
@@ -561,6 +718,13 @@ function addCompra() {
   }
 
   comprasDraft.push(compra);
+
+  // Soma a quantidade comprada no estoque atual no formulário se o campo estiver aberto
+  if (estAtualEl && Number(quantidadeCompra) > 0) {
+    const cur = Number(estAtualEl.value) || 0;
+    estAtualEl.value = Math.round((cur + quantidadeCompra) * 1000) / 1000;
+  }
+
   if (custoEl) custoEl.value = '';
   if (qtdEl) qtdEl.value = '';
   if (dataEl && !dataEl.value) dataEl.value = new Date().toISOString().slice(0, 10);
@@ -578,6 +742,8 @@ function flushCompraPendente() {
   const dataEl = document.getElementById('insumoCompraData');
   const custoEl = document.getElementById('insumoCompraCusto');
   const qtdEl = document.getElementById('insumoCompraQtd');
+  const estAtualEl = document.getElementById('insumoFieldEstoqueAtual');
+
   const data = dataEl ? dataEl.value : '';
   const custo = custoEl ? Number(custoEl.value) : NaN;
   const qtd = qtdEl ? Number(qtdEl.value) : NaN;
@@ -585,6 +751,10 @@ function flushCompraPendente() {
   const compra = { id: generateId(), data, custoTotal: custo, quantidadeCompra: qtd };
   if (inventory.validateCompra(compra).valid) {
     comprasDraft.push(compra);
+    if (estAtualEl && Number(qtd) > 0) {
+      const cur = Number(estAtualEl.value) || 0;
+      estAtualEl.value = Math.round((cur + qtd) * 1000) / 1000;
+    }
   }
 }
 
@@ -605,6 +775,8 @@ function saveInsumo() {
   const nomeEl = document.getElementById('insumoFieldNome');
   const unidadeEl = document.getElementById('insumoFieldUnidade');
   const descEl = document.getElementById('insumoFieldDescricao');
+  const estAtualEl = document.getElementById('insumoFieldEstoqueAtual');
+  const estMinEl = document.getElementById('insumoFieldEstoqueMinimo');
 
   // Captura uma compra digitada mas ainda não adicionada à lista
   flushCompraPendente();
@@ -612,9 +784,19 @@ function saveInsumo() {
   const nome = nomeEl ? String(nomeEl.value).trim() : '';
   const unidade = unidadeEl ? unidadeEl.value : 'unidade';
   const descricao = descEl ? String(descEl.value).trim() : '';
+  const estoqueAtual = estAtualEl && estAtualEl.value !== '' ? Number(estAtualEl.value) : 0;
+  const estoqueMinimo = estMinEl && estMinEl.value !== '' ? Number(estMinEl.value) : null;
 
-  const base = { nome, unidade, descricao, compras: comprasDraft };
-  const insumo = editing ? { ...base, id: editing.id } : inventory.createInsumo(base);
+  const baseData = {
+    nome,
+    unidade,
+    descricao,
+    codigo: editing ? editing.codigo : '',
+    estoqueAtual,
+    estoqueMinimo,
+    compras: comprasDraft,
+  };
+  const insumo = editing ? { ...baseData, id: editing.id } : inventory.createInsumo(baseData, storage.getAllInsumos());
 
   const validacao = inventory.validateInsumo(insumo);
   if (!validacao.valid) {
@@ -638,6 +820,7 @@ function saveInsumo() {
 
   showToast(editing ? 'Insumo atualizado!' : 'Insumo cadastrado!');
   closeModal();
+  render();
   onChange();
   return true;
 }
@@ -728,11 +911,15 @@ function openModalBase(b) {
   const rendEl = document.getElementById('baseFieldRendimento');
   const rendUnEl = document.getElementById('baseFieldRendUnidade');
   const descEl = document.getElementById('baseFieldDescricao');
+  const estAtualEl = document.getElementById('baseFieldEstoqueAtual');
+  const estMinEl = document.getElementById('baseFieldEstoqueMinimo');
 
   if (nomeEl) nomeEl.value = b ? (b.nome || '') : '';
   if (rendEl) rendEl.value = b ? (b.rendimento || '') : '';
   if (rendUnEl) rendUnEl.value = b ? (b.rendimentoUnidade || 'unidade') : 'unidade';
   if (descEl) descEl.value = b ? (b.descricao || '') : '';
+  if (estAtualEl) estAtualEl.value = b && b.estoqueAtual != null ? b.estoqueAtual : '';
+  if (estMinEl) estMinEl.value = b && b.estoqueMinimo != null ? b.estoqueMinimo : '';
 
   showAvisoBase('');
   renderComponentes();
@@ -754,7 +941,8 @@ function closeModalBase() {
 /** Atualiza o rótulo de unidade de um componente conforme o insumo. */
 function updateComponenteUnit(row, unitEl) {
   const ins = storage.getAllInsumos().find((i) => i.id === row.insumoId);
-  unitEl.textContent = ins ? ins.unidade : '';
+  const u = ins ? ins.unidade : '';
+  unitEl.textContent = u === 'unidade' ? 'un' : u;
 }
 
 /** Atualiza a pré-visualização do custo total da base no modal. */
@@ -825,7 +1013,7 @@ function renderComponentes() {
     sorted.forEach((i) => {
       const opt = document.createElement('option');
       opt.value = i.id;
-      opt.textContent = `${i.nome} (${i.unidade})`;
+      opt.textContent = `${i.nome} (${i.unidade === 'unidade' ? 'un' : i.unidade})`;
       sel.appendChild(opt);
     });
     sel.value = row.insumoId || '';
@@ -879,7 +1067,7 @@ function renderComponentes() {
       costEl.textContent = ins ? formatCurrency(custo) : '—';
       if (compra && Number(compra.custoTotal) > 0) {
         const q = Number(compra.quantidadeCompra) || 0;
-        const und = compra.unidade || (ins && ins.unidade) || 'unidade';
+        const und = compra.unidade || (ins && ins.unidade) || 'un';
         precoEl.textContent = q > 0
           ? `${formatCurrency(Number(compra.custoTotal) || 0)} / ${trimNum(q)} ${und}`
           : `${formatCurrency(Number(compra.custoTotal) || 0)}`;
@@ -919,20 +1107,28 @@ function saveBase() {
   const rendEl = document.getElementById('baseFieldRendimento');
   const rendUnEl = document.getElementById('baseFieldRendUnidade');
   const descEl = document.getElementById('baseFieldDescricao');
+  const estAtualEl = document.getElementById('baseFieldEstoqueAtual');
+  const estMinEl = document.getElementById('baseFieldEstoqueMinimo');
 
   const componentes = componentesDraft
     .filter((c) => c.insumoId)
     .map((c) => ({ insumoId: c.insumoId, quantidade: Number(c.quantidade) || 0 }));
+
+  const estoqueAtual = estAtualEl && estAtualEl.value !== '' ? Number(estAtualEl.value) : 0;
+  const estoqueMinimo = estMinEl && estMinEl.value !== '' ? Number(estMinEl.value) : null;
 
   const data = {
     nome: nomeEl ? String(nomeEl.value).trim() : '',
     descricao: descEl ? String(descEl.value).trim() : '',
     rendimento: rendEl ? Number(rendEl.value) : NaN,
     rendimentoUnidade: rendUnEl ? rendUnEl.value : 'un',
+    codigo: editingBase ? editingBase.codigo : '',
+    estoqueAtual,
+    estoqueMinimo,
     componentes,
   };
 
-  const b = editingBase ? { ...data, id: editingBase.id } : base.createBase(data);
+  const b = editingBase ? { ...data, id: editingBase.id } : base.createBase(data, base.getBases());
 
   const validacao = base.validateBase(b);
   if (!validacao.valid) {
@@ -954,6 +1150,7 @@ function saveBase() {
   storage.saveBases(lista);
   showToast(editingBase ? 'Base atualizada!' : 'Base cadastrada!');
   closeModalBase();
+  render();
   onChange();
   return true;
 }
@@ -969,6 +1166,7 @@ function removeBase(b) {
   const lista = base.getBases().filter((x) => x.id !== b.id);
   storage.saveBases(lista);
   showToast('Base excluída.');
+  render();
   onChange();
 }
 
@@ -992,6 +1190,14 @@ if (categoriaModal) {
   });
 }
 
+document.querySelectorAll('.inventory-filter-pill').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.inventory-filter-pill').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCategoryFilter = btn.dataset.filter || 'todos';
+    render();
+  });
+});
 
 const searchEl = document.getElementById('insumoSearch');
 if (searchEl) searchEl.addEventListener('input', () => render());
@@ -1021,6 +1227,29 @@ if (insumoModal) {
 const addCompBtn = document.getElementById('btnAddComponente');
 if (addCompBtn) addCompBtn.addEventListener('click', () => addComponente());
 
+const pasteBaseExcelBtn = document.getElementById('btnPasteBaseExcel');
+if (pasteBaseExcelBtn) {
+  pasteBaseExcelBtn.addEventListener('click', () => {
+    openExcelImportModal((importedRows) => {
+      if (!Array.isArray(importedRows) || importedRows.length === 0) return;
+
+      if (componentesDraft.length === 1 && !componentesDraft[0].insumoId && !componentesDraft[0].quantidade) {
+        componentesDraft = [];
+      }
+
+      importedRows.forEach((r) => {
+        componentesDraft.push({
+          insumoId: r.refId,
+          quantidade: r.quantidade,
+        });
+      });
+
+      renderComponentes();
+      updateBaseCostPreview();
+    });
+  });
+}
+
 const rendPreviewEl = document.getElementById('baseFieldRendimento');
 if (rendPreviewEl) rendPreviewEl.addEventListener('input', () => updateBaseCostPreview());
 
@@ -1039,3 +1268,4 @@ if (baseModal) {
     el.addEventListener('click', () => closeModalBase());
   });
 }
+

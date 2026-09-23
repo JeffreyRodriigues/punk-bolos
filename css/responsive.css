@@ -160,6 +160,39 @@
   .chart-wrap-sm {
     height: 220px;
   }
+
+  /* Tabela de receita no mobile / modal */
+  .base-componentes-head {
+    display: none;
+  }
+
+  .base-componente-row.item-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+    position: relative;
+  }
+
+  .base-componente-row .base-componente-preco,
+  .base-componente-row .base-componente-cost {
+    text-align: left;
+  }
+
+  .base-componente-row .base-componente-preco::before,
+  .base-componente-row .base-componente-cost::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+  }
+
+  .base-componente-row .item-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
 }
 
 /* ---------- Celular (<= 480px) ---------- */
