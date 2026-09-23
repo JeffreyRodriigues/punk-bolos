@@ -46,11 +46,31 @@ export function round2(value) {
 }
 
 /**
+ * Gera o próximo código sequencial de insumo (ex.: "PIN0001").
+ * @param {Array<Object>} [existingList=[]] - Lista atual de insumos.
+ * @returns {string} Código no formato PINXXXX.
+ */
+export function nextInsumoCodigo(existingList = []) {
+  let maxNum = 0;
+  (existingList || []).forEach((item) => {
+    if (item && typeof item.codigo === 'string') {
+      const match = item.codigo.match(/^PIN(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+  });
+  return `PIN${String(maxNum + 1).padStart(4, '0')}`;
+}
+
+/**
  * Normaliza e cria um insumo no formato padrão.
  * @param {Object} data - Dados crus do formulário.
+ * @param {Array<Object>} [existingList=[]] - Lista existente para gerar código automático.
  * @returns {Object} Insumo normalizado (compras vazias por padrão).
  */
-export function createInsumo(data = {}) {
+export function createInsumo(data = {}, existingList = []) {
   const unidade = INSUMO_UNITS.includes(data.unidade) ? data.unidade : 'unidade';
   const compras = Array.isArray(data.compras)
     ? data.compras.map((c) => ({
@@ -60,11 +80,20 @@ export function createInsumo(data = {}) {
         quantidadeCompra: Number(c.quantidadeCompra) || 0,
       }))
     : [];
+
+  let codigo = String(data.codigo || '').trim();
+  if (!codigo && Array.isArray(existingList)) {
+    codigo = nextInsumoCodigo(existingList);
+  }
+
   return {
     id: typeof data.id === 'string' && data.id ? data.id : generateId(),
+    codigo: codigo || '',
     nome: String(data.nome || '').trim(),
     unidade,
     descricao: String(data.descricao || '').trim(),
+    estoqueAtual: Number(data.estoqueAtual) || 0,
+    estoqueMinimo: data.estoqueMinimo != null && data.estoqueMinimo !== '' ? Number(data.estoqueMinimo) : null,
     compras,
   };
 }

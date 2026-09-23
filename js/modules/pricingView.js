@@ -16,6 +16,7 @@ import * as product from './product.js';
 import * as pricing from './pricing.js';
 import * as base from './base.js';
 import * as inventory from './inventory.js';
+import { openExcelImportModal } from './excelModal.js';
 import { showToast } from './toast.js';
 import { formatCurrency } from '../utils/money.js';
 import { sortKey } from '../utils/describe.js';
@@ -39,6 +40,12 @@ let currentTipoFilter = '';
 
 /** Receita em edição (null = nova precificação para o produto). */
 let editingReceita = null;
+
+/** Flag se o formulário está em modo de edição ou somente leitura. */
+let isEditing = false;
+
+/** Snapshot do formulário para permitir cancelar alterações. */
+let originalSnapshot = null;
 
 /** Rascunho das linhas de insumo do formulário. */
 let insumoRows = [];
@@ -153,6 +160,83 @@ function populateProdutoSelect() {
 }
 
 /**
+ * Salva um snapshot do estado atual para caso o usuário cancele a edição.
+ */
+function saveSnapshot() {
+  originalSnapshot = {
+    margem: (document.getElementById('precMargem') || {}).value,
+    multiplicador: (document.getElementById('precMultiplicador') || {}).value,
+    rendimento: (document.getElementById('precRendimento') || {}).value,
+    embalagem: (document.getElementById('precEmbalagem') || {}).value,
+    custoAdicional: (document.getElementById('precCustoAdicional') || {}).value,
+    custoAdicionalObs: (document.getElementById('precCustoAdicionalObs') || {}).value,
+    insumoRows: JSON.parse(JSON.stringify(insumoRows)),
+  };
+}
+
+/**
+ * Restaura o formulário a partir do snapshot.
+ */
+function restoreSnapshot() {
+  if (!originalSnapshot) return;
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val != null) el.value = val;
+  };
+  setVal('precMargem', originalSnapshot.margem);
+  setVal('precMultiplicador', originalSnapshot.multiplicador);
+  setVal('precRendimento', originalSnapshot.rendimento);
+  setVal('precEmbalagem', originalSnapshot.embalagem);
+  setVal('precCustoAdicional', originalSnapshot.custoAdicional);
+  setVal('precCustoAdicionalObs', originalSnapshot.custoAdicionalObs);
+  insumoRows = JSON.parse(JSON.stringify(originalSnapshot.insumoRows || []));
+}
+
+/**
+ * Atualiza a interface gráfica conforme o modo de edição (somente leitura ou editando).
+ */
+function updateModeUI() {
+  const formEl = document.getElementById('precificacaoForm');
+  const btnEdit = document.getElementById('btnEditPrecificacao');
+  const editingButtons = document.getElementById('precEditingButtons');
+  const editActions = document.getElementById('precEditActions');
+  const badgeStatus = document.getElementById('precificacaoStatusBadge');
+
+  if (formEl) {
+    formEl.classList.toggle('prec-readonly', !isEditing);
+  }
+
+  // Habilita / desabilita os inputs dos fatores
+  const factorInputs = ['precMargem', 'precMultiplicador', 'precRendimento', 'precEmbalagem', 'precCustoAdicional', 'precCustoAdicionalObs'];
+  factorInputs.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !isEditing;
+  });
+
+  if (btnEdit) btnEdit.style.display = isEditing ? 'none' : 'block';
+  if (editingButtons) editingButtons.style.display = isEditing ? 'flex' : 'none';
+  if (editActions) editActions.style.display = isEditing ? 'flex' : 'none';
+
+  if (badgeStatus) {
+    if (!editingReceita) {
+      badgeStatus.className = 'badge badge-secondary';
+      badgeStatus.textContent = '⚪ Não precificado';
+    } else {
+      const insumos = storage.getAllInsumos();
+      const bases = base.getBases();
+      const desatualizada = pricing.isDesatualizada(editingReceita, insumos, bases);
+      if (desatualizada) {
+        badgeStatus.className = 'badge badge-warning';
+        badgeStatus.textContent = '🟡 Custo alterado';
+      } else {
+        badgeStatus.className = 'badge badge-success';
+        badgeStatus.textContent = '🟢 Precificado';
+      }
+    }
+  }
+}
+
+/**
  * Carrega o produto selecionado, preenchendo o formulário com a
  * receita existente (ou em branco, com defaults).
  * @param {string} produtoId - Id do produto.
@@ -161,6 +245,8 @@ function loadProduto(produtoId) {
   currentProdutoId = produtoId || '';
   const receita = pricing.getReceita(storage.getAllPrecificacoes(), currentProdutoId);
   editingReceita = receita || null;
+  // Se já tem receita salva, abre em modo somente leitura. Se não tem, abre em modo edição.
+  isEditing = !editingReceita;
 
   const margem = document.getElementById('precMargem');
   const mult = document.getElementById('precMultiplicador');
@@ -169,15 +255,15 @@ function loadProduto(produtoId) {
   const custoAdic = document.getElementById('precCustoAdicional');
   const obs = document.getElementById('precCustoAdicionalObs');
 
-  const base = receita || {};
-  if (margem) margem.value = base.margem != null ? base.margem : pricing.PRICING_DEFAULTS.margem;
-  if (mult) mult.value = base.multiplicador != null ? base.multiplicador : pricing.PRICING_DEFAULTS.multiplicador;
-  if (rend) rend.value = base.rendimento != null ? base.rendimento : pricing.PRICING_DEFAULTS.rendimento;
-  if (emb) emb.value = base.embalagem != null ? base.embalagem : pricing.PRICING_DEFAULTS.embalagem;
-  if (custoAdic) custoAdic.value = base.custoAdicional != null ? base.custoAdicional : pricing.PRICING_DEFAULTS.custoAdicional;
-  if (obs) obs.value = base.custoAdicionalObs || '';
+  const baseData = receita || {};
+  if (margem) margem.value = baseData.margem != null ? baseData.margem : pricing.PRICING_DEFAULTS.margem;
+  if (mult) mult.value = baseData.multiplicador != null ? baseData.multiplicador : pricing.PRICING_DEFAULTS.multiplicador;
+  if (rend) rend.value = baseData.rendimento != null ? baseData.rendimento : pricing.PRICING_DEFAULTS.rendimento;
+  if (emb) emb.value = baseData.embalagem != null ? baseData.embalagem : pricing.PRICING_DEFAULTS.embalagem;
+  if (custoAdic) custoAdic.value = baseData.custoAdicional != null ? baseData.custoAdicional : pricing.PRICING_DEFAULTS.custoAdicional;
+  if (obs) obs.value = baseData.custoAdicionalObs || '';
 
-  insumoRows = (base.itens || []).map((i) => ({
+  insumoRows = (baseData.itens || []).map((i) => ({
     refId: i.baseId || i.insumoId || '',
     tipo: i.baseId ? 'base' : 'insumo',
     quantidade: i.quantidade,
@@ -186,7 +272,9 @@ function loadProduto(produtoId) {
     insumoRows.push({ refId: '', tipo: '', quantidade: '' });
   }
 
+  saveSnapshot();
   showAviso('');
+  updateModeUI();
   renderInsumoRows();
   updatePreview();
 }
@@ -258,6 +346,7 @@ function renderInsumoRows() {
       sel.appendChild(opt);
     });
     sel.value = row.refId || '';
+    sel.disabled = !isEditing;
 
     const qtd = document.createElement('input');
     qtd.type = 'number';
@@ -267,6 +356,7 @@ function renderInsumoRows() {
     qtd.placeholder = 'Qtd';
     qtd.value = row.quantidade != null ? row.quantidade : '';
     qtd.setAttribute('aria-label', 'Quantidade utilizada');
+    qtd.disabled = !isEditing;
 
     const unitEl = document.createElement('span');
     unitEl.className = 'base-componente-unit';
@@ -287,6 +377,10 @@ function renderInsumoRows() {
     del.textContent = '✕';
     del.title = 'Remover item';
     del.setAttribute('aria-label', 'Remover item');
+    del.disabled = !isEditing;
+    if (!isEditing) {
+      del.style.visibility = 'hidden';
+    }
 
     const uso = document.createElement('div');
     uso.className = 'base-componente-uso';
@@ -309,7 +403,8 @@ function renderInsumoRows() {
 
       if (tipo === 'base') {
         const b = baseById.get(sel.value);
-        unitEl.textContent = b ? b.rendimentoUnidade : '';
+        const bUnd = b ? b.rendimentoUnidade : '';
+        unitEl.textContent = bUnd === 'unidade' ? 'un' : bUnd;
         if (b) {
           const custoTotal = base.custoBase(b, insumos);
           const rend = Number(b.rendimento) || 0;
@@ -321,11 +416,12 @@ function renderInsumoRows() {
         }
       } else {
         const ins = insumos.find((i) => i.id === sel.value);
-        unitEl.textContent = ins ? ins.unidade : '';
+        const insUnd = ins ? ins.unidade : '';
+        unitEl.textContent = insUnd === 'unidade' ? 'un' : insUnd;
         const compra = ins ? inventory.ultimaCompra(ins) : null;
         if (compra && Number(compra.custoTotal) > 0) {
           const q = Number(compra.quantidadeCompra) || 0;
-          const und = compra.unidade || (ins && ins.unidade) || 'unidade';
+          const und = compra.unidade || (ins && ins.unidade) || 'un';
           precoEl.textContent = q > 0
             ? `${formatCurrency(Number(compra.custoTotal) || 0)} / ${trimNum(q)} ${und}`
             : formatCurrency(Number(compra.custoTotal) || 0);
@@ -492,6 +588,10 @@ function savePrecificacao() {
   storage.savePrecificacoes(lista);
 
   editingReceita = calculada;
+  isEditing = false;
+  saveSnapshot();
+  updateModeUI();
+  renderInsumoRows();
   showToast('Precificação salva!');
   showAviso('', true);
   updatePreview();
@@ -538,8 +638,55 @@ if (tipoFilter) tipoFilter.addEventListener('change', () => {
   loadProduto(sel ? sel.value : '');
 });
 
+const editBtn = document.getElementById('btnEditPrecificacao');
+if (editBtn) {
+  editBtn.addEventListener('click', () => {
+    isEditing = true;
+    saveSnapshot();
+    updateModeUI();
+    renderInsumoRows();
+  });
+}
+
+const cancelBtn = document.getElementById('btnCancelEditPrec');
+if (cancelBtn) {
+  cancelBtn.addEventListener('click', () => {
+    restoreSnapshot();
+    isEditing = !editingReceita;
+    updateModeUI();
+    renderInsumoRows();
+    updatePreview();
+    showAviso('');
+  });
+}
+
 const addBtn = document.getElementById('btnAddPrecInsumo');
 if (addBtn) addBtn.addEventListener('click', () => addInsumoRow());
+
+const pasteExcelBtn = document.getElementById('btnPastePrecExcel');
+if (pasteExcelBtn) {
+  pasteExcelBtn.addEventListener('click', () => {
+    openExcelImportModal((importedRows) => {
+      if (!Array.isArray(importedRows) || importedRows.length === 0) return;
+
+      // Se a única linha existente for vazia, substitui
+      if (insumoRows.length === 1 && !insumoRows[0].refId && !insumoRows[0].quantidade) {
+        insumoRows = [];
+      }
+
+      importedRows.forEach((r) => {
+        insumoRows.push({
+          refId: r.refId,
+          tipo: r.tipo || 'insumo',
+          quantidade: r.quantidade,
+        });
+      });
+
+      renderInsumoRows();
+      updatePreview();
+    });
+  });
+}
 
 const saveBtn = document.getElementById('btnSavePrecificacao');
 if (saveBtn) saveBtn.addEventListener('click', () => savePrecificacao());

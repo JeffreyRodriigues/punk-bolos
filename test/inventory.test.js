@@ -240,3 +240,22 @@ test('getInsumos: lê os insumos da camada de dados', async () => {
   assert.equal(inv.getInsumos().length, 2);
   assert.equal(inv.getInsumos()[0].nome, 'Farinha de trigo');
 });
+
+// --- nextInsumoCodigo & stock fields ---
+test('nextInsumoCodigo: gera PIN0001 com lista vazia e incrementa a partir do maior', () => {
+  assert.equal(inventory.nextInsumoCodigo([]), 'PIN0001');
+  assert.equal(inventory.nextInsumoCodigo([{ codigo: 'PIN0001' }, { codigo: 'PIN0005' }]), 'PIN0006');
+});
+
+test('createInsumo: inicializa codigo e campos de estoque', () => {
+  const i = inventory.createInsumo({
+    nome: 'Chocolate em Pó',
+    unidade: 'g',
+    codigo: 'PIN0010',
+    estoqueAtual: 500,
+    estoqueMinimo: 200,
+  });
+  assert.equal(i.codigo, 'PIN0010');
+  assert.equal(i.estoqueAtual, 500);
+  assert.equal(i.estoqueMinimo, 200);
+});
