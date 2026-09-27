@@ -88,10 +88,11 @@ test('calcular: pipeline completo (9,03 -> 4,39)', () => {
   const r = receitaExemplo(insumos);
   const c = pricing.calcular(r, insumos);
   assert.equal(c.custoIngredientes, 9.03);
+  assert.equal(c.custoRealUnitario, 1.90); // 9,03 / 10 + 1,00 embalagem
   assert.equal(c.comMargem, 11.29);     // 9,03 * 1,25
   assert.equal(c.comMultiplicador, 33.87); // 11,29 * 3
   assert.equal(c.porUnidade, 3.39);     // 33,87 / 10
-  assert.equal(c.custoPorUnidade, 4.39); // +1,00 embalagem
+  assert.equal(c.custoPorUnidade, 4.39); // +1,00 embalagem (preço sugerido)
 });
 
 test('calcular: margem incide ANTES do multiplicador e embalagem FORA dele', () => {

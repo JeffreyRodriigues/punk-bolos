@@ -69,6 +69,7 @@ export function createReceita(data = {}) {
     custoAdicionalObs: String(data.custoAdicionalObs || ''),
     dataCalculo: data.dataCalculo || new Date().toISOString().slice(0, 10),
     custoIngredientes: data.custoIngredientes != null ? Number(data.custoIngredientes) : 0,
+    custoRealUnitario: data.custoRealUnitario != null ? Number(data.custoRealUnitario) : 0,
     custoPorUnidade: data.custoPorUnidade != null ? Number(data.custoPorUnidade) : 0,
   };
 }
@@ -99,7 +100,7 @@ export function custoIngredientes(receita, insumos = [], bases = []) {
 /**
  * Custo de um único item (insumo ou base) dado o seu id/tipo e quantidade.
  * @param {Object} item - Item { insumoId|baseId, quantidade }.
- * @param {Array<Object>} insumos - Lista de insumos (compras).
+ * @param {Array<Object>} insumos - Lista de insumos (com compras).
  * @param {Array<Object>} [bases] - Lista de bases.
  * @returns {number} Custo do item (R$).
  */
@@ -120,27 +121,36 @@ export function custoItem(item, insumos = [], bases = []) {
  * @param {Object} receita - Receita (fatores + itens).
  * @param {Array<Object>} insumos - Lista de insumos (com compras).
  * @param {Array<Object>} [bases] - Lista de bases (com componentes).
- * @returns {{ custoIngredientes: number, comMargem: number, comMultiplicador: number, porUnidade: number, custoPorUnidade: number }}
+ * @returns {{ custoIngredientes: number, custoRealUnitario: number, comMargem: number, comMultiplicador: number, porUnidade: number, custoPorUnidade: number, precoSugerido: number }}
  */
 export function calcular(receita, insumos = [], bases = []) {
   const ci = custoIngredientes(receita, insumos, bases);
   const margem = Number(receita.margem) || 0;
   const multiplicador = Number(receita.multiplicador) || 1;
-  const rendimento = Number(receita.rendimento) || 1;
+  const rendimento = Number(receita.rendimento) > 0 ? Number(receita.rendimento) : 1;
   const embalagem = Number(receita.embalagem) || 0;
   const custoAdic = custoAdicionalNum(receita.custoAdicional);
 
+  const custoRealUnitario = round2(ci / rendimento + embalagem + custoAdic);
   const comMargem = round2(ci * (1 + margem / 100));
   const comMultiplicador = round2(comMargem * multiplicador);
   const porUnidade = round2(comMultiplicador / rendimento);
-  const custoPorUnidade = round2(porUnidade + embalagem + custoAdic);
+  const precoSugerido = round2(porUnidade + embalagem + custoAdic);
 
-  return { custoIngredientes: ci, comMargem, comMultiplicador, porUnidade, custoPorUnidade };
+  return {
+    custoIngredientes: ci,
+    custoRealUnitario,
+    comMargem,
+    comMultiplicador,
+    porUnidade,
+    custoPorUnidade: precoSugerido,
+    precoSugerido,
+  };
 }
 
 /**
  * Recalcula e devolve uma NOVA receita com os campos de snapshot
- * (custoIngredientes, custoPorUnidade, dataCalculo) atualizados.
+ * (custoIngredientes, custoRealUnitario, custoPorUnidade, dataCalculo) atualizados.
  * @param {Object} receita - Receita a recalcular.
  * @param {Array<Object>} insumos - Lista de insumos.
  * @param {Array<Object>} [bases] - Lista de bases.
@@ -151,6 +161,7 @@ export function recalcular(receita, insumos = [], bases = []) {
   return {
     ...receita,
     custoIngredientes: c.custoIngredientes,
+    custoRealUnitario: c.custoRealUnitario,
     custoPorUnidade: c.custoPorUnidade,
     dataCalculo: new Date().toISOString().slice(0, 10),
   };

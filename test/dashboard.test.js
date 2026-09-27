@@ -98,6 +98,41 @@ test('lucroBruto: calcula CMV real e margem % a partir das receitas cadastradas'
   assert.equal(res.margem, 56.60); // (56.60 / 100) * 100
 });
 
+test('lucroBruto: usa custo real unitario (CMV) sem multiplicador 3x', () => {
+  const products = [
+    { id: 'p-fatia', titulo: 'Ninho com Nutella', tipoProduto: 'Fatia', tamanho: '', valor: 14.00 },
+  ];
+  // Receita com ingredientes 30,00, rendimento 10, embalagem 1,00 -> CMV real = 4,00 por fatia
+  // Preço sugerido com 3x = 12,25
+  const precificacoes = [
+    {
+      produtoId: 'p-fatia',
+      custoIngredientes: 30.00,
+      rendimento: 10,
+      embalagem: 1.00,
+      custoAdicional: 0,
+      custoRealUnitario: 4.00,
+      custoPorUnidade: 12.25, // preço sugerido com multiplicador
+    },
+  ];
+  const orders = [
+    {
+      status: 'Concluído',
+      valorTotal: 28.00, // 2 fatias vendidas a 14,00 cada
+      pagamento: 'PIX',
+      itens: [
+        { produtoId: 'p-fatia', tipoProduto: 'Fatia', quantidade: 2, valorUnitario: 14.00 },
+      ],
+    },
+  ];
+
+  const res = s.lucroBruto(orders, precificacoes, products);
+  assert.equal(res.receita, 28.00); // 2 * 14.00
+  assert.equal(res.custo, 8.00); // 2 * 4.00 (CMV real!)
+  assert.equal(res.lucro, 20.00); // 28.00 - 8.00 = +20.00 de lucro real!
+  assert.equal(res.margem, 71.43); // (20 / 28) * 100
+});
+
 // --- Distribuição por status ---
 test('countByStatus: inclui cancelados', () => {
   const counts = s.countByStatus([O.ativo, O.cancelado, O.pendente]);

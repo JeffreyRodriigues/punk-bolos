@@ -85,7 +85,8 @@ Bloco de insumos com quantidade, que pode ser usado como **item de receita** (ex
   // Snapshot (resultado calculado):
   dataCalculo: "2026-08-08",
   custoIngredientes: 9.03,         // Σ insumos + bases
-  custoPorUnidade: 4.39            // Resultado final armazenado
+  custoRealUnitario: 1.90,         // CMV Real por unidade (ingredientes/rendimento + embalagem + custo extra)
+  custoPorUnidade: 4.39            // Preço sugerido de venda (com margem 25% + multiplicador 3x)
 }
 ```
 

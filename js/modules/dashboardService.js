@@ -123,8 +123,28 @@ export function ticketMedio(orders) {
 }
 
 /**
+ * Extrai o custo real unitário (CMV) de uma receita cadastrada.
+ * @param {Object} [r] - Objeto de receita da precificação.
+ * @returns {number} Custo real por unidade (ingredientes / rendimento + embalagem + custoAdicional).
+ */
+export function getReceitaCustoUnitario(r) {
+  if (!r) return 0;
+  if (r.custoRealUnitario != null && Number(r.custoRealUnitario) > 0) {
+    return Number(r.custoRealUnitario);
+  }
+  const rendimento = Number(r.rendimento) > 0 ? Number(r.rendimento) : 1;
+  const ci = Number(r.custoIngredientes) || 0;
+  const emb = Number(r.embalagem) || 0;
+  const adic = Number(r.custoAdicional) || 0;
+  if (ci > 0 || emb > 0 || adic > 0) {
+    return round2(ci / rendimento + emb + adic);
+  }
+  return Number(r.custoPorUnidade) || 0;
+}
+
+/**
  * Lucro bruto no período: receita − custo dos produtos vendidos
- * (calculado a partir das receitas cadastradas na aba Precificação).
+ * (calculado a partir das receitas cadastradas na aba Precificação com o CMV real por unidade).
  * @param {Array<Object>} orders - Pedidos.
  * @param {Array<Object>} [precificacoes] - Receitas de precificação.
  * @param {Array<Object>} [products] - Catálogo de produtos.
@@ -142,7 +162,7 @@ export function lucroBruto(orders, precificacoes = [], products = []) {
       if (item.cortesia) return;
       const prodId = resolveItemProductId(item, products);
       const r = recByProd.get(prodId);
-      const custoUnit = r ? Number(r.custoPorUnidade) || 0 : 0;
+      const custoUnit = getReceitaCustoUnitario(r);
       custoTotal += (Number(item.quantidade) || 0) * custoUnit;
     });
   });

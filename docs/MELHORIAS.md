@@ -162,6 +162,10 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - Distinção visual no modal de conferência com badge roxo `🍰 Base Cadastrada` e `🍰 Base Similar`, exibindo o custo calculado dinamicamente em tempo real proporcional ao rendimento.
 - Ao confirmar a importação, o item é inserido diretamente na precificação como `{ tipo: 'base', refId: baseId }`, sem gerar insumo duplicado no inventário.
 
+### 29. Correção do Cálculo de Lucro Bruto e CMV no Dashboard
+- O cálculo de Lucro Bruto do Dashboard (`dashboardService.js`) foi corrigido para utilizar o **Custo Real Unitário de Produção (CMV Real)** `(custoIngredientes ÷ rendimento + embalagem + custoAdicional)` em vez do preço sugerido de venda com multiplicador de lucro 3×.
+- O faturamento/receita continua sendo apurado estritamente pelo **preço original que o confeiteiro cadastrou manualmente na Lista de Produtos** e vendeu nos pedidos, eliminando distorções de lucro negativo.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).
