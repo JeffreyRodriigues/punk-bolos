@@ -3175,6 +3175,16 @@ html.dark .badge-fidelidade {
   color: var(--color-info, #1d4ed8);
 }
 
+.badge-purple {
+  background-color: rgba(168, 85, 247, 0.15);
+  color: #7e22ce;
+}
+
+html.dark .badge-purple {
+  background-color: rgba(168, 85, 247, 0.25);
+  color: #c084fc;
+}
+
 .badge-secondary {
   background-color: var(--color-surface-alt);
   color: var(--color-text-muted);

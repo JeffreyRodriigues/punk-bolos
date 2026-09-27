@@ -155,7 +155,12 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - Grid de receitas e componentes calibrado com alinhamento pixel-perfect para pesagem em gramas, ml ou unidades.
 
 ### 27. Expansão da Suíte de Testes Automatizados
-- Expansão de 124 para **224 testes unitários automatizados** com `node:test`, cobrindo 100% das novas regras de cardápio, checkout, clientes, fidelidade, insumos, bases e importador do Excel.
+- Expansão de 124 para **227 testes unitários automatizados** com `node:test`, cobrindo 100% das novas regras de cardápio, checkout, clientes, fidelidade, insumos, bases e importador do Excel.
+
+### 28. Reconhecimento de Bases (`PBA`) no Importador do Excel
+- O importador do Excel (`excelImporter.js` e `excelModal.js`) agora reconhece automaticamente receitas **Bases cadastradas** (`PBA0001` ou nome da Base como "Base Brigadeiro Tradicional"), além de Insumos (`PIN`).
+- Distinção visual no modal de conferência com badge roxo `🍰 Base Cadastrada` e `🍰 Base Similar`, exibindo o custo calculado dinamicamente em tempo real proporcional ao rendimento.
+- Ao confirmar a importação, o item é inserido diretamente na precificação como `{ tipo: 'base', refId: baseId }`, sem gerar insumo duplicado no inventário.
 
 ---
 

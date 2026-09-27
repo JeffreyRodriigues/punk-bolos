@@ -11,12 +11,15 @@
    ============================================================ */
 
 import * as inventory from './inventory.js';
+import * as base from './base.js';
 
 /** Status de cada linha na pré-visualização. */
 export const STATUS_TYPES = {
   EXACT_MATCH_SAME_PRICE: 'same_price',
   EXACT_MATCH_DIFF_PRICE: 'diff_price',
+  EXACT_MATCH_BASE: 'base_match',
   SIMILAR_NAME: 'similar_name',
+  SIMILAR_BASE: 'similar_base',
   NEW_INSUMO: 'new_insumo',
   INVALID: 'invalid',
 };
@@ -237,12 +240,13 @@ export function parseExcelText(rawText) {
 }
 
 /**
- * Cruza as linhas extraídas da planilha com os insumos existentes no inventário.
+ * Cruza as linhas extraídas da planilha com os insumos e bases existentes.
  * @param {Array<Object>} parsedRows - Linhas do parseExcelText.
  * @param {Array<Object>} existingInsumos - Lista de insumos do inventário.
+ * @param {Array<Object>} [existingBases=[]] - Lista de bases cadastradas.
  * @returns {Array<Object>} Lista de itens com status e recomendações de mapeamento.
  */
-export function matchParsedRowsWithInventory(parsedRows = [], existingInsumos = []) {
+export function matchParsedRowsWithInventory(parsedRows = [], existingInsumos = [], existingBases = []) {
   return parsedRows.map((row) => {
     const normName = normalizeText(row.rawNome);
 
@@ -250,22 +254,56 @@ export function matchParsedRowsWithInventory(parsedRows = [], existingInsumos = 
       return {
         ...row,
         status: STATUS_TYPES.INVALID,
+        tipo: 'insumo',
+        refId: '',
         insumoId: '',
+        baseId: '',
         insumoMatch: null,
+        baseMatch: null,
         acao: 'invalid',
         mensagem: 'Quantidade utilizada inválida ou nome ausente.',
       };
     }
 
-    // Busca insumo correspondente exato (normalizado)
-    const match = existingInsumos.find((ins) => normalizeText(ins.nome) === normName);
+    // 1. Busca BASE correspondente exata (normalizada pelo nome ou código)
+    const baseMatch = (existingBases || []).find((b) => {
+      if (!b) return false;
+      const bNome = normalizeText(b.nome);
+      const bCod = b.codigo ? normalizeText(b.codigo) : '';
+      return bNome === normName || (bCod && bCod === normName);
+    });
+
+    if (baseMatch) {
+      const custoPorUnidade = base.custoPorUnidadeBase(baseMatch, existingInsumos);
+      const rend = Number(baseMatch.rendimento) || 1;
+      const und = baseMatch.rendimentoUnidade || 'g';
+
+      return {
+        ...row,
+        status: STATUS_TYPES.EXACT_MATCH_BASE,
+        tipo: 'base',
+        refId: baseMatch.id,
+        baseId: baseMatch.id,
+        baseMatch,
+        custoPorUnidade,
+        acao: 'use_base',
+        mensagem: `Base cadastrada (${baseMatch.codigo || 'Base'}) — Custo calc.: R$ ${custoPorUnidade.toFixed(2)} / ${rend}${und}`,
+      };
+    }
+
+    // 2. Busca INSUMO correspondente exato (normalizado pelo nome ou código)
+    const match = existingInsumos.find((ins) => {
+      if (!ins) return false;
+      const iNome = normalizeText(ins.nome);
+      const iCod = ins.codigo ? normalizeText(ins.codigo) : '';
+      return iNome === normName || (iCod && iCod === normName);
+    });
 
     if (match) {
       const ultimaCompra = inventory.ultimaCompra(match);
       const precoAtual = ultimaCompra ? Number(ultimaCompra.custoTotal) || 0 : 0;
       const qtdAtual = ultimaCompra ? Number(ultimaCompra.quantidadeCompra) || 0 : 0;
 
-      // Se não informou custo na planilha ou informou igual ao inventário
       const custoInformado = row.custoEmbalagem;
       const qtdInformada = row.qtdEmbalagem;
 
@@ -281,6 +319,8 @@ export function matchParsedRowsWithInventory(parsedRows = [], existingInsumos = 
         return {
           ...row,
           status: STATUS_TYPES.EXACT_MATCH_DIFF_PRICE,
+          tipo: 'insumo',
+          refId: match.id,
           insumoId: match.id,
           insumoMatch: match,
           precoAtual,
@@ -293,6 +333,8 @@ export function matchParsedRowsWithInventory(parsedRows = [], existingInsumos = 
       return {
         ...row,
         status: STATUS_TYPES.EXACT_MATCH_SAME_PRICE,
+        tipo: 'insumo',
+        refId: match.id,
         insumoId: match.id,
         insumoMatch: match,
         precoAtual,
@@ -302,19 +344,51 @@ export function matchParsedRowsWithInventory(parsedRows = [], existingInsumos = 
       };
     }
 
-    // Busca insumo com nome parecido (fuzzy matching)
+    // 3. Busca por similaridade difusa (Bases e Insumos)
     let bestSimilar = null;
+    let bestType = 'insumo';
     let bestScore = 0;
 
+    for (const b of (existingBases || [])) {
+      if (!b) continue;
+      const score = calculateSimilarity(row.rawNome, b.nome);
+      if (score > bestScore) {
+        bestScore = score;
+        bestSimilar = b;
+        bestType = 'base';
+      }
+    }
+
     for (const ins of existingInsumos) {
+      if (!ins) continue;
       const score = calculateSimilarity(row.rawNome, ins.nome);
       if (score > bestScore) {
         bestScore = score;
         bestSimilar = ins;
+        bestType = 'insumo';
       }
     }
 
     if (bestSimilar && bestScore >= 0.55) {
+      if (bestType === 'base') {
+        const custoPorUnidade = base.custoPorUnidadeBase(bestSimilar, existingInsumos);
+        const rend = Number(bestSimilar.rendimento) || 1;
+        const und = bestSimilar.rendimentoUnidade || 'g';
+
+        return {
+          ...row,
+          status: STATUS_TYPES.SIMILAR_BASE,
+          tipo: 'base',
+          refId: bestSimilar.id,
+          baseId: bestSimilar.id,
+          baseMatch: bestSimilar,
+          similarityScore: bestScore,
+          custoPorUnidade,
+          acao: 'use_similar_base',
+          mensagem: `Possível Base similar: "${bestSimilar.nome}" (${Math.round(bestScore * 100)}% compatível)`,
+        };
+      }
+
       const ultimaCompra = inventory.ultimaCompra(bestSimilar);
       const precoAtual = ultimaCompra ? Number(ultimaCompra.custoTotal) || 0 : 0;
       const qtdAtual = ultimaCompra ? Number(ultimaCompra.quantidadeCompra) || 0 : 0;
@@ -322,24 +396,28 @@ export function matchParsedRowsWithInventory(parsedRows = [], existingInsumos = 
       return {
         ...row,
         status: STATUS_TYPES.SIMILAR_NAME,
+        tipo: 'insumo',
+        refId: bestSimilar.id,
         insumoId: bestSimilar.id,
         insumoMatch: bestSimilar,
         similarityScore: bestScore,
         precoAtual,
         qtdAtual,
-        acao: 'use_similar', // 'use_similar', 'create_new' ou 'map_other'
+        acao: 'use_similar',
         unidade: 'g',
         mensagem: `Possível produto similar: "${bestSimilar.nome}" (${Math.round(bestScore * 100)}% compatível)`,
       };
     }
 
-    // Insumo novo a ser cadastrado
+    // 4. Insumo novo a ser cadastrado
     return {
       ...row,
       status: STATUS_TYPES.NEW_INSUMO,
+      tipo: 'insumo',
+      refId: '',
       insumoId: '',
       insumoMatch: null,
-      unidade: 'g', // Padrão gramas (conforme planilha de bolos)
+      unidade: 'g',
       acao: 'create_new',
       mensagem: 'Novo insumo (será cadastrado no inventário)',
     };

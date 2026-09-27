@@ -12,6 +12,7 @@
 
 import * as storage from './storage.js';
 import * as inventory from './inventory.js';
+import * as base from './base.js';
 import {
   parseExcelText,
   matchParsedRowsWithInventory,
@@ -99,9 +100,10 @@ function handleTextChange() {
   if (aviso) aviso.hidden = true;
 
   const existingInsumos = storage.getAllInsumos();
-  currentMatchedRows = matchParsedRowsWithInventory(parsed, existingInsumos);
+  const existingBases = base.getBases ? base.getBases() : [];
+  currentMatchedRows = matchParsedRowsWithInventory(parsed, existingInsumos, existingBases);
 
-  renderPreviewTable(currentMatchedRows, existingInsumos);
+  renderPreviewTable(currentMatchedRows, existingInsumos, existingBases);
   previewSection.hidden = false;
 
   const hasValidRows = currentMatchedRows.some((r) => r.status !== STATUS_TYPES.INVALID);
@@ -112,8 +114,9 @@ function handleTextChange() {
  * Renderiza as linhas de pré-visualização no corpo da tabela.
  * @param {Array<Object>} rows - Linhas analisadas
  * @param {Array<Object>} existingInsumos - Insumos cadastrados
+ * @param {Array<Object>} [existingBases=[]] - Bases cadastradas
  */
-function renderPreviewTable(rows, existingInsumos) {
+function renderPreviewTable(rows, existingInsumos, existingBases = []) {
   const previewBody = document.getElementById('excelPreviewBody');
   if (!previewBody) return;
 
@@ -128,12 +131,18 @@ function renderPreviewTable(rows, existingInsumos) {
     let badgeClass = 'badge-secondary';
     let badgeText = 'Inválido';
 
-    if (row.status === STATUS_TYPES.EXACT_MATCH_SAME_PRICE) {
+    if (row.status === STATUS_TYPES.EXACT_MATCH_BASE) {
+      badgeClass = 'badge-purple';
+      badgeText = '🍰 Base Cadastrada';
+    } else if (row.status === STATUS_TYPES.EXACT_MATCH_SAME_PRICE) {
       badgeClass = 'badge-success';
       badgeText = '🟢 Existente';
     } else if (row.status === STATUS_TYPES.EXACT_MATCH_DIFF_PRICE) {
       badgeClass = 'badge-warning';
       badgeText = '🟡 Preço Dif.';
+    } else if (row.status === STATUS_TYPES.SIMILAR_BASE) {
+      badgeClass = 'badge-orange';
+      badgeText = '🍰 Base Similar';
     } else if (row.status === STATUS_TYPES.SIMILAR_NAME) {
       badgeClass = 'badge-orange';
       badgeText = '🟠 Nome Parecido';
@@ -150,7 +159,13 @@ function renderPreviewTable(rows, existingInsumos) {
 
     // Coluna 3: Ação / Mapeamento
     const tdAcao = document.createElement('td');
-    if (row.status === STATUS_TYPES.EXACT_MATCH_SAME_PRICE) {
+    if (row.status === STATUS_TYPES.EXACT_MATCH_BASE) {
+      const bNome = row.baseMatch ? row.baseMatch.nome : row.rawNome;
+      const bCod = row.baseMatch && row.baseMatch.codigo ? ` (${row.baseMatch.codigo})` : '';
+      const custoStr = row.custoPorUnidade != null ? formatCurrency(row.custoPorUnidade) : '';
+      const rend = row.baseMatch ? `${row.baseMatch.rendimento}${row.baseMatch.rendimentoUnidade || 'g'}` : '';
+      tdAcao.innerHTML = `<span class="text-muted">Usa Base: <strong>${escapeHtml(bNome)}${escapeHtml(bCod)}</strong> — Custo calc.: ${custoStr} / ${rend}</span>`;
+    } else if (row.status === STATUS_TYPES.EXACT_MATCH_SAME_PRICE) {
       tdAcao.innerHTML = `<span class="text-muted">Usa cadastro: <strong>${escapeHtml(row.insumoMatch.nome)}</strong></span>`;
     } else if (row.status === STATUS_TYPES.EXACT_MATCH_DIFF_PRICE) {
       const precoPlanilha = row.custoEmbalagem > 0 ? formatCurrency(row.custoEmbalagem) : 'R$ 0,00';
@@ -166,6 +181,35 @@ function renderPreviewTable(rows, existingInsumos) {
         <label class="excel-radio-label">
           <input type="radio" name="acao_diff_${index}" value="update_price">
           <span>Atualizar inventário para ${precoPlanilha} / ${row.qtdEmbalagem}g</span>
+        </label>
+      `;
+
+      div.querySelectorAll('input').forEach((input) => {
+        input.addEventListener('change', (e) => {
+          row.acao = e.target.value;
+        });
+      });
+
+      tdAcao.appendChild(div);
+    } else if (row.status === STATUS_TYPES.SIMILAR_BASE) {
+      const div = document.createElement('div');
+      div.className = 'excel-action-options';
+      const bNome = row.baseMatch ? row.baseMatch.nome : row.rawNome;
+      const bCod = row.baseMatch && row.baseMatch.codigo ? ` (${row.baseMatch.codigo})` : '';
+      const custoStr = row.custoPorUnidade != null ? formatCurrency(row.custoPorUnidade) : '';
+      const rend = row.baseMatch ? `${row.baseMatch.rendimento}${row.baseMatch.rendimentoUnidade || 'g'}` : '';
+
+      div.innerHTML = `
+        <div style="font-weight: 600; color: var(--color-warn); margin-bottom: 4px;">
+          🍰 Parece com a Base: "${escapeHtml(bNome)}" (${Math.round((row.similarityScore || 0.7) * 100)}% similar)
+        </div>
+        <label class="excel-radio-label">
+          <input type="radio" name="acao_sim_base_${index}" value="use_similar_base" checked>
+          <span>Usar Base cadastrada: <strong>${escapeHtml(bNome)}${escapeHtml(bCod)}</strong> (${custoStr} / ${rend})</span>
+        </label>
+        <label class="excel-radio-label">
+          <input type="radio" name="acao_sim_base_${index}" value="create_new">
+          <span>Cadastrar como NOVO insumo: <strong>${escapeHtml(row.rawNome)}</strong></span>
         </label>
       `;
 
@@ -259,6 +303,54 @@ function handleConfirm() {
 
     for (const row of currentMatchedRows) {
       if (row.status === STATUS_TYPES.INVALID) continue;
+
+      // Se for uma Base Exata
+      if (row.status === STATUS_TYPES.EXACT_MATCH_BASE) {
+        if (row.baseId) {
+          rowsToInsert.push({
+            refId: row.baseId,
+            tipo: 'base',
+            quantidade: row.qtdUtilizada,
+          });
+        }
+        continue;
+      }
+
+      // Se for uma Base Similar
+      if (row.status === STATUS_TYPES.SIMILAR_BASE) {
+        if (row.acao === 'use_similar_base') {
+          if (row.baseId) {
+            rowsToInsert.push({
+              refId: row.baseId,
+              tipo: 'base',
+              quantidade: row.qtdUtilizada,
+            });
+          }
+          continue;
+        }
+        // Se a ação for cadastrar como novo insumo:
+        const novoInsumo = inventory.createInsumo({
+          nome: row.rawNome,
+          unidade: row.unidade || 'g',
+          descricao: 'Cadastrado via importação de planilha',
+          compras: [
+            {
+              data: today,
+              custoTotal: row.custoEmbalagem > 0 ? row.custoEmbalagem : 0.01,
+              quantidadeCompra: row.qtdEmbalagem > 0 ? row.qtdEmbalagem : 1000,
+            },
+          ],
+        });
+
+        allInsumos.push(novoInsumo);
+        newInsumosCreated++;
+        rowsToInsert.push({
+          refId: novoInsumo.id,
+          tipo: 'insumo',
+          quantidade: row.qtdUtilizada,
+        });
+        continue;
+      }
 
       let targetInsumoId = row.insumoId;
 

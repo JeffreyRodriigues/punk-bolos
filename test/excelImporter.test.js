@@ -157,4 +157,50 @@ describe('excelImporter: matchParsedRowsWithInventory', () => {
     assert.equal(matches[0].acao, 'create_new');
     assert.equal(matches[0].unidade, 'g');
   });
+
+  const fakeBases = [
+    {
+      id: 'b1',
+      codigo: 'PBA0001',
+      nome: 'Base Brigadeiro Tradicional',
+      rendimento: 400,
+      rendimentoUnidade: 'g',
+      componentes: [
+        { insumoId: 'i1', quantidade: 200 },
+        { insumoId: 'i2', quantidade: 200 },
+      ],
+    },
+  ];
+
+  it('identifica base correspondente exata pelo nome e prioriza como base', () => {
+    const rows = [{ rawNome: 'Base Brigadeiro Tradicional', custoEmbalagem: 0, qtdEmbalagem: 0, qtdUtilizada: 150 }];
+    const matches = matchParsedRowsWithInventory(rows, fakeInsumos, fakeBases);
+
+    assert.equal(matches[0].status, STATUS_TYPES.EXACT_MATCH_BASE);
+    assert.equal(matches[0].tipo, 'base');
+    assert.equal(matches[0].refId, 'b1');
+    assert.equal(matches[0].baseId, 'b1');
+    assert.equal(matches[0].acao, 'use_base');
+    assert.equal(matches[0].qtdUtilizada, 150);
+  });
+
+  it('identifica base correspondente exata pelo código (PBAXXXX)', () => {
+    const rows = [{ rawNome: 'PBA0001', custoEmbalagem: 0, qtdEmbalagem: 0, qtdUtilizada: 300 }];
+    const matches = matchParsedRowsWithInventory(rows, fakeInsumos, fakeBases);
+
+    assert.equal(matches[0].status, STATUS_TYPES.EXACT_MATCH_BASE);
+    assert.equal(matches[0].tipo, 'base');
+    assert.equal(matches[0].refId, 'b1');
+  });
+
+  it('identifica base similar e marca como SIMILAR_BASE', () => {
+    const rows = [{ rawNome: 'Brigadeiro Tradicional da Vovó', custoEmbalagem: 0, qtdEmbalagem: 0, qtdUtilizada: 100 }];
+    const matches = matchParsedRowsWithInventory(rows, fakeInsumos, fakeBases);
+
+    assert.equal(matches[0].status, STATUS_TYPES.SIMILAR_BASE);
+    assert.equal(matches[0].tipo, 'base');
+    assert.equal(matches[0].refId, 'b1');
+    assert.equal(matches[0].baseId, 'b1');
+    assert.equal(matches[0].acao, 'use_similar_base');
+  });
 });

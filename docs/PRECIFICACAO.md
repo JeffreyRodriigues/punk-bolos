@@ -95,11 +95,12 @@ Bloco de insumos com quantidade, que pode ser usado como **item de receita** (ex
 
 O app possui importador em modal (`js/modules/excelModal.js` e `js/modules/excelImporter.js`):
 1. **4 Colunas aceitas:** `Ingrediente` | `Custo Embalagem` | `Gramas Embalagem` | `Gramas Utilizadas`.
-2. **Reconhecimento Inteligente:**
-   - Detecta e casa com insumos existentes (por nome exato ou similaridade).
-   - Compara o preço da planilha com a última compra no sistema.
-   - Permite criar novos insumos automaticamente com a primeira compra preenchida.
-   - Permite atualizar o preço de compra do insumo caso tenha variado.
+2. **Reconhecimento Inteligente de Insumos e Bases:**
+   - **Bases Cadastradas (🍰):** Se o nome colado coincidir com uma Base existente (`PBA0001` ou nome da receita base como *Base Brigadeiro*), o importador reconhece como `tipo: base`, calcula o custo dinâmico proporcional ao rendimento e insere diretamente como base na receita sem cadastrar insumo duplicado.
+   - **Bases Similares:** Caso o nome seja próximo a uma Base já cadastrada, o importador sugere vinculá-la ou cadastrar como um novo insumo.
+   - **Insumos Existentes (🟢 / 🟡):** Casa com insumos cadastrados por nome exato ou similaridade, comparando o preço da planilha com a última compra.
+   - **Preço Diferente (🟡):** Permite escolher entre manter o preço atual ou atualizar o inventário com os valores da planilha.
+   - **Insumos Novos (🔵):** Cadastra novos insumos automaticamente com a primeira compra preenchida.
 
 - **Custo total da base** = soma do custo de cada componente (mesma regra de custo de insumo: `custoItem(componente, última compra)`).
 - **Custo por unidade de rendimento** = custo total ÷ rendimento.

@@ -18,10 +18,11 @@ funciona (fluxo, lógica, comportamento de UI) a menos que o usuário solicite
 explicitamente. Quando solicitado, pergunte o motivo da mudança e, se houver uma
 abordagem melhor, apresente-a como sugestão antes de executar o que foi pedido.
 
-**Atualização de documentação é obrigatória.** Sempre que uma nova funcionalidade,
-regra de negócio, módulo ou melhoria for criada ou alterada no projeto, os
-documentos em `docs/` (`SISTEMA.md`, `FUNCIONALIDADES.md`, `PRECIFICACAO.md`, etc.)
-DEVEM ser atualizados imediatamente para manter a documentação 100% fiel ao código.
+**Atualização de documentação no commit.** A documentação em `docs/`
+(`SISTEMA.md`, `FUNCIONALIDADES.md`, `PRECIFICACAO.md`, `MELHORIAS.md`, etc.) DEVE ser
+atualizada na etapa de finalização/commit, após a aprovação da funcionalidade,
+garantindo que o código commitado esteja 100% fiel à documentação sem gerar
+retrabalho caso uma proposta intermediária não seja aprovada.
 
 **Deploy (git push) exige confirmação prévia.** Antes de executar `git push`, informe
 ao usuário quais arquivos serão enviados e a mensagem do commit, e aguarde aprovação

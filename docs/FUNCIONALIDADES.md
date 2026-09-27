@@ -50,7 +50,7 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 
 ### 1.7 Precificação & Custos
 - **Montagem de Receitas:** Associação de insumos e bases com quantidades exatas.
-- **Importador Rápido do Excel:** Modal para colar 4 colunas (`Ingrediente`, `Custo Embalagem`, `Gramas Embalagem`, `Gramas Utilizadas`) com reconhecimento inteligente e criação de insumos.
+- **Importador Rápido do Excel:** Modal para colar 4 colunas (`Ingrediente`, `Custo Embalagem`, `Gramas Embalagem`, `Gramas Utilizadas`) com reconhecimento inteligente de insumos e **Bases cadastradas (`PBA`)**, cálculo de custo em tempo real e criação facilitada.
 - **Fatores de Custo:**
   - Margem para custos incalculáveis (gás, energia).
   - Multiplicador de lucro e mão de obra.
