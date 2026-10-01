@@ -109,6 +109,7 @@ function updateStatus(orderToUpdate, newStatus, successMessage) {
   orders[index].status = newStatus;
   storage.save(orders);
 
+  updatePendingOrdersBadge();
   orderList.render();
   dashboard.render();
   estoqueView.render();
@@ -116,11 +117,30 @@ function updateStatus(orderToUpdate, newStatus, successMessage) {
   showToast(successMessage);
 }
 
+/**
+ * Atualiza o indicador numérico (badge) de pedidos com status Pendente na aba Pedidos.
+ */
+export function updatePendingOrdersBadge() {
+  const badge = document.getElementById('pendingOrdersBadge');
+  if (!badge) return;
+  const orders = storage.getAll();
+  const pendingCount = orders.filter((o) => o.status === 'Pendente').length;
+  if (pendingCount > 0) {
+    badge.textContent = pendingCount;
+    badge.hidden = false;
+    badge.removeAttribute('hidden');
+  } else {
+    badge.hidden = true;
+    badge.setAttribute('hidden', '');
+  }
+}
+
 /* ---------- Inicialização ---------- */
 
 function init() {
   // Tema salvo/preferido do sistema
   theme.initTheme();
+  updatePendingOrdersBadge();
 
   // Erros de sincronização com a nuvem ficam visíveis ao usuário
   storage.setErrorHandler((message) => showToast(message, 'error'));
@@ -346,6 +366,7 @@ function init() {
 
   // 2. Em segundo plano, busca os dados atualizados da nuvem (Supabase) e sincroniza a UI
   storage.init().then(() => {
+    updatePendingOrdersBadge();
     dashboard.render();
     orderList.render();
     productList.render();

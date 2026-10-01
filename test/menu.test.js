@@ -263,4 +263,52 @@ test('validarCheckout e validarCadastroCliente com objeto de endereço estrutura
   assert.ok(v2.errors.numero);
 });
 
+test('verificarDisponibilidadeCardapio — tipoProduto Adicional é tratado sob encomenda/disponível', () => {
+  const adicional = { id: 'adc1', tipoProduto: 'Adicional', titulo: 'Granulado Belga' };
+  const disp = menuService.verificarDisponibilidadeCardapio(adicional, 0);
+  assert.equal(disp.sobEncomenda, true);
+  assert.equal(disp.disponivel, true);
+  assert.equal(disp.statusClass, 'status-adicional');
+});
 
+test('gerarMensagemPedidoWhatsapp — formata bolo customizado com etapas (estilo, adicionais, data, horário, termos, observação)', () => {
+  const dados = {
+    nome: 'Beatriz Lima',
+    whatsapp: '(11) 98888-2222',
+    tipoEntrega: 'Retirada',
+    dataDesejada: '2026-10-05',
+    periodo: 'Tarde',
+    pagamento: 'PIX',
+  };
+
+  const carrinhoComBoloPersonalizado = [
+    {
+      tipoProduto: 'Bolo Inteiro',
+      titulo: 'Bolo Red Velvet (P - 15cm)',
+      tamanho: 'P (15cm)',
+      sabor: 'Red Velvet',
+      estiloDecoracao: 'Decorado',
+      adicionais: [
+        { titulo: 'Granulado Belga Callebaut', valor: 10 },
+        { titulo: 'Morangos Frescos', valor: 15 },
+      ],
+      dataEntrega: '2026-10-05',
+      horarioEntrega: '15:00 - 17:00',
+      observacao: 'Escrever Parabéns Bia na tábua',
+      termosAceitos: true,
+      quantidade: 1,
+      valor: 145,
+    },
+  ];
+
+  const msg = menuService.gerarMensagemPedidoWhatsapp(dados, carrinhoComBoloPersonalizado, 145, 'Punk Bolos');
+  assert.ok(msg.includes('Bolo Red Velvet (P - 15cm)'));
+  assert.ok(msg.includes('Estilo: Decorado'));
+  assert.ok(msg.includes('Granulado Belga Callebaut'));
+  assert.ok(msg.includes('Morangos Frescos'));
+  assert.ok(msg.includes('2026-10-05'));
+  assert.ok(msg.includes('15:00 - 17:00'));
+  assert.ok(msg.includes('Obs: Escrever Parabéns Bia na tábua'));
+  assert.ok(msg.includes('Termos de transporte/pagamento aceitos: Sim'));
+  assert.ok(msg.includes(menuService.formatarMoeda(145)));
+});

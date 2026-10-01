@@ -17,8 +17,8 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Filtro por Período:** Hoje, 7 dias, Este Mês e Faixa Customizada (De/Até).
 
 ### 1.2 Produtos
-- **Catálogo Completo:** Cadastro de bolos inteiros, fatias e punkitos.
-- **Tamanhos e Detalhes:** Tamanhos exclusivos para bolos inteiros (Mini, PP, P, M, G, GG, Bento Cake, Coração).
+- **Catálogo Completo:** Cadastro de bolos inteiros, bolos naked, fatias, punkitos, adicionais e confeitos.
+- **Tamanhos e Detalhes:** Tamanhos exclusivos para bolos inteiros e bolos naked (Mini, PP, P, M, G, GG, Bento Cake, Coração).
 - **Valores e Descrições:** Valores de venda sugeridos e integração com controle de estoque.
 
 ### 1.3 Produção (Estoque de Bolos)
@@ -65,7 +65,14 @@ Interface pública voltada para os clientes finais:
 - **Catálogo Visual:** Exibição de fotos, sabores e preços dos produtos.
 - **Pronta Entrega vs. Encomenda:**
   - *Fatias e Punkitos:* trava automática de quantidade baseada no estoque disponível.
-  - *Bolos Inteiros:* sob encomenda com escolha de data e horário de entrega.
+  - *Monte seu Bolo (Wizard de 7 Etapas):* personalização guiada passo a passo através de um card único:
+    - **Etapa 1:** Escolha do tamanho do bolo (P, M, G com rendimento em fatias e peso aproximado).
+    - **Etapa 2:** Estilo & Decoração (*Naked Cake* rústico sem cobertura ou *Bolo Decorado* com cobertura suave em chantininho e adicionais/confeitos como Granulado Belga, Morangos, etc.).
+    - **Etapa 3:** Escolha do sabor (filtrado dinamicamente: lista sabores de *Bolo Naked* quando Naked Cake for escolhido, e sabores de *Bolo Inteiro* quando Bolo Decorado for escolhido).
+    - **Etapa 4:** Escolha da data de entrega/retirada.
+    - **Etapa 5:** Escolha do melhor horário/período.
+    - **Etapa 6:** Termos e regras importantes (transporte exclusivamente de carro com ar-condicionado, 100% pagamento integral PIX adiantado para entrar na produção, alinhamento de acréscimos especiais no WhatsApp).
+    - **Etapa 7:** Observações e escrita na tábua + Resumo detalhado com valor total atualizado em tempo real.
 - **Sacola de Compras Flutuante:** Adição de itens, cálculo de totais e botão de checkout.
 - **Área do Cliente:** Login simples via WhatsApp, cartão fidelidade e botão "Repetir Pedido".
-- **Fechamento no WhatsApp & Supabase:** Envia o pedido estruturado diretamente para o banco de dados e abre a conversa no WhatsApp formatada.
+- **Fechamento no WhatsApp & Supabase:** Envia o pedido estruturado diretamente para o banco de dados e abre a conversa no WhatsApp formatada com todos os detalhes e adicionais do bolo.

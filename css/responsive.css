@@ -162,10 +162,79 @@
     gap: 10px;
   }
 
-  /* Cards de pedido em 2 colunas */
-  .order-list {
-    grid-template-columns: repeat(2, 1fr);
+  /* Barra de ferramentas de pedidos no mobile */
+  .orders-toolbar {
+    flex-direction: column;
+    align-items: stretch;
     gap: 10px;
+  }
+
+  .order-view-toggle {
+    width: 100%;
+    display: flex;
+  }
+
+  .view-toggle-btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+
+  .csv-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .csv-actions .btn {
+    flex: 1 1 calc(33.333% - 6px);
+    text-align: center;
+    font-size: 0.8rem;
+    padding: 8px 4px;
+    min-height: 40px;
+  }
+
+  /* Cards de pedidos no tablet */
+  .order-list.view-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .order-list.view-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .order-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .btn-card-action {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .order-pagination {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .order-pagination .btn-pagination {
+    width: 100%;
+    min-height: 44px;
   }
 
   .modal-card {
@@ -248,9 +317,63 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Lista: 1 coluna no celular (cards largos) */
-  .order-list {
+  /* Lista e Grade: 1 coluna no celular (cards largos) */
+  .order-list.view-grid,
+  .order-list.view-list {
     grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .order-card {
+    padding: 14px 12px;
+  }
+
+  .order-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .order-header-badges {
+    width: 100%;
+  }
+
+  .order-customer-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .btn-order-wa {
+    padding: 6px 12px;
+    min-height: 38px;
+  }
+
+  .order-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .order-total-wrap {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    width: 100%;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--color-border);
+  }
+
+  .order-card-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .csv-actions .btn {
+    flex: 1 1 100%;
   }
 
   /* Formulário do modal: campos empilhados */

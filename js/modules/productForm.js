@@ -34,8 +34,8 @@ export function setChangeListener(cb) {
  * Tamanho só é exibido para "Bolo Inteiro".
  */
 function updateTamanhoVisibility() {
-  const isCake =
-    document.getElementById('field-tipo-produto').value === 'Bolo Inteiro';
+  const tipo = document.getElementById('field-tipo-produto').value;
+  const isCake = tipo === 'Bolo Inteiro' || tipo === 'Bolo Naked';
   tamanhoWrap.hidden = !isCake;
 }
 

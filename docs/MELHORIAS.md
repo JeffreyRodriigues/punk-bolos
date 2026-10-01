@@ -166,6 +166,24 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - O cálculo de Lucro Bruto do Dashboard (`dashboardService.js`) foi corrigido para utilizar o **Custo Real Unitário de Produção (CMV Real)** `(custoIngredientes ÷ rendimento + embalagem + custoAdicional)` em vez do preço sugerido de venda com multiplicador de lucro 3×.
 - O faturamento/receita continua sendo apurado estritamente pelo **preço original que o confeiteiro cadastrou manualmente na Lista de Produtos** e vendeu nos pedidos, eliminando distorções de lucro negativo.
 
+### 30. Wizard de Personalização de Bolos no Cardápio (7 Etapas) & Novo Tipo Bolo Naked
+- Implementado assistente interativo passo a passo unificado sob o card **Monte seu Bolo** no Cardápio Digital (`cardapio.html` e `js/cardapio.js`):
+  - **Etapa 1:** Seleção do tamanho (P, M, G, etc.) com exibição clara de peso e rendimento em fatias.
+  - **Etapa 2:** Escolha do estilo (*Naked Cake* rústico ou *Bolo Decorado* em chantininho com adicionais e confeitos dinâmicos cadastrados na aba Produtos como `tipoProduto === 'Adicional'`).
+  - **Etapa 3:** Escolha do sabor artesanal com filtro dinâmico baseado no estilo selecionado na Etapa 2 (quando *Naked Cake* for escolhido, lista apenas produtos cadastrados como `tipoProduto === 'Bolo Naked'`, com exemplo padrão *Pink Lemonade*; quando *Bolo Decorado* for escolhido, lista os produtos de `Bolo Inteiro`).
+  - **Etapas 4 e 5:** Agendamento de data e horário/período de retirada/entrega sob encomenda.
+  - **Etapa 6:** Termos essenciais com aceite obrigatório (transporte exclusivo no piso do carro com ar-condicionado, 100% pagamento integral PIX adiantado, alinhamento de decorações especiais no WhatsApp).
+  - **Etapa 7:** Campo de observações (dedicatória/escrita na tábua, restrições) e resumo completo com valor total atualizado ao vivo.
+- Mensagem de WhatsApp estruturada detalhando todas as escolhas, estilo, adicionais, agendamento e observações do bolo personalizado.
+### 31. Auto-Criação de Produtos a Partir de Pedidos, Reconhecimento Flexível de Decorações e Layout Detalhado de Pedidos
+- **Auto-criação no Catálogo (`ensureProduct`):** Quando um pedido inclui um bolo personalizado (sabor/tamanho) ou adicionais/decorações (ex.: *Papel Arroz*, *Granulado*) que ainda não existem no catálogo/inventário, o sistema cadastra o produto automaticamente no inventário com seu tipo, tamanho e valor unitário, permitindo que seja preenchido e selecionado nos detalhes e na edição de pedidos sem deixar campos vazios.
+- **Reconhecimento Flexível de Adicionais e Decorações:** Suporte a tipos compatíveis (`Decoração` $\leftrightarrow$ `Adicional` e `Bolo Inteiro` $\leftrightarrow$ `Bolo Naked`) e higienização inteligente de prefixos (`Decoração`, `Adicional`, `Confeito`) e sufixos de tamanho, garantindo que confeitos como *Granulado Belga*, *Confeito Granulado Belga Callebaut* e *Papel Arroz* sejam sempre reconhecidos e vinculados corretamente.
+- **Layout de Pedidos, Impressão Otimizada e Badge de Alerta:**
+  - Alternador de visualização entre Grade e Lista Detalhada (100% texto, sem emojis) com paginação de 10 pedidos por página e controles mobile.
+  - Botão de impressão individual em destaque no cabeçalho do pedido e botão de impressão em lote de todos os pedidos filtrados.
+  - Regras de impressão avançadas (`@page { margin: 6mm 8mm; }` e `page-break-inside: avoid`) para evitar quebra de comandas em folhas A4 e suporte natural a bobinas térmicas de 80mm/58mm.
+  - Indicador numérico (badge de alerta) em tempo real na aba **Pedidos** sinalizando a quantidade de encomendas com status `Pendente` aguardando confirmação.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

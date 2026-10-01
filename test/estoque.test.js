@@ -353,13 +353,23 @@ test('describeErro: produto indefinido não quebra', () => {
 });
 
 // --- produtosDisponiveis ---
-test('produtosDisponiveis: filtra produtos sem estoque para venda', async () => {
+test('produtosDisponiveis: filtra produtos sem estoque para pronta entrega, mas inclui sob encomenda', async () => {
   const produ = [{ produtoId: 'f1', quantidade: 10 }];
   await setDb(seed({ orders: [PEDIDO_PENDENTE(3)], productions: produ }));
   const esp = await import('../js/modules/estoque.js');
-  // f1: 10 prod - 3 reserv - 2 vend = 5 (disponível); b1 e i1 sem produção
+  // f1: 10 prod - 3 reserv - 2 vend = 5 (disponível); i1 (Punkitos) sem produção; b1 (Bolo Inteiro) é sob encomenda
   const ok = esp.produtosDisponiveis([P_FATIA, P_BOLO, P_ILIMITADO]);
-  assert.deepEqual(ok.map((p) => p.id), ['f1']);
+  assert.deepEqual(ok.map((p) => p.id), ['f1', 'b1']);
+});
+
+test('isSobEncomenda: identifica Bolos e Adicionais como sob encomenda', async () => {
+  const esp = await import('../js/modules/estoque.js');
+  assert.equal(esp.isSobEncomenda({ tipoProduto: 'Bolo Inteiro' }), true);
+  assert.equal(esp.isSobEncomenda({ tipoProduto: 'Bolo Naked' }), true);
+  assert.equal(esp.isSobEncomenda({ tipoProduto: 'Adicional' }), true);
+  assert.equal(esp.isSobEncomenda({ tipoProduto: 'Decoração' }), true);
+  assert.equal(esp.isSobEncomenda({ tipoProduto: 'Fatia' }), false);
+  assert.equal(esp.isSobEncomenda({ tipoProduto: 'Punkitos' }), false);
 });
 
 test('produtosDisponiveis: requiredId sempre aparece (item de pedido em edição)', async () => {

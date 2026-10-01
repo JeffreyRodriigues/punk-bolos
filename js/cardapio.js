@@ -9,6 +9,7 @@
 import * as storage from './modules/storage.js';
 import * as menuService from './modules/menuService.js';
 import * as orderModule from './modules/order.js';
+import * as product from './modules/product.js';
 import * as estoque from './modules/estoque.js';
 import * as supabase from './modules/supabase.js';
 
@@ -1037,14 +1038,17 @@ function renderProducts() {
 
   const allProducts = storage.getAllProducts() || [];
 
-  // Filtragem por busca e categoria
+  // Filtragem por busca e categoria (ignora adicionais/decoração na listagem principal)
   const q = currentSearch.trim().toLowerCase();
-  const filtered = allProducts.filter((p) => {
+
+  // Produtos regulares (Fatia, Punkitos, etc.)
+  const regularProducts = allProducts.filter((p) => {
+    if (p.tipoProduto === 'Adicional' || p.tipoProduto === 'Decoração' || p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked') return false;
+
     // Busca
     const matchSearch = !q ||
       String(p.titulo || '').toLowerCase().includes(q) ||
       String(p.tipoProduto || '').toLowerCase().includes(q) ||
-      String(p.tamanho || '').toLowerCase().includes(q) ||
       String(p.detalhes || '').toLowerCase().includes(q);
 
     if (!matchSearch) return false;
@@ -1054,7 +1058,12 @@ function renderProducts() {
     return p.tipoProduto === currentCategory;
   });
 
-  if (filtered.length === 0) {
+  // Verifica se o card unificado "Monte seu Bolo" deve ser exibido
+  const boloProducts = allProducts.filter((p) => p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked');
+  const shouldShowBoloWizardCard = (currentCategory === 'todos' || currentCategory === 'Bolo Inteiro' || currentCategory === 'Bolo Naked') &&
+    (!q || 'monte seu bolo'.includes(q) || 'bolo inteiro'.includes(q) || 'bolo naked'.includes(q) || 'naked cake'.includes(q) || 'bolo'.includes(q) || boloProducts.some((p) => String(p.titulo || '').toLowerCase().includes(q) || String(p.detalhes || '').toLowerCase().includes(q)));
+
+  if (regularProducts.length === 0 && !shouldShowBoloWizardCard) {
     grid.innerHTML = '';
     if (emptyState) emptyState.hidden = false;
     return;
@@ -1063,22 +1072,53 @@ function renderProducts() {
   if (emptyState) emptyState.hidden = true;
   grid.innerHTML = '';
 
-  filtered.forEach((p) => {
+  // 1. Card unificado "Monte seu Bolo"
+  if (shouldShowBoloWizardCard) {
+    let startingPrice = 65;
+    if (boloProducts.length > 0) {
+      const prices = boloProducts.map((p) => Number(p.valor)).filter((v) => !isNaN(v) && v > 0);
+      if (prices.length > 0) startingPrice = Math.min(...prices);
+    }
+
+    const cakeCard = document.createElement('div');
+    cakeCard.className = 'menu-product-card';
+    cakeCard.innerHTML = `
+      <div class="menu-product-info">
+        <div class="menu-badges-row">
+          <span class="menu-product-badge">Bolo • Personalizado</span>
+          <span class="status-badge status-encomenda">Sob Encomenda</span>
+        </div>
+        <h3 class="menu-product-title">Monte seu Bolo</h3>
+        <p class="menu-product-details">Escolha o tamanho ideal para sua comemoração, estilo (Naked ou Decorado), sabor artesanal e agende sua retirada.</p>
+        <span class="menu-product-price">A partir de ${menuService.formatarMoeda(startingPrice)}</span>
+      </div>
+      <div class="menu-product-action">
+        <button type="button" class="btn-add-item btn-add-cake">
+          <span>＋</span> Adicionar
+        </button>
+      </div>
+    `;
+
+    cakeCard.querySelector('.btn-add-cake')?.addEventListener('click', () => {
+      openCakeWizard();
+    });
+
+    grid.appendChild(cakeCard);
+  }
+
+  // 2. Demais produtos do cardápio (Fatias, Punkitos, etc.)
+  regularProducts.forEach((p) => {
     const card = document.createElement('div');
     const saldoEstoque = p.estoqueDisponivel !== undefined ? p.estoqueDisponivel : estoque.disponivel(p);
     const disp = menuService.verificarDisponibilidadeCardapio(p, saldoEstoque);
-    const inCart = cart.find((item) => item.id === p.id);
+    const inCart = cart.find((item) => item.id === p.id || item.produtoId === p.id);
 
     card.className = `menu-product-card${!disp.disponivel ? ' esgotado' : ''}`;
-
-    const badgeCategoria = p.tipoProduto === 'Bolo Inteiro' && p.tamanho
-      ? `${p.tipoProduto} • ${p.tamanho}`
-      : p.tipoProduto;
 
     card.innerHTML = `
       <div class="menu-product-info">
         <div class="menu-badges-row">
-          <span class="menu-product-badge">${escapeHtml(badgeCategoria)}</span>
+          <span class="menu-product-badge">${escapeHtml(p.tipoProduto)}</span>
           <span class="status-badge ${disp.statusClass}">${escapeHtml(disp.statusTexto)}</span>
         </div>
         <h3 class="menu-product-title">${escapeHtml(p.titulo)}</h3>
@@ -1095,15 +1135,14 @@ function renderProducts() {
                   <span class="qty-val">${inCart.quantidade}</span>
                   <button type="button" class="btn-qty btn-plus" data-id="${p.id}" aria-label="Aumentar" ${inCart.quantidade >= disp.estoqueMax ? 'disabled title="Limite máximo disponível"' : ''}>＋</button>
                 </div>`
-              : `<button type="button" class="btn-add-item" data-id="${p.id}">
+              : `<button type="button" class="btn-add-item btn-add-standard" data-id="${p.id}">
                   <span>＋</span> Adicionar
                 </button>`
         }
       </div>
     `;
 
-    // Eventos dos botões do card
-    const btnAdd = card.querySelector('.btn-add-item:not(:disabled)');
+    const btnAdd = card.querySelector('.btn-add-standard');
     if (btnAdd) {
       btnAdd.addEventListener('click', () => {
         cart = menuService.adicionarItemCarrinho(cart, p, 1, disp.estoqueMax);
@@ -1115,9 +1154,9 @@ function renderProducts() {
     const btnMinus = card.querySelector('.btn-minus');
     if (btnMinus) {
       btnMinus.addEventListener('click', () => {
-        const item = cart.find((i) => i.id === p.id);
+        const item = cart.find((i) => i.id === p.id || i.produtoId === p.id);
         if (item) {
-          cart = menuService.alterarQuantidadeCarrinho(cart, p.id, item.quantidade - 1, disp.estoqueMax);
+          cart = menuService.alterarQuantidadeCarrinho(cart, item.id, item.quantidade - 1, disp.estoqueMax);
           updateCartUi();
           renderProducts();
         }
@@ -1127,9 +1166,9 @@ function renderProducts() {
     const btnPlus = card.querySelector('.btn-plus:not(:disabled)');
     if (btnPlus) {
       btnPlus.addEventListener('click', () => {
-        const item = cart.find((i) => i.id === p.id);
+        const item = cart.find((i) => i.id === p.id || i.produtoId === p.id);
         if (item) {
-          cart = menuService.alterarQuantidadeCarrinho(cart, p.id, item.quantidade + 1, disp.estoqueMax);
+          cart = menuService.alterarQuantidadeCarrinho(cart, item.id, item.quantidade + 1, disp.estoqueMax);
           updateCartUi();
           renderProducts();
         }
@@ -1137,6 +1176,726 @@ function renderProducts() {
     }
 
     grid.appendChild(card);
+  });
+}
+
+/* ============================================================
+   WIZARD DE PERSONALIZAÇÃO DE BOLO (7 ETAPAS)
+   ============================================================ */
+
+let wizardState = {
+  currentStep: 1,
+  availableSizes: [],
+  availableFlavors: [],
+  availableAdicionais: [],
+  selectedSize: null,
+  selectedFlavor: null,
+  selectedDecorStyle: 'Decorado',
+  selectedAdicionais: [],
+  selectedDate: '',
+  selectedTimeSlot: '15:00 - 17:00',
+  customTime: '',
+  termsAccepted: false,
+  observacao: '',
+};
+
+function getFlavorsForStyle(style) {
+  const allProducts = storage.getAllProducts() || [];
+  let availableFlavors = [];
+  const seenFlavors = new Set();
+
+  if (style === 'Naked Cake') {
+    const nakedProds = allProducts.filter((p) => p.tipoProduto === 'Bolo Naked');
+    nakedProds.forEach((p) => {
+      let flavorName = p.titulo.replace(/^(Bolo Naked|Naked Cake|Naked|Bolo)\s*(de\s*)?/i, '').trim();
+      if (!flavorName) flavorName = p.titulo;
+      if (!seenFlavors.has(flavorName.toLowerCase())) {
+        seenFlavors.add(flavorName.toLowerCase());
+        availableFlavors.push({
+          id: p.id,
+          titulo: flavorName,
+          detalhes: p.detalhes || 'Massa artesanal aparente com recheio cremoso e acabamento rústico',
+        });
+      }
+    });
+
+    if (availableFlavors.length === 0) {
+      availableFlavors = [
+        { id: 'flav_naked_pink', titulo: 'Pink Lemonade', detalhes: 'Massa leve com toque de limão siciliano e recheio refrescante de frutas vermelhas.' },
+        { id: 'flav_naked_frutas', titulo: 'Frutas Vermelhas com Cream Cheese', detalhes: 'Massa fofinha com coulis artesanal de frutas vermelhas e cream cheese.' },
+        { id: 'flav_naked_maracuja', titulo: 'Maracujá com Chocolate Branco', detalhes: 'Massa suave amanteigada com geleia de maracujá e ganache branca artesanal.' },
+      ];
+    }
+  } else {
+    // Bolo Decorado
+    const cakeFlavors = allProducts.filter((p) => p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Fatia');
+    cakeFlavors.forEach((p) => {
+      let flavorName = p.titulo.replace(/^(Fatia|Bolo Inteiro|Bolo)\s*(de\s*)?/i, '').trim();
+      if (!flavorName) flavorName = p.titulo;
+      if (!seenFlavors.has(flavorName.toLowerCase())) {
+        seenFlavors.add(flavorName.toLowerCase());
+        availableFlavors.push({
+          id: p.id,
+          titulo: flavorName,
+          detalhes: p.detalhes || 'Massa artesanal fofinha e recheio cremoso especial',
+        });
+      }
+    });
+
+    if (availableFlavors.length === 0) {
+      availableFlavors = [
+        { id: 'flav_1', titulo: 'Red Velvet', detalhes: 'Massa aveludada vermelha com recheio especial de cream cheese artesanal.' },
+        { id: 'flav_2', titulo: 'Cenoura com Brigadeiro Belga', detalhes: 'Massa fofinha de cenoura com cobertura e recheio de brigadeiro gourmet.' },
+        { id: 'flav_3', titulo: 'Chocolate Supremo', detalhes: 'Massa intensa de cacau 100% com recheio duplo de brigadeiro belga.' },
+        { id: 'flav_4', titulo: 'Doce de Leite com Nozes', detalhes: 'Massa amanteigada de baunilha com doce de leite artesanal e nozes crocantes.' },
+        { id: 'flav_5', titulo: 'Ninho com Nutella', detalhes: 'Massa suave de baunilha com brigadeiro cremoso de Ninho e pura Nutella.' },
+      ];
+    }
+  }
+
+  return availableFlavors;
+}
+
+function openCakeWizard(initialProduct = null) {
+  const modal = document.getElementById('modalBoloWizard');
+  if (!modal) return;
+
+  modal.removeAttribute('hidden');
+  modal.hidden = false;
+
+  const allProducts = storage.getAllProducts() || [];
+  const boloProducts = allProducts.filter((p) => p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked');
+
+  const CAKE_SIZE_SPECS = [
+    { key: 'Mini', label: 'Bolo Mini', rendimento: 'Serve 4 a 6 fatias (~600g)', defaultPrice: 65 },
+    { key: 'PP', label: 'Bolo PP', rendimento: 'Serve 6 a 8 fatias (~1kg)', defaultPrice: 90 },
+    { key: 'P', label: 'Bolo P (15cm)', rendimento: 'Serve 10 a 12 fatias (~1,5kg)', defaultPrice: 120 },
+    { key: 'M', label: 'Bolo M (20cm)', rendimento: 'Serve 18 a 22 fatias (~2,5kg)', defaultPrice: 170 },
+    { key: 'G', label: 'Bolo G (25cm)', rendimento: 'Serve 28 a 35 fatias (~3,8kg)', defaultPrice: 240 },
+    { key: 'GG', label: 'Bolo GG', rendimento: 'Serve 40 a 50 fatias (~5kg)', defaultPrice: 320 },
+    { key: 'Bento Cake', label: 'Bento Cake', rendimento: 'Serve 1 a 2 pessoas (~400g)', defaultPrice: 50 },
+    { key: 'Coração', label: 'Bolo Coração', rendimento: 'Serve 10 a 12 fatias (~1,5kg)', defaultPrice: 130 },
+  ];
+
+  // Determina tamanhos disponíveis
+  let availableSizes = [];
+  const seenSizeKeys = new Set();
+
+  if (boloProducts.length > 0) {
+    boloProducts.forEach((p) => {
+      const sizeKey = p.tamanho || 'P';
+      if (!seenSizeKeys.has(sizeKey)) {
+        seenSizeKeys.add(sizeKey);
+        const spec = CAKE_SIZE_SPECS.find((s) => s.key === sizeKey) || {
+          key: sizeKey,
+          label: `Bolo ${sizeKey}`,
+          rendimento: p.detalhes || 'Sob encomenda artesanal',
+          defaultPrice: Number(p.valor) || 120,
+        };
+        availableSizes.push({
+          id: `size_${sizeKey}`,
+          key: sizeKey,
+          tamanho: spec.label,
+          rendimento: spec.rendimento,
+          valor: Number(p.valor) || spec.defaultPrice,
+        });
+      }
+    });
+  }
+
+  if (availableSizes.length === 0) {
+    availableSizes = [
+      { id: 'size_P', key: 'P', tamanho: 'Bolo P (15cm)', rendimento: 'Serve 10 a 12 fatias (~1,5kg)', valor: 120 },
+      { id: 'size_M', key: 'M', tamanho: 'Bolo M (20cm)', rendimento: 'Serve 18 a 22 fatias (~2,5kg)', valor: 170 },
+      { id: 'size_G', key: 'G', tamanho: 'Bolo G (25cm)', rendimento: 'Serve 28 a 35 fatias (~3,8kg)', valor: 240 },
+    ];
+  }
+
+  const sizeOrder = ['Mini', 'PP', 'P', 'M', 'G', 'GG', 'Bento Cake', 'Coração'];
+  availableSizes.sort((a, b) => {
+    const idxA = sizeOrder.indexOf(a.key);
+    const idxB = sizeOrder.indexOf(b.key);
+    return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+  });
+
+  // Define tamanho inicial
+  let defaultSize = availableSizes[0];
+  if (initialProduct && initialProduct.tamanho) {
+    const match = availableSizes.find(
+      (s) => s.key === initialProduct.tamanho || s.tamanho.includes(initialProduct.tamanho)
+    );
+    if (match) defaultSize = match;
+  }
+
+  // Define estilo inicial
+  let initialDecorStyle = 'Decorado';
+  if (initialProduct && (initialProduct.tipoProduto === 'Bolo Naked' || initialProduct.titulo?.toLowerCase().includes('naked'))) {
+    initialDecorStyle = 'Naked Cake';
+  }
+
+  // Determina sabores com base no estilo
+  let availableFlavors = getFlavorsForStyle(initialDecorStyle);
+  let defaultFlavor = availableFlavors[0] || null;
+
+  if (initialProduct && initialProduct.titulo) {
+    const cleanInit = initialProduct.titulo.replace(/^(Fatia|Bolo Inteiro|Bolo Naked|Naked Cake|Bolo)\s*(de\s*)?/i, '').trim().toLowerCase();
+    const matchF = availableFlavors.find(
+      (f) => f.titulo.toLowerCase().includes(cleanInit) || cleanInit.includes(f.titulo.toLowerCase())
+    );
+    if (matchF) defaultFlavor = matchF;
+  }
+
+  // Determina adicionais de decoração cadastrados (tipoProduto === 'Adicional' ou 'Decoração')
+  const dbAdicionais = allProducts.filter((p) => p.tipoProduto === 'Adicional' || p.tipoProduto === 'Decoração');
+  let availableAdicionais = [];
+  if (dbAdicionais.length > 0) {
+    availableAdicionais = dbAdicionais.map((a) => ({
+      id: a.id,
+      titulo: a.titulo,
+      valor: Number(a.valor) || 0,
+      detalhes: a.detalhes || '',
+    }));
+  } else {
+    availableAdicionais = [
+      { id: 'adc_belga', titulo: 'Confeito Granulado Belga Callebaut', valor: 10, detalhes: 'Granulado nobre de chocolate ao leite' },
+      { id: 'adc_morangos', titulo: 'Morangos Frescos no Topo', valor: 15, detalhes: 'Frutas frescas selecionadas' },
+      { id: 'adc_glitter', titulo: 'Glitter Comestível & Brilho Dourado', valor: 12, detalhes: 'Acabamento luminoso glamouroso' },
+    ];
+  }
+
+  // Data mínima: amanhã
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDateStr = tomorrow.toISOString().slice(0, 10);
+
+  // Reseta estado do Wizard
+  wizardState = {
+    currentStep: 1,
+    availableSizes,
+    availableFlavors,
+    availableAdicionais,
+    selectedSize: defaultSize,
+    selectedFlavor: defaultFlavor,
+    selectedDecorStyle: initialDecorStyle,
+    selectedAdicionais: [],
+    selectedDate: minDateStr,
+    selectedTimeSlot: '15:00 - 17:00',
+    customTime: '',
+    termsAccepted: false,
+    observacao: '',
+  };
+
+  // Renderiza opções nos elementos DOM do Wizard
+  renderWizardSizeStep();
+  renderWizardDecorStep();
+  renderWizardFlavorStep();
+
+  const dateInput = document.getElementById('wizardDateInput');
+  if (dateInput) {
+    dateInput.min = minDateStr;
+    dateInput.value = minDateStr;
+  }
+
+  const termsCheck = document.getElementById('wizardTermsCheck');
+  if (termsCheck) termsCheck.checked = false;
+
+  const obsInput = document.getElementById('wizardObsInput');
+  if (obsInput) obsInput.value = '';
+
+  const customTimeWrap = document.getElementById('wizardCustomTimeWrap');
+  if (customTimeWrap) customTimeWrap.hidden = true;
+
+  // Atualiza botões de estilo
+  const styleNaked = document.getElementById('styleCardNaked');
+  const styleDecorado = document.getElementById('styleCardDecorado');
+  const decorExtrasWrap = document.getElementById('wizardDecorExtrasWrap');
+
+  if (styleNaked && styleDecorado) {
+    if (initialDecorStyle === 'Naked Cake') {
+      styleNaked.classList.add('active');
+      styleDecorado.classList.remove('active');
+      if (decorExtrasWrap) decorExtrasWrap.style.display = 'none';
+    } else {
+      styleDecorado.classList.add('active');
+      styleNaked.classList.remove('active');
+      if (decorExtrasWrap) decorExtrasWrap.style.display = 'flex';
+    }
+  }
+
+  goToWizardStep(1);
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCakeWizard() {
+  const modal = document.getElementById('modalBoloWizard');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+function renderWizardSizeStep() {
+  const container = document.getElementById('wizardSizesGrid') || document.getElementById('wizardSizeGrid');
+  if (!container) return;
+  container.innerHTML = '';
+
+  wizardState.availableSizes.forEach((s) => {
+    const isSelected = wizardState.selectedSize && wizardState.selectedSize.id === s.id;
+    const card = document.createElement('label');
+    card.className = `wizard-size-card${isSelected ? ' active' : ''}`;
+
+    card.innerHTML = `
+      <input type="radio" name="wizardSizeRadio" value="${s.id}" ${isSelected ? 'checked' : ''}>
+      <div class="size-card-info">
+        <span class="size-card-name">${escapeHtml(s.tamanho)}</span>
+        <span class="size-card-serves">${escapeHtml(s.rendimento)}</span>
+      </div>
+      <div class="size-card-right">
+        <span class="size-card-price">${menuService.formatarMoeda(s.valor)}</span>
+        <div class="card-radio-indicator" aria-hidden="true"></div>
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      wizardState.selectedSize = s;
+      container.querySelectorAll('.wizard-size-card').forEach((c) => c.classList.remove('active'));
+      card.classList.add('active');
+      updateWizardLivePrice();
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function renderWizardFlavorStep() {
+  const container = document.getElementById('wizardFlavorsList') || document.getElementById('wizardFlavorGrid');
+  const stepDesc = document.getElementById('wizardFlavorStepDesc');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (stepDesc) {
+    stepDesc.textContent = wizardState.selectedDecorStyle === 'Naked Cake'
+      ? 'Sabores especiais disponíveis para o Naked Cake (com acabamento rústico):'
+      : 'Sabores nobres com massa artesanal e recheios generosos:';
+  }
+
+  wizardState.availableFlavors.forEach((f) => {
+    const isSelected = wizardState.selectedFlavor && wizardState.selectedFlavor.id === f.id;
+    const card = document.createElement('label');
+    card.className = `wizard-flavor-card${isSelected ? ' active' : ''}`;
+
+    card.innerHTML = `
+      <input type="radio" name="wizardFlavorRadio" value="${f.id}" ${isSelected ? 'checked' : ''}>
+      <div class="flavor-card-content">
+        <span class="flavor-card-name">${escapeHtml(f.titulo)}</span>
+        ${f.detalhes ? `<p class="flavor-card-desc">${escapeHtml(f.detalhes)}</p>` : ''}
+      </div>
+      <div class="card-radio-indicator" aria-hidden="true"></div>
+    `;
+
+    card.addEventListener('click', () => {
+      wizardState.selectedFlavor = f;
+      container.querySelectorAll('.wizard-flavor-card').forEach((c) => c.classList.remove('active'));
+      card.classList.add('active');
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function renderWizardDecorStep() {
+  const container = document.getElementById('wizardDecorList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  wizardState.availableAdicionais.forEach((a) => {
+    const isChecked = wizardState.selectedAdicionais.some((item) => item.id === a.id);
+    const card = document.createElement('label');
+    card.className = `wizard-decor-card${isChecked ? ' active' : ''}`;
+    card.innerHTML = `
+      <div class="decor-card-info">
+        <input type="checkbox" value="${a.id}" ${isChecked ? 'checked' : ''}>
+        <div class="decor-card-text">
+          <span class="decor-card-name">${escapeHtml(a.titulo)}</span>
+          ${a.detalhes ? `<p class="decor-card-desc">${escapeHtml(a.detalhes)}</p>` : ''}
+        </div>
+      </div>
+      <span class="decor-card-price">+${menuService.formatarMoeda(a.valor)}</span>
+    `;
+
+    const checkInput = card.querySelector('input[type="checkbox"]');
+    checkInput.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        card.classList.add('active');
+        if (!wizardState.selectedAdicionais.some((item) => item.id === a.id)) {
+          wizardState.selectedAdicionais.push(a);
+        }
+      } else {
+        card.classList.remove('active');
+        wizardState.selectedAdicionais = wizardState.selectedAdicionais.filter((item) => item.id !== a.id);
+      }
+      updateWizardLivePrice();
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function setupWizardQuickDates() {
+  const dateInput = document.getElementById('wizardDateInput');
+  const quickContainer = document.getElementById('wizardQuickDates');
+  if (!quickContainer || !dateInput) return;
+
+  quickContainer.querySelectorAll('.btn-quick-date').forEach((btn) => {
+    btn.onclick = () => {
+      const now = new Date();
+      let target = new Date();
+
+      const days = btn.getAttribute('data-days');
+      const type = btn.getAttribute('data-type');
+
+      if (days) {
+        target.setDate(now.getDate() + Number(days));
+      } else if (type === 'saturday') {
+        const dayOfWeek = now.getDay();
+        const dist = (6 - dayOfWeek + 7) % 7 || 7;
+        target.setDate(now.getDate() + dist);
+      } else if (type === 'sunday') {
+        const dayOfWeek = now.getDay();
+        const dist = (7 - dayOfWeek + 7) % 7 || 7;
+        target.setDate(now.getDate() + dist);
+      }
+
+      const iso = target.toISOString().slice(0, 10);
+      dateInput.value = iso;
+      wizardState.selectedDate = iso;
+    };
+  });
+}
+
+function updateWizardLivePrice() {
+  const basePrice = wizardState.selectedSize ? Number(wizardState.selectedSize.valor) || 0 : 0;
+  const extrasPrice = (wizardState.selectedDecorStyle === 'Decorado' ? wizardState.selectedAdicionais : [])
+    .reduce((sum, a) => sum + (Number(a.valor) || 0), 0);
+  const total = basePrice + extrasPrice;
+
+  const priceEl = document.getElementById('wizardLivePrice');
+  if (priceEl) priceEl.textContent = menuService.formatarMoeda(total);
+
+  const summaryTotalEl = document.getElementById('summaryTotalPrice');
+  if (summaryTotalEl) summaryTotalEl.textContent = menuService.formatarMoeda(total);
+}
+
+function updateWizardSummary() {
+  const sizeVal = document.getElementById('summarySizeVal');
+  const flavorVal = document.getElementById('summaryFlavorVal');
+  const decorVal = document.getElementById('summaryDecorVal');
+  const adicionaisRow = document.getElementById('summaryAdicionaisRow');
+  const adicionaisVal = document.getElementById('summaryAdicionaisVal');
+  const schedVal = document.getElementById('summaryScheduleVal');
+
+  if (sizeVal && wizardState.selectedSize) {
+    sizeVal.textContent = `${wizardState.selectedSize.tamanho} (${wizardState.selectedSize.rendimento})`;
+  }
+
+  if (flavorVal && wizardState.selectedFlavor) {
+    flavorVal.textContent = wizardState.selectedFlavor.titulo;
+  }
+
+  if (decorVal) {
+    decorVal.textContent = wizardState.selectedDecorStyle === 'Naked Cake' ? 'Naked Cake (Rústico)' : 'Bolo Decorado (Chantininho)';
+  }
+
+  if (adicionaisRow && adicionaisVal) {
+    if (wizardState.selectedDecorStyle === 'Decorado' && wizardState.selectedAdicionais.length > 0) {
+      adicionaisRow.hidden = false;
+      adicionaisRow.removeAttribute('hidden');
+      adicionaisVal.textContent = wizardState.selectedAdicionais.map((a) => `${a.titulo} (+${menuService.formatarMoeda(a.valor)})`).join(', ');
+    } else {
+      adicionaisRow.hidden = true;
+      adicionaisRow.setAttribute('hidden', '');
+    }
+  }
+
+  if (schedVal) {
+    const formattedDate = formatDateBr(wizardState.selectedDate);
+    const timeSlot = wizardState.selectedTimeSlot === 'outro' ? wizardState.customTime : wizardState.selectedTimeSlot;
+    schedVal.textContent = `${formattedDate || 'Data a definir'}${timeSlot ? ` às ${timeSlot}` : ''}`;
+  }
+
+  updateWizardLivePrice();
+}
+
+function goToWizardStep(stepNumber) {
+  if (stepNumber < 1) stepNumber = 1;
+  if (stepNumber > 7) stepNumber = 7;
+
+  wizardState.currentStep = stepNumber;
+
+  // Atualiza barra de progresso
+  const progressFill = document.getElementById('wizardProgressFill');
+  if (progressFill) {
+    const pct = (stepNumber / 7) * 100;
+    progressFill.style.width = `${pct}%`;
+  }
+
+  // Atualiza stepper dots
+  const dots = document.querySelectorAll('.wizard-steps-indicator .step-dot');
+  dots.forEach((dot) => {
+    const dotStep = Number(dot.getAttribute('data-step'));
+    dot.classList.remove('active', 'completed');
+    if (dotStep < stepNumber) {
+      dot.classList.add('completed');
+      dot.textContent = '✓';
+    } else if (dotStep === stepNumber) {
+      dot.classList.add('active');
+      dot.textContent = dotStep;
+    } else {
+      dot.textContent = dotStep;
+    }
+
+    // Permite navegar clicando nas etapas
+    dot.onclick = () => {
+      if (dotStep < stepNumber) {
+        goToWizardStep(dotStep);
+      } else if (dotStep === stepNumber + 1) {
+        handleWizardNext();
+      }
+    };
+  });
+
+  // Alterna classes nos passos
+  for (let i = 1; i <= 7; i++) {
+    const stepEl = document.getElementById(`wizardStep${i}`);
+    if (stepEl) {
+      if (i === stepNumber) {
+        stepEl.classList.add('active');
+      } else {
+        stepEl.classList.remove('active');
+      }
+    }
+  }
+
+  // Atualiza botões
+  const btnPrev = document.getElementById('btnWizardPrev');
+  const btnNext = document.getElementById('btnWizardNext');
+
+  if (btnPrev) {
+    btnPrev.disabled = stepNumber === 1;
+  }
+
+  if (btnNext) {
+    if (stepNumber === 7) {
+      btnNext.innerHTML = `<span>Adicionar à Sacola 🛍️</span>`;
+    } else {
+      btnNext.innerHTML = `<span>Avançar →</span>`;
+    }
+  }
+
+  if (stepNumber === 4) {
+    setupWizardQuickDates();
+  }
+
+  if (stepNumber === 7) {
+    updateWizardSummary();
+  }
+
+  // Scroll to top do modal
+  const body = document.querySelector('.wizard-body');
+  if (body) body.scrollTop = 0;
+}
+
+function handleWizardNext() {
+  const current = wizardState.currentStep;
+
+  if (current === 1) {
+    if (!wizardState.selectedSize) {
+      showCardapioToast('Por favor, selecione o tamanho do bolo.', 'warn');
+      return;
+    }
+    goToWizardStep(2);
+    return;
+  }
+
+  if (current === 2) {
+    if (!wizardState.selectedDecorStyle) {
+      showCardapioToast('Por favor, selecione o estilo do bolo.', 'warn');
+      return;
+    }
+    // Garante que os sabores da Etapa 3 estão atualizados para o estilo selecionado
+    wizardState.availableFlavors = getFlavorsForStyle(wizardState.selectedDecorStyle);
+    if (!wizardState.selectedFlavor || !wizardState.availableFlavors.some((f) => f.id === wizardState.selectedFlavor.id)) {
+      wizardState.selectedFlavor = wizardState.availableFlavors[0] || null;
+    }
+    renderWizardFlavorStep();
+    goToWizardStep(3);
+    return;
+  }
+
+  if (current === 3) {
+    if (!wizardState.selectedFlavor) {
+      showCardapioToast('Por favor, selecione o sabor do bolo.', 'warn');
+      return;
+    }
+    goToWizardStep(4);
+    return;
+  }
+
+  if (current === 4) {
+    const dateInput = document.getElementById('wizardDateInput');
+    const dateVal = dateInput?.value || '';
+    if (!dateVal) {
+      showCardapioToast('Por favor, selecione a data desejada.', 'warn');
+      dateInput?.focus();
+      return;
+    }
+    wizardState.selectedDate = dateVal;
+    goToWizardStep(5);
+    return;
+  }
+
+  if (current === 5) {
+    if (wizardState.selectedTimeSlot === 'outro') {
+      const customTimeInput = document.getElementById('wizardCustomTimeInput');
+      const customVal = customTimeInput?.value || '';
+      if (!customVal) {
+        showCardapioToast('Por favor, informe o horário desejado.', 'warn');
+        customTimeInput?.focus();
+        return;
+      }
+      wizardState.customTime = customVal;
+    }
+    goToWizardStep(6);
+    return;
+  }
+
+  if (current === 6) {
+    const termsCheck = document.getElementById('wizardTermsCheck');
+    if (!termsCheck || !termsCheck.checked) {
+      showCardapioToast('Você precisa marcar a caixa concordando com as regras para continuar.', 'warn', 4000);
+      termsCheck?.focus();
+      return;
+    }
+    wizardState.termsAccepted = true;
+    goToWizardStep(7);
+    return;
+  }
+
+  if (current === 7) {
+    // Finalização e adição ao carrinho
+    const obsInput = document.getElementById('wizardObsInput');
+    wizardState.observacao = obsInput ? obsInput.value.trim() : '';
+
+    const basePrice = wizardState.selectedSize ? Number(wizardState.selectedSize.valor) || 0 : 0;
+    const extrasPrice = (wizardState.selectedDecorStyle === 'Decorado' ? wizardState.selectedAdicionais : [])
+      .reduce((sum, a) => sum + (Number(a.valor) || 0), 0);
+    const totalUnit = basePrice + extrasPrice;
+
+    const tipoProdutoFinal = wizardState.selectedDecorStyle === 'Naked Cake' ? 'Bolo Naked' : 'Bolo Inteiro';
+    const tituloPrefixo = wizardState.selectedDecorStyle === 'Naked Cake' ? 'Naked Cake' : 'Bolo';
+    const cleanFlavor = wizardState.selectedFlavor ? wizardState.selectedFlavor.titulo : '';
+    const sizeKey = wizardState.selectedSize ? (wizardState.selectedSize.key || wizardState.selectedSize.tamanho) : 'P';
+
+    const customCakeItem = {
+      id: `bolo_custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      produtoId: '',
+      tipoProduto: tipoProdutoFinal,
+      titulo: `${tituloPrefixo} ${cleanFlavor} (${sizeKey})`,
+      tamanho: sizeKey,
+      sabor: cleanFlavor,
+      valorBase: basePrice,
+      estiloDecoracao: wizardState.selectedDecorStyle,
+      adicionais: wizardState.selectedDecorStyle === 'Decorado' ? [...wizardState.selectedAdicionais] : [],
+      dataEntrega: wizardState.selectedDate,
+      horarioEntrega: wizardState.selectedTimeSlot === 'outro' ? wizardState.customTime : wizardState.selectedTimeSlot,
+      observacao: wizardState.observacao,
+      termosAceitos: wizardState.termsAccepted,
+      quantidade: 1,
+      valor: totalUnit,
+    };
+
+    cart.push(customCakeItem);
+    updateCartUi();
+    renderProducts();
+    closeCakeWizard();
+
+    showCardapioToast('Bolo personalizado adicionado à sua sacola! 🎂', 'success', 3500);
+    openCartModal();
+  }
+}
+
+function handleWizardPrev() {
+  if (wizardState.currentStep > 1) {
+    goToWizardStep(wizardState.currentStep - 1);
+  }
+}
+
+function setupCakeWizardEvents() {
+  // Fechar
+  document.getElementById('btnWizardClose')?.addEventListener('click', closeCakeWizard);
+  document.getElementById('wizardBackdrop')?.addEventListener('click', closeCakeWizard);
+
+  // Navegação
+  document.getElementById('btnWizardPrev')?.addEventListener('click', handleWizardPrev);
+  document.getElementById('btnWizardNext')?.addEventListener('click', handleWizardNext);
+
+  // Estilo de Decoração (Naked vs Decorado)
+  const styleNaked = document.getElementById('styleCardNaked');
+  const styleDecorado = document.getElementById('styleCardDecorado');
+  const decorExtrasWrap = document.getElementById('wizardDecorExtrasWrap');
+
+  if (styleNaked && styleDecorado) {
+    styleNaked.addEventListener('click', () => {
+      styleNaked.classList.add('active');
+      styleDecorado.classList.remove('active');
+      wizardState.selectedDecorStyle = 'Naked Cake';
+      if (decorExtrasWrap) {
+        decorExtrasWrap.style.display = 'none';
+      }
+      wizardState.availableFlavors = getFlavorsForStyle('Naked Cake');
+      if (!wizardState.selectedFlavor || !wizardState.availableFlavors.some((f) => f.id === wizardState.selectedFlavor.id)) {
+        wizardState.selectedFlavor = wizardState.availableFlavors[0] || null;
+      }
+      renderWizardFlavorStep();
+      updateWizardLivePrice();
+    });
+
+    styleDecorado.addEventListener('click', () => {
+      styleDecorado.classList.add('active');
+      styleNaked.classList.remove('active');
+      wizardState.selectedDecorStyle = 'Decorado';
+      if (decorExtrasWrap) {
+        decorExtrasWrap.style.display = 'flex';
+      }
+      wizardState.availableFlavors = getFlavorsForStyle('Decorado');
+      if (!wizardState.selectedFlavor || !wizardState.availableFlavors.some((f) => f.id === wizardState.selectedFlavor.id)) {
+        wizardState.selectedFlavor = wizardState.availableFlavors[0] || null;
+      }
+      renderWizardFlavorStep();
+      updateWizardLivePrice();
+    });
+  }
+
+  // Horários
+  const timeCards = document.querySelectorAll('.wizard-time-card');
+  const customTimeWrap = document.getElementById('wizardCustomTimeWrap');
+
+  timeCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      timeCards.forEach((c) => c.classList.remove('active'));
+      card.classList.add('active');
+      const input = card.querySelector('input[type="radio"]');
+      if (input) {
+        input.checked = true;
+        wizardState.selectedTimeSlot = input.value;
+        if (input.value === 'outro') {
+          if (customTimeWrap) customTimeWrap.hidden = false;
+        } else {
+          if (customTimeWrap) customTimeWrap.hidden = true;
+        }
+      }
+    });
   });
 }
 
@@ -1197,7 +1956,19 @@ function renderCartDrawerItems() {
     const disp = menuService.verificarDisponibilidadeCardapio(prod, saldoEstoque);
 
     const itemTotal = (Number(item.quantidade) || 1) * (Number(item.valor) || 0);
-    const desc = item.tamanho ? `${item.tipoProduto} (${item.tamanho})` : item.tipoProduto;
+    let desc = item.tamanho ? `${item.tipoProduto} (${item.tamanho})` : item.tipoProduto;
+    if ((item.tipoProduto === 'Bolo Inteiro' || item.tipoProduto === 'Bolo Naked') && (item.estiloDecoracao || item.dataEntrega)) {
+      const parts = [];
+      if (item.estiloDecoracao) parts.push(item.estiloDecoracao);
+      if (item.adicionais && item.adicionais.length > 0) {
+        parts.push(`+ ${item.adicionais.map((a) => a.titulo).join(', ')}`);
+      }
+      if (item.dataEntrega) {
+        const formattedDate = formatDateBr(item.dataEntrega);
+        parts.push(`📅 ${formattedDate}${item.horarioEntrega ? ` às ${item.horarioEntrega}` : ''}`);
+      }
+      desc = parts.join(' • ');
+    }
 
     row.innerHTML = `
       <div class="cart-item-info">
@@ -1293,14 +2064,81 @@ async function handleCheckout() {
   try {
     const orders = storage.getAll();
     const numero = orderModule.nextOrderNumber(orders);
-    const orderItems = cart.map((c) => ({
-      produtoId: c.id,
-      tipoProduto: c.tipoProduto,
-      sabor: c.titulo,
-      tamanho: c.tamanho || '',
-      quantidade: c.quantidade,
-      valorUnitario: c.valor,
-    }));
+    const orderItems = [];
+    const cakeNotes = [];
+
+    cart.forEach((c) => {
+      if (c.id && String(c.id).startsWith('bolo_custom_')) {
+        // Item principal: Bolo
+        const boloItem = {
+          produtoId: c.produtoId || '',
+          tipoProduto: c.tipoProduto || 'Bolo Inteiro',
+          sabor: c.sabor || c.titulo,
+          tamanho: c.tamanho || '',
+          quantidade: c.quantidade || 1,
+          valorUnitario: c.valorBase || c.valor,
+        };
+        const ensuredBolo = product.ensureProduct(boloItem);
+        if (ensuredBolo) {
+          boloItem.produtoId = ensuredBolo.id;
+          boloItem.sabor = ensuredBolo.titulo;
+        }
+        orderItems.push(boloItem);
+
+        // Adicionais e Decorações como itens individuais
+        if (Array.isArray(c.adicionais) && c.adicionais.length > 0) {
+          c.adicionais.forEach((ad) => {
+            const adcItem = {
+              produtoId: ad.id || '',
+              tipoProduto: ad.tipoProduto || 'Adicional',
+              sabor: ad.titulo || ad.sabor || 'Adicional',
+              tamanho: '',
+              quantidade: c.quantidade || 1,
+              valorUnitario: Number(ad.valor) || 0,
+            };
+            const ensuredAdc = product.ensureProduct(adcItem);
+            if (ensuredAdc) {
+              adcItem.produtoId = ensuredAdc.id;
+              adcItem.sabor = ensuredAdc.titulo;
+            }
+            orderItems.push(adcItem);
+          });
+        }
+
+        // Detalhes da montagem para as observações
+        const extrasStr = (c.adicionais && c.adicionais.length > 0)
+          ? c.adicionais.map((a) => a.titulo).join(', ')
+          : 'Sem adicionais';
+        let detail = `[Bolo: ${c.sabor || c.titulo} (${c.tamanho || 'P'}) | Estilo: ${c.estiloDecoracao || 'Padrão'} | Adicionais: ${extrasStr}`;
+        if (c.dataEntrega) detail += ` | Data: ${formatDateBr(c.dataEntrega)}`;
+        if (c.horarioEntrega) detail += ` ${c.horarioEntrega}`;
+        if (c.observacao) detail += ` | Obs: ${c.observacao}`;
+        detail += `]`;
+        cakeNotes.push(detail);
+      } else {
+        const standardItem = {
+          produtoId: c.id || c.produtoId || '',
+          tipoProduto: c.tipoProduto,
+          sabor: c.titulo,
+          tamanho: c.tamanho || '',
+          quantidade: c.quantidade,
+          valorUnitario: c.valor,
+        };
+        const ensured = product.ensureProduct(standardItem);
+        if (ensured) {
+          standardItem.produtoId = ensured.id;
+        }
+        orderItems.push(standardItem);
+      }
+    });
+
+    const obsArray = [];
+    if (observacoes && observacoes.trim()) obsArray.push(observacoes.trim());
+    if (cakeNotes.length > 0) obsArray.push(cakeNotes.join('\n'));
+    const finalObs = obsArray.join('\n\n');
+
+    const totalQty = orderItems.reduce((acc, it) => acc + (Number(it.quantidade) || 0), 0);
+    const totalVal = orderItems.reduce((acc, it) => acc + (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0), 0);
 
     const novoPedido = {
       id: `ped_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -1309,12 +2147,12 @@ async function handleCheckout() {
       cliente: nome.trim(),
       contato: whatsapp.trim(),
       itens: orderItems,
-      valorTotal: totais.totalValor,
-      quantidadeTotal: totais.totalItens,
+      valorTotal: totalVal || totais.totalValor,
+      quantidadeTotal: totalQty || totais.totalItens,
       status: 'Pendente',
       pagamento,
       entrega: currentDeliveryType === 'Entrega' ? `Entrega (${endereco.trim()})` : 'Retirada',
-      observacoes: observacoes.trim(),
+      observacoes: finalObs,
       consomeEstoque: true,
     };
 
@@ -1453,6 +2291,9 @@ function setupEventListeners() {
   setupCepLookup('client');
   setupCepLookup('regCustomer');
   setupCepLookup('profCustomer');
+
+  // Inicializa eventos do Wizard de Bolos
+  setupCakeWizardEvents();
 
   // Busca
   const searchInput = document.getElementById('menuSearch');

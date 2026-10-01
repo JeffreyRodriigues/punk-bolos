@@ -80,7 +80,7 @@ test('quantityByType: agrupa por tipo', () => {
     { tipoProduto: 'Bolo Inteiro', quantidade: 1 },
     { tipoProduto: 'Outro', quantidade: 9 },
   ]);
-  assert.deepEqual(result, { 'Fatia': 3, 'Punkitos': 0, 'Bolo Inteiro': 1 });
+  assert.deepEqual(result, { 'Fatia': 3, 'Punkitos': 0, 'Bolo Inteiro': 1, 'Bolo Naked': 0 });
 });
 
 test('createOrder: monta pedido com agregados calculados', () => {
@@ -142,6 +142,22 @@ test('isCortesia: reconhece a forma de pagamento', () => {
   assert.equal(order.isCortesia('PIX'), false);
   assert.equal(order.isCortesia(undefined), false);
   assert.equal(order.isCortesia(''), false);
+});
+
+test('normalizePaymentMethod: normaliza variações do cardápio e preserva válidas', () => {
+  assert.equal(order.normalizePaymentMethod('Cartão de Crédito'), 'Crédito');
+  assert.equal(order.normalizePaymentMethod('Cartão de Débito'), 'Débito');
+  assert.equal(order.normalizePaymentMethod('PIX'), 'PIX');
+  assert.equal(order.normalizePaymentMethod('Dinheiro'), 'Dinheiro');
+  assert.equal(order.normalizePaymentMethod('Cortesia'), 'Cortesia');
+  assert.equal(order.normalizePaymentMethod(''), 'PIX');
+});
+
+test('normalizeDeliveryMethod: normaliza variações de entrega', () => {
+  assert.equal(order.normalizeDeliveryMethod('Entrega (Rua Flores, 123)'), 'Entrega Própria');
+  assert.equal(order.normalizeDeliveryMethod('Uber Cliente'), 'Uber Cliente');
+  assert.equal(order.normalizeDeliveryMethod('Retirada'), 'Retirada');
+  assert.equal(order.normalizeDeliveryMethod(''), 'Retirada');
 });
 
 test('orderTotalValue: zera em cortesia e mantém nos demais', () => {

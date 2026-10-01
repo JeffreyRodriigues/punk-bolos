@@ -28,7 +28,7 @@ export function verificarDisponibilidadeCardapio(produto, saldoEstoque = 0) {
     };
   }
 
-  const isBolo = produto.tipoProduto === 'Bolo Inteiro';
+  const isBolo = produto.tipoProduto === 'Bolo Inteiro' || produto.tipoProduto === 'Bolo Naked';
   if (isBolo) {
     return {
       sobEncomenda: true,
@@ -36,6 +36,16 @@ export function verificarDisponibilidadeCardapio(produto, saldoEstoque = 0) {
       estoqueMax: 99,
       statusTexto: 'Sob Encomenda',
       statusClass: 'status-encomenda',
+    };
+  }
+
+  if (produto.tipoProduto === 'Adicional' || produto.tipoProduto === 'Decoração') {
+    return {
+      sobEncomenda: true,
+      disponivel: true,
+      estoqueMax: 99,
+      statusTexto: 'Adicional / Decoração',
+      statusClass: 'status-adicional',
     };
   }
 
@@ -217,7 +227,27 @@ export function gerarMensagemPedidoWhatsapp(
     const titulo = item.titulo ? ` - ${item.titulo}` : '';
     const tagEncomenda = item.tipoProduto === 'Bolo Inteiro' ? ' [Sob Encomenda]' : ' [Pronta Entrega]';
     const itemTotal = (Number(item.quantidade) || 1) * (Number(item.valor) || 0);
-    return `- ${qtd}x ${tipo}${tam}${titulo}${tagEncomenda} (${formatarMoeda(itemTotal)})`;
+
+    let linha = `- ${qtd}x ${tipo}${tam}${titulo}${tagEncomenda} (${formatarMoeda(itemTotal)})`;
+    if (item.estiloDecoracao) {
+      linha += `\n  * Estilo: ${item.estiloDecoracao}`;
+    }
+    if (Array.isArray(item.adicionais) && item.adicionais.length > 0) {
+      const adicStr = item.adicionais.map((a) => `${a.titulo || a.nome} (+${formatarMoeda(a.valor)})`).join(', ');
+      linha += `\n  * Adicionais: ${adicStr}`;
+    }
+    if (item.dataEntrega || item.horarioEntrega) {
+      const dtStr = [item.dataEntrega, item.horarioEntrega].filter(Boolean).join(' as ');
+      linha += `\n  * Agendamento: ${dtStr}`;
+    }
+    if (item.observacao) {
+      linha += `\n  * Obs: ${item.observacao}`;
+    }
+    if (item.termosAceitos) {
+      linha += `\n  * Termos de transporte/pagamento aceitos: Sim`;
+    }
+
+    return linha;
   }).join('\n');
 
   const tipoEntrega = dadosCliente.tipoEntrega === 'Entrega' ? 'Entrega' : 'Retirada no Ateliê';

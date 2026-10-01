@@ -23,7 +23,7 @@
 import * as storage from './storage.js';
 
 /** Tipos de produto aceitos pelo sistema. */
-export const PRODUCT_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro'];
+export const PRODUCT_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Bolo Naked', 'Decoração', 'Adicional'];
 
 /** Tamanhos válidos apenas para "Bolo Inteiro". */
 export const CAKE_SIZES = ['Mini', 'PP', 'P', 'M', 'G', 'GG', 'Bento Cake', 'Coração'];
@@ -39,6 +39,32 @@ export const STATUSES = [
 
 /** Formas de pagamento disponíveis. */
 export const PAYMENT_METHODS = ['PIX', 'Dinheiro', 'Crédito', 'Débito', 'Cortesia'];
+
+/**
+ * Normaliza a forma de pagamento, mapeando variações vindas do cardápio digital.
+ * @param {string} pagamento - Forma de pagamento informada.
+ * @returns {string} Forma de pagamento padronizada.
+ */
+export function normalizePaymentMethod(pagamento) {
+  const p = String(pagamento || '').trim();
+  if (p === 'Cartão de Crédito') return 'Crédito';
+  if (p === 'Cartão de Débito') return 'Débito';
+  if (PAYMENT_METHODS.includes(p)) return p;
+  return 'PIX';
+}
+
+/**
+ * Normaliza o método de entrega para compatibilidade com o formulário.
+ * @param {string} entrega - Tipo ou texto de entrega informado.
+ * @returns {string} Opção padronizada para o seletor.
+ */
+export function normalizeDeliveryMethod(entrega) {
+  const e = String(entrega || '').trim();
+  if (DELIVERY_METHODS.includes(e)) return e;
+  if (e.toLowerCase().startsWith('entrega')) return 'Entrega Própria';
+  if (e.toLowerCase().startsWith('uber')) return 'Uber Cliente';
+  return 'Retirada';
+}
 
 /**
  * Indica se a forma de pagamento é Cortesia (pedido grátis, R$ 0,00).
@@ -142,7 +168,7 @@ export function totalValue(items) {
  * @returns {Object} Mapa tipo -> quantidade (0 quando nenhum).
  */
 export function quantityByType(items) {
-  const counts = { 'Fatia': 0, 'Punkitos': 0, 'Bolo Inteiro': 0 };
+  const counts = { 'Fatia': 0, 'Punkitos': 0, 'Bolo Inteiro': 0, 'Bolo Naked': 0 };
   (items || []).forEach((item) => {
     const type = item.tipoProduto;
     if (Object.prototype.hasOwnProperty.call(counts, type)) {

@@ -27,6 +27,19 @@ import * as storage from './storage.js';
 import * as product from './product.js';
 
 /**
+ * Identifica se um produto é feito sob encomenda (não depende de produção prévia em estoque).
+ * - "Bolo Inteiro", "Bolo Naked", "Adicional" e "Decoração" são sob encomenda.
+ * - "Fatia", "Punkitos" e outros exigem produção prévia (pronta entrega).
+ * @param {Object} produto - Produto do catálogo.
+ * @returns {boolean} true se for sob encomenda.
+ */
+export function isSobEncomenda(produto) {
+  if (!produto || typeof produto !== 'object') return false;
+  const tipo = produto.tipoProduto;
+  return tipo === 'Bolo Inteiro' || tipo === 'Bolo Naked' || tipo === 'Adicional' || tipo === 'Decoração';
+}
+
+/**
  * Resolve o produto do catálogo correspondente a um item de pedido.
  * Prioriza o produtoId (novo formato); senão casa por tipo+tamanho+valor.
  * @param {Object} item - Item de pedido.
@@ -200,7 +213,7 @@ export function validateItens(itens, options = {}) {
   const errors = [];
   (itens || []).forEach((item) => {
     const produto = resolveProduct(item);
-    if (!produto) {
+    if (!produto || isSobEncomenda(produto)) {
       return;
     }
     const qtd = Number(item.quantidade) || 0;
@@ -222,10 +235,10 @@ export function validateItens(itens, options = {}) {
 }
 
 /**
- * Filtra os produtos que podem ser vendidos no momento (disponível > 0).
- * Como a venda exige produção, produtos sem estoque disponível não
- * aparecem no seletor de itens de um novo pedido. Ao editar, pode-se
- * informar um id "obrigatório" (item já presente no pedido).
+ * Filtra os produtos que podem ser vendidos no momento (disponível > 0 ou Sob Encomenda).
+ * Produtos Sob Encomenda (Bolo Inteiro, Bolo Naked, Adicional, Decoração) estão sempre disponíveis.
+ * Produtos de pronta entrega (Fatia, Punkitos) exigem saldo em estoque > 0.
+ * Ao editar, pode-se informar um id "obrigatório" (item já presente no pedido).
  * @param {Array<Object>} produtos - Lista de produtos do catálogo.
  * @param {{ excludeOrderId?: string, requiredId?: string }} [options]
  *   - excludeOrderId: pedido em edição (não contar a própria reserva).
@@ -235,7 +248,9 @@ export function validateItens(itens, options = {}) {
 export function produtosDisponiveis(produtos = [], options = {}) {
   const excludeOrderId = options.excludeOrderId || '';
   const requiredId = options.requiredId || '';
-  return (produtos || []).filter((p) => p.id === requiredId || disponivel(p, excludeOrderId) > 0);
+  return (produtos || []).filter(
+    (p) => p.id === requiredId || isSobEncomenda(p) || disponivel(p, excludeOrderId) > 0
+  );
 }
 
 /**
@@ -258,14 +273,15 @@ export function describeErro(erro) {
 }
 
 /**
- * Nome legível de um produto (com tamanho em Bolo Inteiro).
+ * Nome legível de um produto (com tamanho em Bolo Inteiro e Bolo Naked).
  * @param {Object} produto - Produto do catálogo.
  * @returns {string} Ex.: "Fatia de chocolate" ou "Bolo M Red Velvet".
  */
 export function nomeProduto(produto) {
   if (!produto) return '';
   const base = produto.titulo || 'Produto';
-  if (produto.tipoProduto === 'Bolo Inteiro' && produto.tamanho) {
+  const isCake = produto.tipoProduto === 'Bolo Inteiro' || produto.tipoProduto === 'Bolo Naked';
+  if (isCake && produto.tamanho) {
     return `${base} (${produto.tamanho})`;
   }
   return `${base} (${produto.tipoProduto || 'Fatia'})`;

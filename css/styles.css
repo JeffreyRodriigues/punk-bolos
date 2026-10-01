@@ -265,6 +265,27 @@ input[type="number"] {
   font-weight: 700;
 }
 
+.nav-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background-color: var(--color-danger, #d32f2f);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.nav-tab-badge[hidden] {
+  display: none !important;
+}
+
 /* Estado da Sidebar Oculta/Recolhida no Desktop */
 body.sidebar-collapsed .app-nav {
   width: 0;
@@ -480,68 +501,300 @@ body.sidebar-collapsed .app-nav {
   box-shadow: var(--shadow-card);
 }
 
-/* ---------- Lista de pedidos (cards) ---------- */
-.order-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+/* ---------- Barra de ferramentas e alternador de visualização ---------- */
+.orders-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
+  margin-bottom: 12px;
+}
+
+.order-view-toggle {
+  display: inline-flex;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 4px;
+}
+
+.view-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-toggle-btn:hover {
+  color: var(--color-text);
+}
+
+.view-toggle-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- Lista de pedidos (Modos Grade e Lista) ---------- */
+.order-list.view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px;
+}
+
+.order-list.view-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .order-card {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 16px;
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.order-card:hover {
+  border-color: var(--color-primary);
+}
+
+/* Cabeçalho do Card */
 .order-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.order-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .order-number {
   font-weight: 800;
+  font-size: 1.05rem;
   color: var(--color-primary);
 }
 
 .order-date {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--color-text-muted);
 }
 
-.order-customer {
+.order-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-card-print {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.74rem;
   font-weight: 700;
-  font-size: 1.02rem;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.order-detail {
-  font-size: 0.88rem;
-  color: var(--color-text-muted);
+.btn-card-print:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.btn-card-print:active {
+  transform: scale(0.95);
+}
+
+/* Cliente e WhatsApp */
+.order-customer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.order-customer-name {
+  font-weight: 700;
+  font-size: 1.08rem;
+  color: var(--color-text);
+}
+
+.btn-order-wa {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-ok-soft);
+  color: var(--color-ok);
+  border: 1px solid rgba(40, 167, 69, 0.25);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.btn-order-wa:hover {
+  background: var(--color-ok);
+  color: #fff;
+}
+
+/* Itens do Pedido no Card */
+.order-items-container {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.order-items-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.order-item-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.order-item-entry:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.order-item-title {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.order-item-sub {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.order-item-price {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* Observações / Personalizações do Pedido */
+.order-obs-box {
+  background: var(--color-warn-soft);
+  border-left: 3px solid var(--color-warn);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.order-obs-title {
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-warn);
+  margin-bottom: 2px;
+}
+
+/* Endereço / Entrega */
+.order-delivery-box {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.order-delivery-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+/* Rodapé do Card (Valor + Pagamento + Ações) */
+.order-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.order-total-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.order-total-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-text-muted);
+  font-weight: 700;
 }
 
 .order-value {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--color-text);
 }
 
 /* Selo de status (cores por estado) */
 .badge {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  display: inline-block;
 }
 
 .badge.Pendente      { background: var(--color-warn-soft);  color: var(--color-warn); }
@@ -550,32 +803,118 @@ body.sidebar-collapsed .app-nav {
 .badge.Concluído     { background: var(--color-ok-soft);   color: var(--color-ok); }
 .badge.Cancelado     { background: var(--color-danger-soft); color: var(--color-danger); }
 
-/* Ações do card (ícones) */
+.badge.payment-badge {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.badge.cortesia-badge {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+/* Ações do card com texto limpo */
 .order-card-actions {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-border);
+  align-items: center;
 }
 
-.icon-btn {
-  flex: 1;
-  min-width: 42px;
+.btn-card-action {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
+  color: var(--color-text);
   border-radius: var(--radius-sm);
-  padding: 8px;
-  font-size: 0.95rem;
+  padding: 7px 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.icon-btn:hover { background: var(--color-primary-soft); }
-.icon-btn:active { transform: scale(0.94); }
+.btn-card-action:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
 
-.icon-btn.danger:hover { background: var(--color-danger-soft); }
-.icon-btn.ok:hover { background: var(--color-ok-soft); }
+.btn-card-action:active {
+  transform: scale(0.96);
+}
+
+.btn-card-action.action-ok {
+  background: var(--color-ok-soft);
+  color: var(--color-ok);
+  border-color: rgba(40, 167, 69, 0.3);
+}
+
+.btn-card-action.action-ok:hover {
+  background: var(--color-ok);
+  color: #fff;
+}
+
+.btn-card-action.action-danger {
+  color: var(--color-danger);
+}
+
+.btn-card-action.action-danger:hover {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+/* ---------- Paginação de Pedidos ---------- */
+.order-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  flex-wrap: wrap;
+}
+
+.btn-pagination {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  min-height: 42px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.btn-pagination:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn-pagination:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-align: center;
+}
 
 /* ---------- Estado vazio ---------- */
 .empty-state {
@@ -3417,5 +3756,165 @@ html.dark .badge-purple {
   background: var(--color-danger-soft);
   color: var(--color-danger);
   border-color: var(--color-danger);
+}
+
+/* ============================================================
+   ESTILOS DE IMPRESSÃO (Comandas e Recibos)
+   ============================================================ */
+.print-container {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 6mm 8mm;
+    size: auto;
+  }
+
+  /* Oculta toda a interface do sistema */
+  body > *:not(#printContainer) {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Segoe UI', Arial, sans-serif !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #printContainer {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 6px !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .print-ticket {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+    border: 1px dashed #000 !important;
+    border-radius: 4px !important;
+    padding: 14px 16px !important;
+    margin-bottom: 24px !important;
+    max-width: 480px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .print-ticket-header {
+    text-align: center !important;
+    border-bottom: 2px solid #000 !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .print-ticket-brand {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px !important;
+  }
+
+  .print-ticket-order-num {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    margin: 4px 0 !important;
+  }
+
+  .print-ticket-date {
+    font-size: 11px !important;
+    color: #333 !important;
+  }
+
+  .print-ticket-customer {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px dashed #666 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .print-ticket-items {
+    margin-bottom: 10px !important;
+  }
+
+  .print-items-title {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    margin-bottom: 6px !important;
+  }
+
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 12px !important;
+  }
+
+  .print-table td {
+    padding: 4px 0 !important;
+    border-bottom: 1px dotted #ccc !important;
+    vertical-align: top !important;
+  }
+
+  .print-table tr:last-child td {
+    border-bottom: none !important;
+  }
+
+  .print-td-qtd {
+    width: 30px !important;
+    font-weight: 700 !important;
+  }
+
+  .print-td-desc {
+    padding-right: 8px !important;
+  }
+
+  .print-td-val {
+    text-align: right !important;
+    white-space: nowrap !important;
+    font-weight: 600 !important;
+  }
+
+  .print-ticket-obs {
+    background: #f5f5f5 !important;
+    border: 1px solid #ddd !important;
+    padding: 8px 10px !important;
+    margin-bottom: 10px !important;
+    border-radius: 3px !important;
+    font-size: 12px !important;
+  }
+
+  .print-ticket-obs p {
+    margin: 2px 0 0 0 !important;
+  }
+
+  .print-ticket-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: baseline !important;
+    border-top: 2px solid #000 !important;
+    padding-top: 8px !important;
+    margin-top: 8px !important;
+    font-size: 13px !important;
+  }
+
+  .print-ticket-total {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+  }
 }
 

@@ -25,11 +25,13 @@ test('createProduct: normaliza dados padrão', () => {
   assert.ok(p.id);
 });
 
-test('createProduct: tipo inválido vira Fatia, tamanho só em Bolo Inteiro', () => {
+test('createProduct: tipo inválido vira Fatia, tamanho só em Bolo Inteiro e Bolo Naked', () => {
   const p1 = product.createProduct({ titulo: 'X', tipoProduto: 'Inexistente', valor: 10 });
   assert.equal(p1.tipoProduto, 'Fatia');
   const p2 = product.createProduct({ titulo: 'X', tipoProduto: 'Bolo Inteiro', tamanho: 'GG', valor: 10 });
   assert.equal(p2.tamanho, 'GG');
+  const p2Naked = product.createProduct({ titulo: 'X', tipoProduto: 'Bolo Naked', tamanho: 'M', valor: 10 });
+  assert.equal(p2Naked.tamanho, 'M');
   const p3 = product.createProduct({ titulo: 'X', tipoProduto: 'Fatia', tamanho: 'P', valor: 10 });
   assert.equal(p3.tamanho, '');
 });
@@ -61,10 +63,13 @@ test('validateProduct: tipo obrigatório', () => {
   assert.ok(r.errors['tipo-produto']);
 });
 
-test('validateProduct: Bolo Inteiro exige tamanho', () => {
-  const r = product.validateProduct({ titulo: 'X', tipoProduto: 'Bolo Inteiro', valor: '5' });
-  assert.equal(r.valid, false);
-  assert.ok(r.errors['tamanho-produto']);
+test('validateProduct: Bolo Inteiro e Bolo Naked exigem tamanho', () => {
+  const r1 = product.validateProduct({ titulo: 'X', tipoProduto: 'Bolo Inteiro', valor: '5' });
+  assert.equal(r1.valid, false);
+  assert.ok(r1.errors['tamanho-produto']);
+  const r2 = product.validateProduct({ titulo: 'X', tipoProduto: 'Bolo Naked', valor: '5' });
+  assert.equal(r2.valid, false);
+  assert.ok(r2.errors['tamanho-produto']);
 });
 
 test('validateProduct: valor negativo inválido', () => {
@@ -114,4 +119,122 @@ test('matchProduct: desempata pelo título quando há produtos de mesmo valor', 
   // Com o título desanco o produto certo, mesmo com o mesmo preço.
   const comTitulo = product.matchProduct({ tipoProduto: 'Fatia', tamanho: '', sabor: 'Fatia B', valorUnitario: 10 });
   assert.equal(comTitulo?.id, 'pB');
+});
+
+test('matchProduct: resolve bolo com nome composto e tamanho descritivo', async () => {
+  await setDb({
+    products: [
+      { id: 'pNakedPink', titulo: 'Pink Lemonade', tipoProduto: 'Bolo Naked', tamanho: 'P', valor: 120 },
+      { id: 'pDecorRed', titulo: 'Red Velvet', tipoProduto: 'Bolo Inteiro', tamanho: 'M', valor: 170 },
+      { id: 'pGranulado', titulo: 'Granulado Belga', tipoProduto: 'Adicional', tamanho: '', valor: 10 },
+    ],
+  });
+
+  // Nome composto vindo de pedido legado ou do wizard com adicionais agregados no preço
+  const itemNaked = {
+    tipoProduto: 'Bolo Naked',
+    tamanho: 'Bolo P (15cm)',
+    sabor: 'Naked Cake Pink Lemonade (Bolo P (15cm))',
+    valorUnitario: 145, // Preço com adicional somado
+  };
+  const match = product.matchProduct(itemNaked);
+  assert.equal(match?.id, 'pNakedPink');
+
+  const itemAdicional = {
+    tipoProduto: 'Adicional',
+    tamanho: '',
+    sabor: 'Granulado Belga',
+    valorUnitario: 10,
+  };
+  const matchAdc = product.matchProduct(itemAdicional);
+  assert.equal(matchAdc?.id, 'pGranulado');
+});
+
+test('matchProduct: casa Decoração e Adicional de forma flexível (Granulado, Papel Arroz)', async () => {
+  await setDb({
+    products: [
+      { id: 'pPapel', titulo: 'Papel Arroz', tipoProduto: 'Decoração', tamanho: '', valor: 15 },
+      { id: 'pConfeitoGranulado', titulo: 'Confeito Granulado Belga Callebaut', tipoProduto: 'Adicional', tamanho: '', valor: 10 },
+    ],
+  });
+
+  // Decoração Papel Arroz casa com Papel Arroz (tipo Decoração)
+  const itemPapel = { tipoProduto: 'Decoração', sabor: 'Decoração Papel Arroz', valorUnitario: 15 };
+  assert.equal(product.matchProduct(itemPapel)?.id, 'pPapel');
+
+  // Decoração Granulado casa com Confeito Granulado Belga Callebaut (tipo Adicional)
+  const itemGranulado = { tipoProduto: 'Decoração', sabor: 'Decoração Granulado', valorUnitario: 10 };
+  assert.equal(product.matchProduct(itemGranulado)?.id, 'pConfeitoGranulado');
+
+  // Sabor Granulado simples
+  const itemGranSimples = { tipoProduto: 'Decoração', sabor: 'Granulado', valorUnitario: 10 };
+  assert.equal(product.matchProduct(itemGranSimples)?.id, 'pConfeitoGranulado');
+});
+
+test('ensureProduct: cria o produto no catálogo se ele não existir', async () => {
+  const initialCount = product.getProducts().length;
+
+  const itemBoloNovo = {
+    tipoProduto: 'Bolo Inteiro',
+    tamanho: 'P',
+    sabor: 'Maracujá com Chocolate Branco',
+    valorUnitario: 130,
+  };
+
+  const createdBolo = product.ensureProduct(itemBoloNovo);
+  assert.ok(createdBolo?.id);
+  assert.equal(createdBolo.titulo, 'Maracujá com Chocolate Branco');
+  assert.equal(createdBolo.tipoProduto, 'Bolo Inteiro');
+  assert.equal(createdBolo.tamanho, 'P');
+  assert.equal(createdBolo.valor, 130);
+  assert.equal(product.getProducts().length, initialCount + 1);
+
+  // Segunda chamada retorna o produto já existente sem duplicar
+  const existing = product.ensureProduct(itemBoloNovo);
+  assert.equal(existing.id, createdBolo.id);
+  assert.equal(product.getProducts().length, initialCount + 1);
+});
+
+test('inferProductType: infere corretamente Bolo Inteiro, Bolo Naked e Decoração sem cair em Fatia', () => {
+  // Sabor com Bolo ou tamanho presente -> Bolo Inteiro
+  assert.equal(product.inferProductType({ sabor: 'Bolo de Cenoura', tamanho: 'M' }), 'Bolo Inteiro');
+  assert.equal(product.inferProductType({ sabor: 'Red Velvet', tamanho: 'P' }), 'Bolo Inteiro');
+  assert.equal(product.inferProductType({ sabor: 'Bolo Pink Lemonade' }), 'Bolo Inteiro');
+
+  // Sabor com Naked -> Bolo Naked
+  assert.equal(product.inferProductType({ sabor: 'Naked Cake Pink Lemonade', tamanho: 'P' }), 'Bolo Naked');
+  assert.equal(product.inferProductType({ sabor: 'Bolo Naked Frutas Vermelhas' }), 'Bolo Naked');
+
+  // Confeitos / Decorações
+  assert.equal(product.inferProductType({ sabor: 'Papel Arroz' }), 'Decoração');
+  assert.equal(product.inferProductType({ sabor: 'Confeito Granulado Belga' }), 'Decoração');
+  assert.equal(product.inferProductType({ sabor: 'Decoração Granulado' }), 'Decoração');
+
+  // Fatia real
+  assert.equal(product.inferProductType({ sabor: 'Fatia de Chocolate' }), 'Fatia');
+  assert.equal(product.inferProductType({ tipoProduto: 'Fatia', sabor: 'Chocolate Tradicional' }), 'Fatia');
+});
+
+test('ensureProduct: não herda produtoId de fatia quando o item for Bolo Inteiro ou Bolo Naked', async () => {
+  await setDb({
+    products: [
+      { id: 'pFatiaTiramissu', titulo: 'Tiramissu', tipoProduto: 'Fatia', tamanho: '', valor: 22 },
+    ],
+  });
+
+  // Item de bolo com ID apontando para a fatia
+  const itemBoloTiramissu = {
+    produtoId: 'pFatiaTiramissu',
+    tipoProduto: 'Bolo Inteiro',
+    tamanho: 'P',
+    sabor: 'Tiramissu',
+    valorUnitario: 120,
+  };
+
+  const boloResult = product.ensureProduct(itemBoloTiramissu);
+  assert.notEqual(boloResult.id, 'pFatiaTiramissu');
+  assert.equal(boloResult.tipoProduto, 'Bolo Inteiro');
+  assert.equal(boloResult.tamanho, 'P');
+  assert.equal(boloResult.titulo, 'Tiramissu');
+  assert.equal(boloResult.valor, 120);
 });

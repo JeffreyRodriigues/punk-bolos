@@ -66,17 +66,36 @@ export function setCreateProductHandler(cb) {
  */
 function resolveItemProductId(item) {
   if (!item || typeof item !== 'object') return '';
-  if (item.produtoId) {
-    const byId = product.getProducts().find((p) => p.id === item.produtoId);
-    if (byId) return byId.id;
+  const inferredType = product.inferProductType(item);
+  const isCake = inferredType === 'Bolo Inteiro' || inferredType === 'Bolo Naked';
+  const cleanTam = String(item.tamanho || '').trim().replace(/^Bolo\s+/i, '').replace(/\s*\(.*$/, '').trim();
+  const normalizedItem = { ...item, tipoProduto: inferredType, tamanho: cleanTam };
+
+  if (normalizedItem.produtoId) {
+    const byId = product.getProducts().find((p) => p.id === normalizedItem.produtoId);
+    if (byId && byId.tipoProduto === inferredType) {
+      if (!isCake || (byId.tamanho === cleanTam || !cleanTam)) {
+        return byId.id;
+      }
+    }
   }
-  if (item.saborId) {
-    const byId = product.getProducts().find((p) => p.id === item.saborId);
-    if (byId) return byId.id;
+  if (normalizedItem.saborId) {
+    const byId = product.getProducts().find((p) => p.id === normalizedItem.saborId);
+    if (byId && byId.tipoProduto === inferredType) {
+      return byId.id;
+    }
   }
-  if (item.tipoProduto) {
-    const match = product.matchProduct(item);
-    if (match) return match.id;
+  const match = product.matchProduct(normalizedItem);
+  if (match && match.tipoProduto === inferredType) {
+    if (!isCake || match.tamanho === cleanTam || !cleanTam) {
+      return match.id;
+    }
+  }
+
+  // Se o item tem dados de produto mas não existe no catálogo com o tipo e tamanho corretos, cria automaticamente
+  if (normalizedItem.sabor || normalizedItem.titulo || normalizedItem.tipoProduto) {
+    const created = product.ensureProduct(normalizedItem);
+    if (created && created.id) return created.id;
   }
   return '';
 }
@@ -92,6 +111,13 @@ function createItemRow(item = {}) {
   const row = document.createElement('div');
   row.className = 'item-row';
 
+  const inferredType = product.inferProductType(item);
+  const normalizedItem = { ...item, tipoProduto: inferredType };
+
+  // Produto que originou o item em edição (sempre exibido, mesmo sem estoque).
+  const edittingProductId = resolveItemProductId(normalizedItem);
+  const resolvedProd = product.getProducts().find((p) => p.id === edittingProductId);
+
   const tipoSelect = document.createElement('select');
   tipoSelect.className = 'item-tipo';
   tipoSelect.setAttribute('aria-label', 'Tipo de produto');
@@ -101,14 +127,11 @@ function createItemRow(item = {}) {
     opt.textContent = type;
     tipoSelect.appendChild(opt);
   });
-  tipoSelect.value = item.tipoProduto || 'Fatia';
+  tipoSelect.value = resolvedProd ? resolvedProd.tipoProduto : inferredType;
 
   const saborSelect = document.createElement('select');
   saborSelect.className = 'item-sabor';
   saborSelect.setAttribute('aria-label', 'Sabor / produto');
-
-  // Produto que originou o item em edição (sempre exibido, mesmo sem estoque).
-  const edittingProductId = resolveItemProductId(item);
 
   /**
    * Popula o seletor de sabor com os produtos do catálogo do tipo
@@ -149,7 +172,8 @@ function createItemRow(item = {}) {
       .forEach((p) => {
         const opt = document.createElement('option');
         opt.value = p.id;
-        const size = p.tipoProduto === 'Bolo Inteiro' && p.tamanho ? ` (${p.tamanho})` : '';
+        const isCake = p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked';
+        const size = isCake && p.tamanho ? ` (${p.tamanho})` : '';
         opt.textContent = `${p.titulo}${size} — ${formatCurrency(p.valor)}`;
         saborSelect.appendChild(opt);
       });
@@ -290,10 +314,11 @@ function readItems() {
       const produtoId = saborSelect ? saborSelect.value : '';
       const chosen = produtoId ? byId.get(produtoId) : null;
       if (!chosen) return null;
+      const isCake = chosen.tipoProduto === 'Bolo Inteiro' || chosen.tipoProduto === 'Bolo Naked';
       return {
         produtoId: chosen.id,
         tipoProduto: chosen.tipoProduto,
-        tamanho: chosen.tipoProduto === 'Bolo Inteiro' ? (chosen.tamanho || '') : '',
+        tamanho: isCake ? (chosen.tamanho || '') : '',
         sabor: chosen.titulo,
         quantidade: qtdInput ? qtdInput.value : 1,
         valorUnitario: chosen.valor,
@@ -424,8 +449,8 @@ export function openEdit(orderToEdit) {
   document.getElementById('field-cliente').value = orderToEdit.cliente || '';
   document.getElementById('field-contato').value = orderToEdit.contato || '';
   document.getElementById('field-status').value = orderToEdit.status || 'Pendente';
-  document.getElementById('field-pagamento').value = orderToEdit.pagamento || 'PIX';
-  document.getElementById('field-entrega').value = orderToEdit.entrega || 'Retirada';
+  document.getElementById('field-pagamento').value = order.normalizePaymentMethod(orderToEdit.pagamento);
+  document.getElementById('field-entrega').value = order.normalizeDeliveryMethod(orderToEdit.entrega);
   document.getElementById('field-observacoes').value = orderToEdit.observacoes || '';
 
   updateLoyaltyHint(orderToEdit.cliente || '');

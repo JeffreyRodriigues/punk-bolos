@@ -113,27 +113,67 @@ function migrateOrder(order) {
   const legacy = { ...order };
   const legacyType = legacy.tipoProduto || 'Fatia';
   const legacySize =
-    legacy.tipoProduto === 'Bolo Inteiro' ? legacy.tamanho || '' : '';
+    legacy.tipoProduto === 'Bolo Inteiro' || legacy.tipoProduto === 'Bolo Naked' ? legacy.tamanho || '' : '';
 
   let items;
+  const obsLower = String(legacy.observacoes || '').toLowerCase();
+
   if (Array.isArray(legacy.itens)) {
     items = legacy.itens.map((item) => {
-      const type = item.tipoProduto || legacyType;
+      let type = item.tipoProduto;
+      const rawSabor = String(item.sabor || '').toLowerCase();
+      const rawTamanho = String(item.tamanho || '').trim();
+      const isCakeInObs = obsLower.includes('[bolo:') && (rawSabor ? obsLower.includes(rawSabor) : true);
+
+      if (!type || type === 'Fatia') {
+        if (/\bnaked\b/i.test(rawSabor) || (isCakeInObs && obsLower.includes('naked'))) type = 'Bolo Naked';
+        else if (/\bbolo\b/i.test(rawSabor) || rawTamanho || isCakeInObs) type = 'Bolo Inteiro';
+        else if (/\b(decor|papel\s+arroz|granulado|confeito|glitter|topo)\b/i.test(rawSabor)) type = 'Decoração';
+        else if (/\badicional\b/i.test(rawSabor)) type = 'Adicional';
+        else if (/\bpunkitos\b/i.test(rawSabor)) type = 'Punkitos';
+        else type = type || legacyType;
+      }
+
+      let tamanho = item.tamanho != null ? item.tamanho : (type === 'Bolo Inteiro' || type === 'Bolo Naked' ? legacySize : '');
+      if ((type === 'Bolo Inteiro' || type === 'Bolo Naked') && !tamanho) {
+        const matchSize = (item.sabor + ' ' + obsLower).match(/\b(Mini|PP|P|M|G|GG|Bento Cake|Coração)\b/i);
+        tamanho = matchSize ? matchSize[1] : (legacySize || 'P');
+      }
+
       return {
         produtoId: item.produtoId ? String(item.produtoId) : '',
         tipoProduto: type,
-        tamanho: item.tamanho != null ? item.tamanho : (type === 'Bolo Inteiro' ? legacySize : ''),
+        tamanho: tamanho,
         sabor: item.sabor || '',
         quantidade: Number(item.quantidade) || 0,
         valorUnitario: Number(item.valorUnitario) || 0,
       };
     });
   } else {
+    let type = legacyType;
+    const rawSabor = String(legacy.sabor || '').toLowerCase();
+    const rawTamanho = String(legacy.tamanho || '').trim();
+    const isCakeInObs = obsLower.includes('[bolo:') && (rawSabor ? obsLower.includes(rawSabor) : true);
+
+    if (!type || type === 'Fatia') {
+      if (/\bnaked\b/i.test(rawSabor) || (isCakeInObs && obsLower.includes('naked'))) type = 'Bolo Naked';
+      else if (/\bbolo\b/i.test(rawSabor) || rawTamanho || isCakeInObs) type = 'Bolo Inteiro';
+      else if (/\b(decor|papel\s+arroz|granulado|confeito|glitter|topo)\b/i.test(rawSabor)) type = 'Decoração';
+      else if (/\badicional\b/i.test(rawSabor)) type = 'Adicional';
+      else if (/\bpunkitos\b/i.test(rawSabor)) type = 'Punkitos';
+    }
+
+    let tamanho = legacyType === 'Bolo Inteiro' || legacyType === 'Bolo Naked' ? legacySize : '';
+    if ((type === 'Bolo Inteiro' || type === 'Bolo Naked') && !tamanho) {
+      const matchSize = (legacy.sabor + ' ' + obsLower).match(/\b(Mini|PP|P|M|G|GG|Bento Cake|Coração)\b/i);
+      tamanho = matchSize ? matchSize[1] : (legacySize || 'P');
+    }
+
     items = [
       {
         produtoId: legacy.produtoId ? String(legacy.produtoId) : '',
-        tipoProduto: legacyType,
-        tamanho: legacyType === 'Bolo Inteiro' ? legacySize : '',
+        tipoProduto: type,
+        tamanho: tamanho,
         sabor: legacy.sabor || '',
         quantidade: Number(legacy.quantidade) || 0,
         valorUnitario: Number(legacy.valorUnitario) || 0,
@@ -164,19 +204,43 @@ function migrateProduct(product) {
   if (!product || typeof product !== 'object') {
     return product;
   }
-  if (product.titulo != null && product.valor != null) {
-    return product;
+  const rawTit = String(product.titulo != null ? product.titulo : product.nome || '').trim();
+  const rawLower = rawTit.toLowerCase();
+  let tipoProduto = product.tipoProduto || product.tipo;
+
+  if (!tipoProduto || tipoProduto === 'Fatia') {
+    if (/\bnaked\b/i.test(rawLower)) {
+      tipoProduto = 'Bolo Naked';
+    } else if (/\bbolo\b/i.test(rawLower) || product.tamanho) {
+      tipoProduto = 'Bolo Inteiro';
+    } else if (/\b(decor|papel\s+arroz|granulado|confeito|glitter|topo)\b/i.test(rawLower)) {
+      tipoProduto = 'Decoração';
+    } else if (/\badicional\b/i.test(rawLower)) {
+      tipoProduto = 'Adicional';
+    } else if (/\bpunkitos\b/i.test(rawLower)) {
+      tipoProduto = 'Punkitos';
+    }
   }
-  const tipoProduto = ['Fatia', 'Punkitos', 'Bolo Inteiro'].includes(product.tipoProduto)
-    ? product.tipoProduto
-    : 'Fatia';
+
+  const VALID_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Bolo Naked', 'Adicional', 'Decoração'];
+  if (!VALID_TYPES.includes(tipoProduto)) {
+    tipoProduto = 'Fatia';
+  }
+
+  const isCake = tipoProduto === 'Bolo Inteiro' || tipoProduto === 'Bolo Naked';
+  let tamanho = isCake ? String(product.tamanho || '').trim() : '';
+  if (isCake && !tamanho) {
+    const matchSize = rawTit.match(/\b(Mini|PP|P|M|G|GG|Bento Cake|Coração)\b/i);
+    tamanho = matchSize ? matchSize[1] : 'P';
+  }
+
   const parts = [product.tamanho, product.sabor].filter(Boolean).join(' · ');
   return {
     id: product.id,
-    titulo: String(product.nome != null ? product.nome : product.titulo || '').trim(),
+    titulo: rawTit,
     tipoProduto,
-    tamanho: tipoProduto === 'Bolo Inteiro' ? String(product.tamanho || '').trim() : '',
-    valor: Number(product.preco != null ? product.preco : product.valor) || 0,
+    tamanho,
+    valor: Number(product.valor != null ? product.valor : product.preco) || 0,
     detalhes: String(product.detalhes != null ? product.detalhes : parts).trim(),
     controlaEstoque: Boolean(product.controlaEstoque),
   };
@@ -559,6 +623,19 @@ export function getAllProducts() {
   if (productsCache === null) {
     productsCache = readLocalProducts();
   }
+  if (productsCache && !productsCache.some((p) => p.tipoProduto === 'Bolo Naked')) {
+    const sampleNaked = {
+      id: 'prod_naked_pink_lemonade',
+      titulo: 'Pink Lemonade',
+      tipoProduto: 'Bolo Naked',
+      tamanho: 'P',
+      valor: 120,
+      detalhes: 'Massa leve com toque de limão siciliano e recheio refrescante de frutas vermelhas.',
+      controlaEstoque: false,
+    };
+    productsCache.push(sampleNaked);
+    localStorage.setItem(PRODUTOS_KEY, JSON.stringify(productsCache));
+  }
   return productsCache;
 }
 export const getProducts = getAllProducts;
@@ -730,6 +807,19 @@ export async function init() {
       insumosCache = remoteInsumos.map(fromInsumoRow);
       precificacoesCache = remotePrecificacoes.map(fromPrecificacaoRow);
       customersCache = remoteCustomers.map(fromCustomerRow);
+    }
+
+    if (productsCache && !productsCache.some((p) => p.tipoProduto === 'Bolo Naked')) {
+      const sampleNaked = {
+        id: 'prod_naked_pink_lemonade',
+        titulo: 'Pink Lemonade',
+        tipoProduto: 'Bolo Naked',
+        tamanho: 'P',
+        valor: 120,
+        detalhes: 'Massa leve com toque de limão siciliano e recheio refrescante de frutas vermelhas.',
+        controlaEstoque: false,
+      };
+      productsCache.push(sampleNaked);
     }
 
     // Atualiza o LocalStorage local com os dados da nuvem para manter o cache sincronizado

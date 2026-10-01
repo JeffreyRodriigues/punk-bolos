@@ -80,7 +80,7 @@ export function render() {
 
   listEl.innerHTML = '';
   [...products]
-    .sort((a, b) => String(a.nome).localeCompare(String(b.nome)))
+    .sort((a, b) => String(a.titulo || a.nome || '').localeCompare(String(b.titulo || b.nome || '')))
     .forEach((p) => listEl.appendChild(createCard(p)));
 }
 
@@ -105,7 +105,7 @@ function createCard(p) {  const card = document.createElement('article');
 
   const desc = document.createElement('div');
   desc.className = 'product-desc';
-  const size = p.tipoProduto === 'Bolo Inteiro' && p.tamanho ? p.tamanho : '';
+  const size = (p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked') && p.tamanho ? p.tamanho : '';
   const parts = [size, p.detalhes].filter(Boolean);
   if (parts.length > 0) {
     desc.textContent = parts.join(' · ');
