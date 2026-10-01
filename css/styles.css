@@ -1888,6 +1888,14 @@ body.modal-open {
   outline-offset: 1px;
 }
 
+/* Métricas / KPIs de Produção */
+.estoque-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 /* Painéis da tela de Estoque */
 .estoque-panel {
   background-color: var(--color-surface);

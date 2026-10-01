@@ -93,6 +93,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -2072,6 +2073,14 @@ body.modal-open {
 .item-stock.stock-warning {
   outline: 2px solid var(--color-danger);
   outline-offset: 1px;
+}
+
+/* Métricas / KPIs de Produção */
+.estoque-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 /* Painéis da tela de Estoque */
@@ -4707,6 +4716,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5110,32 +5120,51 @@ html.dark .badge-purple {
     <div class="page-title">
       <h1>Produção</h1>
       <span id="estoqueCount" class="count-badge">0</span>
+      <button id="btnOpenProducaoModal" class="btn btn-primary page-action" type="button">＋ Registrar Produção</button>
     </div>
 
     <p class="view-subtitle">
-      Registre aqui a quantidade produzida de cada produto. A produção é
-      OBRIGATÓRIA para vender: pedidos com produtos sem produção não podem
-      ser salvos nem concluídos. Ao CONCLUIR pedidos, o estoque é abatido.
+      Registre a quantidade produzida de cada produto. A produção é
+      obrigatória para vender: pedidos com produtos sem produção não podem
+      ser salvos nem concluídos. Ao concluir pedidos, o estoque é abatido.
     </p>
 
-    <section class="estoque-panel">
-      <h2>Registrar produção</h2>
-      <form id="estoqueForm" class="estoque-form" novalidate>
-        <select id="estoqueFormTipo" aria-label="Tipo de produto">
-          <option value="">— Tipo de produto —</option>
-        </select>
-        <select id="estoqueFormProduto" required aria-label="Produto">
-          <option value="">— Escolha o produto —</option>
-        </select>
-        <input type="date" id="estoqueFormData" required aria-label="Data da produção">
-        <input type="number" id="estoqueFormQtd" min="1" step="1" placeholder="Quantidade" required
-               aria-label="Quantidade produzida" inputmode="numeric">
-        <input type="text" id="estoqueFormObs" placeholder="Observação (opcional)"
-               aria-label="Observação" autocomplete="off">
-        <button type="submit" class="btn btn-primary">Registrar</button>
-      </form>
-      <p id="estoqueFormAviso" class="estoque-aviso" hidden></p>
+    <!-- Métricas / KPIs de Produção -->
+    <section class="estoque-kpis" aria-label="Métricas de produção e estoque">
+      <div class="stat-card">
+        <span class="stat-label">Produzido no Período</span>
+        <strong id="kpiProduzido" class="stat-value">0</strong>
+        <span class="stat-sub">unidades</span>
+      </div>
+      <div class="stat-card stat-warn">
+        <span class="stat-label">Reservado</span>
+        <strong id="kpiReservado" class="stat-value">0</strong>
+        <span class="stat-sub">em pedidos abertos</span>
+      </div>
+      <div class="stat-card stat-ok">
+        <span class="stat-label">Disponível</span>
+        <strong id="kpiDisponivel" class="stat-value">0</strong>
+        <span class="stat-sub">pronto p/ entrega</span>
+      </div>
+      <div class="stat-card stat-money">
+        <span class="stat-label">Itens Zerados</span>
+        <strong id="kpiZerados" class="stat-value">0</strong>
+        <span class="stat-sub">sem saldo</span>
+      </div>
     </section>
+
+    <!-- Barra de busca e filtros por categoria -->
+    <div class="customer-toolbar estoque-toolbar" style="margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+      <div class="search-bar" style="flex: 1 1 280px; margin-bottom: 0;">
+        <input id="estoqueSearch" type="search" placeholder="Buscar produto..." autocomplete="off">
+      </div>
+      <div class="customer-filters estoque-filters" role="group" aria-label="Filtros por categoria">
+        <button type="button" class="customer-filter-pill estoque-filter-pill active" data-filter="">Todos <span id="estoquePillTodos" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill estoque-filter-pill" data-filter="Fatia">Fatias <span id="estoquePillFatia" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill estoque-filter-pill" data-filter="Punkitos">Punkitos <span id="estoquePillPunkitos" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill estoque-filter-pill" data-filter="Bolo Inteiro">Bolos <span id="estoquePillBolo" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+      </div>
+    </div>
 
     <section class="estoque-panel">
       <h2>Saldo por produto</h2>
@@ -5155,7 +5184,6 @@ html.dark .badge-purple {
         </table>
       </div>
       <div id="estoqueEmpty" class="empty-state" hidden>
-        <span class="empty-icon" aria-hidden="true">📦</span>
         <p>Nenhum produto cadastrado ainda.<br>
           Cadastre em <strong>Produtos</strong> para começar a registrar produção.</p>
       </div>
@@ -5792,6 +5820,80 @@ html.dark .badge-purple {
           <button type="button" id="btnSaveBase" class="btn btn-primary">Salvar Base</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Registrar Produção
+       Controlado por js/modules/estoqueView.js
+       ============================================================ -->
+  <div id="producaoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="producaoModalTitle">
+    <div class="modal-backdrop" data-close-producao-modal></div>
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2 id="producaoModalTitle">Registrar Produção</h2>
+        <button type="button" class="modal-close" data-close-producao-modal aria-label="Fechar">✕</button>
+      </div>
+      <form id="estoqueForm" novalidate>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="estoqueFormTipo">Tipo de Produto</label>
+              <select id="estoqueFormTipo" aria-label="Tipo de produto">
+                <option value="">— Tipo de produto —</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="estoqueFormProduto">Produto *</label>
+              <select id="estoqueFormProduto" required aria-label="Produto">
+                <option value="">— Escolha o produto —</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="estoqueFormData">Data da Produção *</label>
+              <input type="date" id="estoqueFormData" required aria-label="Data da produção">
+            </div>
+            <div class="form-field">
+              <label for="estoqueFormQtd">Quantidade Produzida *</label>
+              <input type="number" id="estoqueFormQtd" min="1" step="1" placeholder="Ex.: 10" required
+                     aria-label="Quantidade produzida" inputmode="numeric">
+            </div>
+            <div class="form-field form-field-full">
+              <label for="estoqueFormObs">Observação (opcional)</label>
+              <input type="text" id="estoqueFormObs" placeholder="Ex.: Lote da manhã, fornada extra..."
+                     aria-label="Observação" autocomplete="off">
+            </div>
+          </div>
+          <p id="estoqueFormAviso" class="estoque-aviso" hidden></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-producao-modal>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Produção</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Confirmação de Exclusão de Produção
+       Controlado por js/modules/estoqueView.js
+       ============================================================ -->
+  <div id="producaoDeleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="producaoDeleteModalTitle">
+    <div class="modal-backdrop" data-close-producao-delete-modal></div>
+    <div class="modal-card modal-card-sm" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 id="producaoDeleteModalTitle">Excluir Produção</h2>
+        <button type="button" class="modal-close" data-close-producao-delete-modal aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p id="producaoDeleteModalDesc" style="color: var(--color-text); font-size: 0.95rem; line-height: 1.5; margin-bottom: 0;">
+          Tem certeza de que deseja excluir este registro de produção? Esta ação não pode ser desfeita.
+        </p>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
+        <button type="button" id="btnCancelProducaoDelete" class="btn btn-ghost" data-close-producao-delete-modal>Cancelar</button>
+        <button type="button" id="btnConfirmProducaoDelete" class="btn btn-danger">Sim, Excluir</button>
+      </div>
     </div>
   </div>
 

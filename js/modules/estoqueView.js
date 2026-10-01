@@ -1,9 +1,11 @@
 /* ============================================================
    ESTOQUEVIEW.JS — Tela de Produção (produção + saldo)
    ------------------------------------------------------------
-   - Formulário para registrar produção (produto + data + quantidade)
+   - Modal para registrar produção (produto + data + quantidade)
+   - Painel de Métricas / KPIs (Produzido, Reservado, Disponível, Zerados)
    - Tabela de estoque atual por produto (produzido/vendido/disponível)
-   - Histórico de produções com exclusão
+   - Barra de busca e filtros rápidos por categoria
+   - Histórico de produções com paginação e modal de exclusão
    As regras de cálculo ficam em estoque.js (módulo de negócio).
    ============================================================ */
 
@@ -27,6 +29,13 @@ export function setChangeListener(cb) {
   onChange = cb;
 }
 
+/** Estado de busca e filtros */
+let searchTerm = '';
+let selectedCategory = '';
+let historyPage = 1;
+const HISTORY_PAGE_SIZE = 10;
+let productionToDelete = null;
+
 /**
  * Gera um id único para uma produção.
  * @returns {string} Id no formato "pr<timestamp>-<aleatório>".
@@ -46,6 +55,92 @@ function showAviso(message, ok = false) {
   aviso.textContent = message;
   aviso.hidden = !message;
   aviso.classList.toggle('estoque-aviso-ok', ok);
+}
+
+/**
+ * Abre o modal de registrar produção.
+ * @param {string} [preselectedId] - Id do produto para pré-selecionar.
+ */
+export function openProducaoModal(preselectedId = '') {
+  const modal = document.getElementById('producaoModal');
+  if (!modal) return;
+
+  const dataEl = document.getElementById('estoqueFormData');
+  const qtdEl = document.getElementById('estoqueFormQtd');
+  const obsEl = document.getElementById('estoqueFormObs');
+
+  if (dataEl && !dataEl.value) {
+    dataEl.value = new Date().toISOString().slice(0, 10);
+  }
+  if (qtdEl) qtdEl.value = '';
+  if (obsEl) obsEl.value = '';
+  showAviso('');
+
+  if (preselectedId) {
+    const prod = product.getProducts().find((p) => p.id === preselectedId);
+    populateTipoSelect(prod ? prod.tipoProduto : '');
+    populateProductSelect(preselectedId);
+  } else {
+    populateTipoSelect('');
+    populateProductSelect('');
+  }
+
+  modal.classList.add('open');
+  document.body.classList.add('modal-open');
+
+  setTimeout(() => {
+    if (preselectedId && qtdEl) {
+      qtdEl.focus();
+    } else {
+      const tipoSelect = document.getElementById('estoqueFormTipo');
+      if (tipoSelect) tipoSelect.focus();
+    }
+  }, 50);
+}
+
+/**
+ * Fecha o modal de registrar produção.
+ */
+export function closeProducaoModal() {
+  const modal = document.getElementById('producaoModal');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+  document.body.classList.remove('modal-open');
+  showAviso('');
+}
+
+/**
+ * Abre o modal de confirmação de exclusão de produção.
+ * @param {Object} pr - Objeto de produção a excluir.
+ */
+function openDeleteModal(pr) {
+  productionToDelete = pr;
+  const prod = product.getProducts().find((p) => p.id === pr.produtoId);
+  const prodName = prod ? estoque.nomeProduto(prod) : 'produto';
+
+  const desc = document.getElementById('producaoDeleteModalDesc');
+  if (desc) {
+    desc.textContent = `Tem certeza de que deseja excluir o registro de ${Number(pr.quantidade) || 0} unidade(s) de "${prodName}" produzidas em ${formatDate(pr.data)}?`;
+  }
+
+  const modal = document.getElementById('producaoDeleteModal');
+  if (modal) {
+    modal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
+/**
+ * Fecha o modal de confirmação de exclusão de produção.
+ */
+function closeDeleteModal() {
+  productionToDelete = null;
+  const modal = document.getElementById('producaoDeleteModal');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+  document.body.classList.remove('modal-open');
 }
 
 /**
@@ -88,7 +183,9 @@ function populateProductSelect(selectedId = '') {
   if (!select) return;
 
   const tipo = tipoSelect ? tipoSelect.value : '';
-  const controlled = product.getProducts().filter((p) => p.tipoProduto === tipo);
+  const controlled = tipo
+    ? product.getProducts().filter((p) => p.tipoProduto === tipo)
+    : product.getProducts();
   select.innerHTML = '';
 
   if (controlled.length === 0) {
@@ -96,7 +193,7 @@ function populateProductSelect(selectedId = '') {
     opt.value = '';
     opt.textContent = tipo
       ? `— nenhum produto "${tipo}" no catálogo —`
-      : '— escolha um tipo de produto —';
+      : '— nenhum produto cadastrado —';
     select.appendChild(opt);
     return;
   }
@@ -121,29 +218,105 @@ function populateProductSelect(selectedId = '') {
 }
 
 /**
- * Retorna os produtos a exibir no saldo, filtrados pela categoria
- * selecionada no formulário e pelo período de data ativo.
- * Quando há filtro de data ativo, exibe apenas os produtos que tiveram produção no período.
- * @returns {{ tipo: string, produtos: Array<object>, hasRange: boolean }}
+ * Atualiza os cards de KPI (Produzido, Reservado, Disponível, Zerados).
  */
-function getSaldoVisivel() {
-  const tipoSelect = document.getElementById('estoqueFormTipo');
-  const tipo = tipoSelect ? tipoSelect.value : '';
+function updateKpis() {
   const range = dateFilter.getRange();
   const hasRange = Boolean(range.from || range.to);
+  const products = product.getProducts();
 
-  let produtos = product.getProducts().filter((p) => !tipo || p.tipoProduto === tipo);
+  let totalProduzido = 0;
+  let totalReservado = 0;
+  let totalDisponivel = 0;
+  let totalZerados = 0;
+
+  products.forEach((p) => {
+    const prod = hasRange ? estoque.produzidoNoPeriodo(p.id, range) : estoque.totalProduzido(p.id);
+    const res = estoque.totalReservado(p.id);
+    const disp = estoque.disponivel(p);
+
+    totalProduzido += prod;
+    totalReservado += res;
+    if (disp > 0) {
+      totalDisponivel += disp;
+    } else {
+      totalZerados++;
+    }
+  });
+
+  const kpiProd = document.getElementById('kpiProduzido');
+  const kpiRes = document.getElementById('kpiReservado');
+  const kpiDisp = document.getElementById('kpiDisponivel');
+  const kpiZer = document.getElementById('kpiZerados');
+
+  if (kpiProd) kpiProd.textContent = totalProduzido;
+  if (kpiRes) kpiRes.textContent = totalReservado;
+  if (kpiDisp) kpiDisp.textContent = totalDisponivel;
+  if (kpiZer) kpiZer.textContent = totalZerados;
+}
+
+/**
+ * Atualiza os contadores das pílulas de filtro por categoria.
+ */
+function updateFilterPills() {
+  const products = product.getProducts();
+  const pillTodos = document.getElementById('estoquePillTodos');
+  const pillFatia = document.getElementById('estoquePillFatia');
+  const pillPunkitos = document.getElementById('estoquePillPunkitos');
+  const pillBolo = document.getElementById('estoquePillBolo');
+
+  if (pillTodos) pillTodos.textContent = products.length;
+  if (pillFatia) pillFatia.textContent = products.filter((p) => p.tipoProduto === 'Fatia').length;
+  if (pillPunkitos) pillPunkitos.textContent = products.filter((p) => p.tipoProduto === 'Punkitos').length;
+  if (pillBolo) {
+    pillBolo.textContent = products.filter(
+      (p) => p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked'
+    ).length;
+  }
+}
+
+/**
+ * Retorna os produtos a exibir no saldo, filtrados pela categoria
+ * selecionada, termo de busca e pelo período de data ativo.
+ * @returns {{ produtos: Array<object>, hasRange: boolean, totalGeral: number }}
+ */
+function getSaldoVisivel() {
+  const range = dateFilter.getRange();
+  const hasRange = Boolean(range.from || range.to);
+  const allProducts = product.getProducts();
+
+  let produtos = allProducts;
+
+  if (selectedCategory) {
+    if (selectedCategory === 'Bolo Inteiro') {
+      produtos = produtos.filter(
+        (p) => p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked'
+      );
+    } else {
+      produtos = produtos.filter((p) => p.tipoProduto === selectedCategory);
+    }
+  }
+
+  if (searchTerm.trim()) {
+    const term = sortKey(searchTerm.trim().toLowerCase());
+    produtos = produtos.filter((p) => {
+      const name = sortKey(estoque.nomeProduto(p).toLowerCase());
+      const tipo = sortKey((p.tipoProduto || '').toLowerCase());
+      return name.includes(term) || tipo.includes(term);
+    });
+  }
+
   if (hasRange) {
     produtos = produtos.filter(
       (p) => estoque.produzidoNoPeriodo(p.id, range) > 0 || estoque.vendidoNoPeriodo(p.id, range) > 0
     );
   }
-  return { tipo, produtos, hasRange };
+
+  return { produtos, hasRange, totalGeral: allProducts.length };
 }
 
 /**
- * Renderiza a tabela de estoque atual (produzido/vendido/disponível),
- * considerando o filtro de categoria e o filtro de período.
+ * Renderiza a tabela de estoque atual (produzido/vendido/disponível).
  */
 function renderTable() {
   const tbody = document.getElementById('estoqueTableBody');
@@ -151,12 +324,11 @@ function renderTable() {
 
   const { produtos, hasRange } = getSaldoVisivel();
   const range = dateFilter.getRange();
-  const lista = [...produtos]
-    .sort((a, b) => {
-      const dispA = estoque.totalProduzido(a.id) - estoque.totalReservado(a.id) - estoque.totalVendido(a.id);
-      const dispB = estoque.totalProduzido(b.id) - estoque.totalReservado(b.id) - estoque.totalVendido(b.id);
-      return dispB - dispA;
-    });
+  const lista = [...produtos].sort((a, b) => {
+    const dispA = estoque.disponivel(a);
+    const dispB = estoque.disponivel(b);
+    return dispB - dispA;
+  });
 
   tbody.innerHTML = '';
   lista.forEach((p) => {
@@ -198,37 +370,13 @@ function renderTable() {
     btn.className = 'btn btn-ghost estoque-produzir';
     btn.textContent = '＋ Produzir';
     btn.title = `Registrar produção de ${estoque.nomeProduto(p)}`;
-    btn.addEventListener('click', () => prepararProducao(p.id));
+    btn.addEventListener('click', () => openProducaoModal(p.id));
     actionTd.appendChild(btn);
 
     tr.append(name, produzidoTd, reservadoTd, vendidoTd, dispTd, actionTd);
     tbody.appendChild(tr);
   });
 }
-
-/**
- * Preseleciona o produto no formulário, define a data de hoje e foca
- * o campo de quantidade (usado pelo botão "＋ Produzir" da tabela).
- * @param {string} produtoId - Id do produto.
- */
-function prepararProducao(produtoId) {
-  const prod = product.getProducts().find((p) => p.id === produtoId);
-  populateTipoSelect(prod ? prod.tipoProduto : '');
-  populateProductSelect(produtoId);
-  updateSaldo();
-  const dataEl = document.getElementById('estoqueFormData');
-  if (dataEl && !dataEl.value) {
-    dataEl.value = new Date().toISOString().slice(0, 10);
-  }
-  showAviso('');
-  const qtdEl = document.getElementById('estoqueFormQtd');
-  if (qtdEl) qtdEl.focus();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-/** Página atual do histórico de produções. */
-let historyPage = 1;
-const HISTORY_PAGE_SIZE = 10;
 
 /**
  * Renderiza o histórico de produções (mais recentes primeiro),
@@ -302,11 +450,11 @@ function renderHistory() {
 
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'icon-btn danger';
-    del.textContent = '🗑️';
+    del.className = 'btn-card-action action-danger';
+    del.textContent = 'Excluir';
     del.title = 'Excluir produção';
     del.setAttribute('aria-label', 'Excluir produção');
-    del.addEventListener('click', () => removeProduction(pr));
+    del.addEventListener('click', () => openDeleteModal(pr));
 
     li.append(info, del);
     historyEl.appendChild(li);
@@ -328,28 +476,8 @@ function renderHistory() {
 }
 
 /**
- * Exclui uma produção com confirmação.
- * @param {Object} production - Produção a excluir.
- */
-async function removeProduction(production) {
-  const confirmed = window.confirm(
-    `Excluir esta produção de ${Number(production.quantidade) || 0} unidade(s)?`
-  );
-  if (!confirmed) return;
-
-  try {
-    await storage.deleteProduction(production.id);
-    showToast('Produção excluída.');
-    renderHistory();
-    updateSaldo();
-    onChange();
-  } catch (err) {
-    showToast(`Erro ao excluir produção: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
-  }
-}
-
-/**
  * Lida com o envio do formulário de produção (valida e persiste).
+ * @param {Event} event
  * @returns {boolean} true se registrou.
  */
 function handleRegister(event) {
@@ -387,24 +515,39 @@ function handleRegister(event) {
   });
   storage.saveProductions(producoes);
 
-  if (qtdEl) qtdEl.value = '';
-  if (obsEl) obsEl.value = '';
-  showAviso('Produção registrada!', true);
+  closeProducaoModal();
   showToast('Produção registrada!');
-  const tipoAtual = document.getElementById('estoqueFormTipo').value;
   historyPage = 1;
   onChange();
-  populateTipoSelect(tipoAtual);
-  populateProductSelect(produtoId);
+  updateSaldo();
+  renderHistory();
   return true;
 }
 
 /**
- * Atualiza contador, estado vazio e tabela conforme o filtro de categoria
- * selecionado no formulário.
+ * Confirma e remove uma produção via modal.
+ */
+async function handleConfirmDelete() {
+  if (!productionToDelete) return;
+  const pr = productionToDelete;
+
+  try {
+    await storage.deleteProduction(pr.id);
+    closeDeleteModal();
+    showToast('Produção excluída.');
+    renderHistory();
+    updateSaldo();
+    onChange();
+  } catch (err) {
+    showToast(`Erro ao excluir produção: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+  }
+}
+
+/**
+ * Atualiza contador, estado vazio e tabela conforme filtros e busca.
  */
 function updateSaldo() {
-  const { tipo, produtos, hasRange } = getSaldoVisivel();
+  const { produtos, hasRange, totalGeral } = getSaldoVisivel();
 
   const countEl = document.getElementById('estoqueCount');
   if (countEl) countEl.textContent = produtos.length;
@@ -417,17 +560,23 @@ function updateSaldo() {
   if (emptyEl) {
     const msg = emptyEl.querySelector('p');
     if (msg) {
-      if (vazio && hasRange) {
-        msg.innerHTML = `Nenhuma produção ou venda registrada no período selecionado.<br>Altere o filtro de datas ou registre uma produção no formulário acima.`;
-      } else if (tipo) {
-        msg.innerHTML = `Nenhum produto da categoria <strong>${tipo}</strong>.<br>Cadastre em <strong>Produtos</strong> para começar a registrar produção.`;
-      } else {
+      if (totalGeral === 0) {
         msg.innerHTML = `Nenhum produto cadastrado ainda.<br>Cadastre em <strong>Produtos</strong> para começar a registrar produção.`;
+      } else if (searchTerm.trim()) {
+        msg.innerHTML = `Nenhum produto encontrado para "<strong>${searchTerm.trim()}</strong>".`;
+      } else if (vazio && hasRange) {
+        msg.innerHTML = `Nenhuma produção ou venda registrada no período selecionado.<br>Altere o filtro de datas ou registre uma produção.`;
+      } else if (selectedCategory) {
+        msg.innerHTML = `Nenhum produto na categoria <strong>${selectedCategory}</strong>.`;
+      } else {
+        msg.innerHTML = `Nenhum produto cadastrado ainda.`;
       }
     }
     emptyEl.hidden = !vazio;
   }
 
+  updateKpis();
+  updateFilterPills();
   renderTable();
 }
 
@@ -435,28 +584,67 @@ function updateSaldo() {
  * Renderiza a tela de estoque completa.
  */
 export function render() {
-  populateTipoSelect();
-  populateProductSelect();
   updateSaldo();
   renderHistory();
 }
 
 /* ---------- Eventos ---------- */
 
+// Botão de abertura do modal
+const btnOpen = document.getElementById('btnOpenProducaoModal');
+if (btnOpen) {
+  btnOpen.addEventListener('click', () => openProducaoModal());
+}
+
+// Botões de fechar modal de produção
+document.querySelectorAll('[data-close-producao-modal]').forEach((btn) => {
+  btn.addEventListener('click', closeProducaoModal);
+});
+
+// Botões de fechar modal de exclusão
+document.querySelectorAll('[data-close-producao-delete-modal]').forEach((btn) => {
+  btn.addEventListener('click', closeDeleteModal);
+});
+
+// Botão de confirmar exclusão
+const btnConfirmDelete = document.getElementById('btnConfirmProducaoDelete');
+if (btnConfirmDelete) {
+  btnConfirmDelete.addEventListener('click', handleConfirmDelete);
+}
+
+// Submissão do formulário de produção
 const form = document.getElementById('estoqueForm');
 if (form) {
   form.addEventListener('submit', handleRegister);
 }
 
-// Tipo → Sabor: ao trocar o tipo, recarrega o seletor de produtos e
-// refiltra o saldo por produto da tabela
+// Tipo → Produto no Modal
 const tipoSelect = document.getElementById('estoqueFormTipo');
 if (tipoSelect) {
   tipoSelect.addEventListener('change', () => {
     populateProductSelect();
+  });
+}
+
+// Barra de busca do saldo
+const searchInput = document.getElementById('estoqueSearch');
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    searchTerm = e.target.value;
     updateSaldo();
   });
 }
+
+// Pílulas de filtro por categoria
+const filterPills = document.querySelectorAll('.estoque-filter-pill');
+filterPills.forEach((pill) => {
+  pill.addEventListener('click', () => {
+    filterPills.forEach((p) => p.classList.remove('active'));
+    pill.classList.add('active');
+    selectedCategory = pill.dataset.filter || '';
+    updateSaldo();
+  });
+});
 
 // Paginação do histórico
 const prevBtn = document.getElementById('btnEstoquePrevPage');
@@ -476,3 +664,17 @@ if (nextBtn) {
     renderHistory();
   });
 }
+
+// Fechamento de modal com a tecla Esc
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const prodModal = document.getElementById('producaoModal');
+    if (prodModal && prodModal.classList.contains('open')) {
+      closeProducaoModal();
+    }
+    const delModal = document.getElementById('producaoDeleteModal');
+    if (delModal && delModal.classList.contains('open')) {
+      closeDeleteModal();
+    }
+  }
+});

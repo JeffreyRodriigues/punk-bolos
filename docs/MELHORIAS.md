@@ -202,6 +202,19 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Padronização dos Modais de Cadastro/Edição de Insumos e Bases:**
   - Botões de rodapé unificados (*Salvar Insumo* e *Salvar Base*).
 
+### 34. Padronização Visual da Tela de Produção, Modal de Registro e KPIs em Tempo Real
+- **Modal de Registro de Produção (`#producaoModal`):**
+  - Transformação do antigo formulário inline no topo da página em um modal dedicado (`#producaoModal`), seguindo o padrão de design do sistema.
+  - Abertura através do botão `＋ Registrar Produção` no cabeçalho ou ao clicar em `＋ Produzir` diretamente na linha do produto no saldo (pré-selecionando o item e focando no campo de quantidade).
+- **Cards de Métricas e KPIs de Produção:**
+  - Painel de 4 indicadores em tempo real no topo da view: *Produzido no Período*, *Reservado* (em pedidos abertos), *Disponível* (pronto para entrega) e *Itens Zerados* (sem saldo).
+- **Barra de Busca e Filtros Rápidos:**
+  - Campo de busca em tempo real por nome do produto ou categoria (`#estoqueSearch`).
+  - Pílulas de filtro por categoria (*Todos*, *Fatias*, *Punkitos*, *Bolos*) com contadores dinâmicos integrados.
+- **Modal Personalizado de Exclusão no Histórico de Produção (`#producaoDeleteModal`):**
+  - Substituição do `window.confirm` nativo por modal temático de confirmação com quantidade, produto e data formatada.
+  - Botões do histórico de produção padronizados para texto limpo (`Excluir` com `action-danger`), com paginação e zero emojis.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).
