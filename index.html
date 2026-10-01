@@ -97,6 +97,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -4198,27 +4199,48 @@ html.dark .badge-purple {
    SISTEMA — Botão de Versão e Modal de Novidades (v2.4.0)
    ============================================================ */
 
-.system-version-btn {
-  display: inline-flex;
+.nav-tabs-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.nav-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  width: 100%;
+}
+
+.nav-version-btn {
+  width: 100%;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  background-color: var(--color-surface);
+  justify-content: space-between;
+  gap: 8px;
+  background-color: var(--color-surface-alt);
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 4px 10px 4px 6px;
-  font-size: 0.8rem;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
-  position: relative;
   transition: all var(--transition-fast);
   outline: none;
 }
 
-.system-version-btn:hover {
+.nav-version-btn:hover {
   background-color: var(--color-surface-hover);
   border-color: var(--color-primary);
   transform: translateY(-1px);
+}
+
+.nav-version-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .version-tag {
@@ -4452,15 +4474,6 @@ html.dark .badge-purple {
     display: none;
   }
 
-  .system-version-btn {
-    padding: 3px 6px;
-    gap: 4px;
-  }
-
-  .version-label {
-    display: none;
-  }
-
   .release-grid {
     grid-template-columns: 1fr;
   }
@@ -4487,6 +4500,34 @@ html.dark .badge-purple {
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
+  }
+
+  .nav-tabs-group {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    flex: 1;
+  }
+
+  .nav-footer {
+    margin-top: 0;
+    padding: 6px 8px;
+    border-top: none;
+    border-left: 1px solid var(--color-border);
+    width: auto;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .nav-version-btn {
+    width: auto;
+    padding: 4px 8px;
+    border-radius: 999px;
+  }
+
+  .version-label {
+    display: none;
   }
 
   .nav-tab {
@@ -4974,6 +5015,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5099,11 +5141,6 @@ html.dark .badge-purple {
       <span class="brand">Punk Bolos</span>
     </div>
     <div class="header-right">
-      <button id="btnSystemInfo" class="system-version-btn" type="button" title="Ver versão e novidades do sistema" aria-label="Ver versão e novidades do sistema">
-        <span class="version-tag">v2.4.0</span>
-        <span class="version-label">Novidades</span>
-        <span class="version-dot" id="versionDot"></span>
-      </button>
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Alternar tema claro/escuro">
         <span class="theme-toggle-icon">🌙</span>
       </button>
@@ -5119,13 +5156,24 @@ html.dark .badge-purple {
          NAVEGAÇÃO — abas principais (Sidebar no desktop)
          ============================================================ -->
     <nav class="app-nav" aria-label="Navegação principal">
-      <button class="nav-tab active" type="button" data-view-target="dashboard">Dashboard</button>
-      <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
-      <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
-      <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="clientes">Clientes</button>
-      <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="inventario">Inventário</button>
-      <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="precificacao">Precificação</button>
-      <button class="nav-tab" type="button" data-view-target="orders">Pedidos <span class="nav-tab-badge" id="pendingOrdersBadge" hidden>0</span></button>
+      <div class="nav-tabs-group">
+        <button class="nav-tab active" type="button" data-view-target="dashboard">Dashboard</button>
+        <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
+        <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
+        <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="clientes">Clientes</button>
+        <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="inventario">Inventário</button>
+        <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="precificacao">Precificação</button>
+        <button class="nav-tab" type="button" data-view-target="orders">Pedidos <span class="nav-tab-badge" id="pendingOrdersBadge" hidden>0</span></button>
+      </div>
+      <div class="nav-footer">
+        <button id="btnSystemInfo" class="nav-version-btn" type="button" title="Ver versão e novidades do sistema" aria-label="Ver versão e novidades do sistema">
+          <div class="nav-version-info">
+            <span class="version-tag">v2.4.0</span>
+            <span class="version-label">Novidades</span>
+          </div>
+          <span class="version-dot" id="versionDot"></span>
+        </button>
+      </div>
     </nav>
 
     <!-- Área de Conteúdo das Views -->
@@ -6565,6 +6613,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=48"></script>
+  <script type="module" src="js/app.js?v=49"></script>
 </body>
 </html>

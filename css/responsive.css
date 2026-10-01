@@ -35,15 +35,6 @@
     display: none;
   }
 
-  .system-version-btn {
-    padding: 3px 6px;
-    gap: 4px;
-  }
-
-  .version-label {
-    display: none;
-  }
-
   .release-grid {
     grid-template-columns: 1fr;
   }
@@ -70,6 +61,34 @@
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
+  }
+
+  .nav-tabs-group {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    flex: 1;
+  }
+
+  .nav-footer {
+    margin-top: 0;
+    padding: 6px 8px;
+    border-top: none;
+    border-left: 1px solid var(--color-border);
+    width: auto;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .nav-version-btn {
+    width: auto;
+    padding: 4px 8px;
+    border-radius: 999px;
+  }
+
+  .version-label {
+    display: none;
   }
 
   .nav-tab {

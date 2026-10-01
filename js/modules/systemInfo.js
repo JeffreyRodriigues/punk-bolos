@@ -36,7 +36,7 @@ export function init() {
 
   // Fechar ao pressionar a tecla Escape
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modalEl.classList.contains('active')) {
+    if (e.key === 'Escape' && modalEl.classList.contains('open')) {
       closeModal();
     }
   });
@@ -44,7 +44,7 @@ export function init() {
 
 export function openModal() {
   if (!modalEl) return;
-  modalEl.classList.add('active');
+  modalEl.classList.add('open');
 
   // Marca a versão como visualizada
   localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
@@ -55,5 +55,5 @@ export function openModal() {
 
 export function closeModal() {
   if (!modalEl) return;
-  modalEl.classList.remove('active');
+  modalEl.classList.remove('open');
 }

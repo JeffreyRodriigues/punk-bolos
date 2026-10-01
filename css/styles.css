@@ -4008,27 +4008,48 @@ html.dark .badge-purple {
    SISTEMA — Botão de Versão e Modal de Novidades (v2.4.0)
    ============================================================ */
 
-.system-version-btn {
-  display: inline-flex;
+.nav-tabs-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.nav-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  width: 100%;
+}
+
+.nav-version-btn {
+  width: 100%;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  background-color: var(--color-surface);
+  justify-content: space-between;
+  gap: 8px;
+  background-color: var(--color-surface-alt);
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 4px 10px 4px 6px;
-  font-size: 0.8rem;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
-  position: relative;
   transition: all var(--transition-fast);
   outline: none;
 }
 
-.system-version-btn:hover {
+.nav-version-btn:hover {
   background-color: var(--color-surface-hover);
   border-color: var(--color-primary);
   transform: translateY(-1px);
+}
+
+.nav-version-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .version-tag {
