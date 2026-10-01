@@ -1734,11 +1734,16 @@ body.modal-open {
 
 .inv-table .inv-actions-col {
   text-align: right;
+  width: 140px;
 }
 
 .inv-table .inv-actions {
   text-align: right;
   white-space: nowrap;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
 }
 
 .inv-cat-ingrediente {

@@ -193,6 +193,15 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Modal Personalizado de Confirmação de Exclusão (`productDeleteModal`):**
   - Substituição do `window.confirm` nativo do navegador por um diálogo modal integrado ao tema da aplicação (Dark/Light mode), exibindo o nome do produto a ser excluído, texto de alerta, botão de cancelamento e botão destrutivo (`Sim, Excluir`).
 
+### 33. Padronização Visual da Tela de Inventário e Modal Customizado de Exclusão
+- **Ações e Badges na Tabela de Insumos e Bases (`inventoryView.js` & `styles.css`):**
+  - Substituição dos botões de emoji soltos (`✏️` e `🗑️`) por botões de ação em texto puro (`Editar` e `Excluir` em vermelho suave `action-danger`), com layout compacto e alinhamento à direita na coluna de ações.
+  - Badges de estoque higienizados para texto puro (*Zerado*, *Baixo*, *Normal*), eliminando emojis visuais.
+- **Modal Personalizado de Confirmação de Exclusão (`inventoryDeleteModal`):**
+  - Fim do `window.confirm` para Insumos e Bases: exibição de diálogo modal temático com código (`PINXXXX`/`PBAXXXX`), nome do item e botões *Cancelar* e *Sim, Excluir*.
+- **Padronização dos Modais de Cadastro/Edição de Insumos e Bases:**
+  - Botões de rodapé unificados (*Salvar Insumo* e *Salvar Base*).
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

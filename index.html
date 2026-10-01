@@ -90,6 +90,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1917,11 +1919,16 @@ body.modal-open {
 
 .inv-table .inv-actions-col {
   text-align: right;
+  width: 140px;
 }
 
 .inv-table .inv-actions {
   text-align: right;
   white-space: nowrap;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
 }
 
 .inv-cat-ingrediente {
@@ -4696,6 +4703,8 @@ html.dark .badge-purple {
 
 
 
+
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5687,7 +5696,7 @@ html.dark .badge-purple {
 
         <div class="modal-footer">
           <button type="button" id="btnCancelInsumo" class="btn btn-ghost">Cancelar</button>
-          <button type="button" id="btnSaveInsumo" class="btn btn-primary">Salvar</button>
+          <button type="button" id="btnSaveInsumo" class="btn btn-primary">Salvar Insumo</button>
         </div>
       </form>
     </div>
@@ -5773,9 +5782,32 @@ html.dark .badge-purple {
 
         <div class="modal-footer">
           <button type="button" id="btnCancelBase" class="btn btn-ghost" data-close-modal>Cancelar</button>
-          <button type="button" id="btnSaveBase" class="btn btn-primary">Salvar</button>
+          <button type="button" id="btnSaveBase" class="btn btn-primary">Salvar Base</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Confirmação de Exclusão de Insumo / Base (Inventário)
+       Controlado por js/modules/inventoryView.js
+       ============================================================ -->
+  <div id="inventoryDeleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="inventoryDeleteModalTitle">
+    <div class="modal-backdrop" data-close-inv-delete-modal></div>
+    <div class="modal-card modal-card-sm" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 id="inventoryDeleteModalTitle">Excluir Item</h2>
+        <button type="button" class="modal-close" data-close-inv-delete-modal aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p id="inventoryDeleteModalDesc" style="color: var(--color-text); font-size: 0.95rem; line-height: 1.5; margin-bottom: 0;">
+          Tem certeza de que deseja excluir este item? Esta ação removerá o item do inventário e não pode ser desfeita.
+        </p>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
+        <button type="button" id="btnCancelInvDelete" class="btn btn-ghost" data-close-inv-delete-modal>Cancelar</button>
+        <button type="button" id="btnConfirmInvDelete" class="btn btn-danger">Sim, Excluir</button>
+      </div>
     </div>
   </div>
 

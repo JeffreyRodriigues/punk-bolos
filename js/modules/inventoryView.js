@@ -35,6 +35,107 @@ let editing = null;
 /** Rascunho das compras do insumo aberto no modal. */
 let comprasDraft = [];
 
+/* Modal de exclusão customizado para Inventário */
+const invDeleteModal = document.getElementById('inventoryDeleteModal');
+const invDeleteTitleEl = document.getElementById('inventoryDeleteModalTitle');
+const invDeleteDescEl = document.getElementById('inventoryDeleteModalDesc');
+const confirmInvDeleteBtn = document.getElementById('btnConfirmInvDelete');
+let pendingDeleteItem = null; // { type: 'insumo' | 'base', item: Object }
+
+// Eventos de fechamento do modal de exclusão do inventário
+invDeleteModal?.querySelectorAll('[data-close-inv-delete-modal]').forEach((el) => {
+  el.addEventListener('click', closeDeleteModal);
+});
+
+// Fechar modal com Esc
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && invDeleteModal?.classList.contains('open')) {
+    closeDeleteModal();
+  }
+});
+
+// Confirmar exclusão
+confirmInvDeleteBtn?.addEventListener('click', async () => {
+  if (!pendingDeleteItem) return;
+  const { type, item } = pendingDeleteItem;
+  closeDeleteModal();
+
+  if (type === 'insumo') {
+    try {
+      await storage.deleteInsumo(item.id);
+      showToast('Insumo excluído com sucesso!');
+      render();
+      onChange();
+    } catch (err) {
+      showToast(`Erro ao excluir insumo: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+    }
+  } else if (type === 'base') {
+    try {
+      const lista = base.getBases().filter((x) => x.id !== item.id);
+      storage.saveBases(lista);
+      showToast('Base excluída com sucesso!');
+      render();
+      onChange();
+    } catch (err) {
+      showToast(`Erro ao excluir base: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+    }
+  }
+});
+
+function openDeleteModal(type, item) {
+  pendingDeleteItem = { type, item };
+  const label = type === 'base' ? 'Base' : 'Insumo';
+  if (invDeleteTitleEl) {
+    invDeleteTitleEl.textContent = `Excluir ${label}`;
+  }
+  if (invDeleteDescEl) {
+    const cod = item.codigo ? ` (${escapeHtml(item.codigo)})` : '';
+    invDeleteDescEl.innerHTML = `Tem certeza de que deseja excluir o ${label.toLowerCase()} <strong>"${escapeHtml(item.nome || 'Sem nome')}"</strong>${cod}?<br><br><span style="color: var(--color-text-muted); font-size: 0.88rem;">Esta ação removerá o item do inventário e não pode ser desfeita.</span>`;
+  }
+  if (invDeleteModal) {
+    invDeleteModal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
+function closeDeleteModal() {
+  pendingDeleteItem = null;
+  if (invDeleteModal) {
+    invDeleteModal.classList.remove('open');
+    document.body.classList.remove('modal-open');
+  }
+}
+
+/**
+ * Cria um botão de ação com rótulo em texto puro.
+ * @param {string} label - Rótulo do botão.
+ * @param {Function} onClick - Handler de clique.
+ * @param {string} [variant] - 'action-ok' ou 'action-danger'.
+ * @returns {HTMLButtonElement} Botão criado.
+ */
+function createTextActionBtn(label, onClick, variant = '') {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = `btn-card-action ${variant}`.trim();
+  btn.textContent = label;
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
+/**
+ * Escapa texto para uso seguro em HTML.
+ * @param {string} value - Texto a escapar.
+ * @returns {string} Texto seguro.
+ */
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * Gera um id único para um insumo.
  * @returns {string} Id no formato "i<timestamp>-<aleatório>".
@@ -132,13 +233,13 @@ function renderStockBadge(item) {
   const badge = document.createElement('span');
   if (atual <= 0) {
     badge.className = 'badge badge-danger';
-    badge.textContent = '🔴 Zerado';
+    badge.textContent = 'Zerado';
   } else if (min != null && min > 0 && atual <= min) {
     badge.className = 'badge badge-warning';
-    badge.textContent = '🟡 Baixo';
+    badge.textContent = 'Baixo';
   } else {
     badge.className = 'badge badge-success';
-    badge.textContent = '🟢 Normal';
+    badge.textContent = 'Normal';
   }
   return badge;
 }
@@ -352,23 +453,10 @@ function renderRow(insumo) {
   // Ações
   const tdAcoes = document.createElement('td');
   tdAcoes.className = 'inv-actions';
-  const btnEdit = document.createElement('button');
-  btnEdit.type = 'button';
-  btnEdit.className = 'icon-btn';
-  btnEdit.textContent = '✏️';
-  btnEdit.title = `Editar ${insumo.nome || 'insumo'}`;
-  btnEdit.setAttribute('aria-label', 'Editar insumo');
-  btnEdit.addEventListener('click', () => openEdit(insumo));
-
-  const btnDel = document.createElement('button');
-  btnDel.type = 'button';
-  btnDel.className = 'icon-btn danger';
-  btnDel.textContent = '🗑️';
-  btnDel.title = `Excluir ${insumo.nome || 'insumo'}`;
-  btnDel.setAttribute('aria-label', 'Excluir insumo');
-  btnDel.addEventListener('click', () => removeInsumo(insumo));
-
-  tdAcoes.append(btnEdit, btnDel);
+  tdAcoes.append(
+    createTextActionBtn('Editar', () => openEdit(insumo)),
+    createTextActionBtn('Excluir', () => openDeleteModal('insumo', insumo), 'action-danger')
+  );
 
   tr.append(tdCod, tdCat, tdNome, tdPreco, tdData, tdEstoque, tdStatus, tdAcoes);
   return tr;
@@ -492,21 +580,10 @@ function renderBaseRow(b) {
   // Ações
   const tdAcoes = document.createElement('td');
   tdAcoes.className = 'inv-actions';
-  const btnEdit = document.createElement('button');
-  btnEdit.type = 'button';
-  btnEdit.className = 'icon-btn';
-  btnEdit.textContent = '✏️';
-  btnEdit.title = `Editar ${b.nome || 'base'}`;
-  btnEdit.setAttribute('aria-label', 'Editar base');
-  btnEdit.addEventListener('click', () => openEditBase(b));
-  const btnDel = document.createElement('button');
-  btnDel.type = 'button';
-  btnDel.className = 'icon-btn danger';
-  btnDel.textContent = '🗑️';
-  btnDel.title = `Excluir ${b.nome || 'base'}`;
-  btnDel.setAttribute('aria-label', 'Excluir base');
-  btnDel.addEventListener('click', () => removeBase(b));
-  tdAcoes.append(btnEdit, btnDel);
+  tdAcoes.append(
+    createTextActionBtn('Editar', () => openEditBase(b)),
+    createTextActionBtn('Excluir', () => openDeleteModal('base', b), 'action-danger')
+  );
 
   tr.append(tdCod, tdCat, tdNome, tdPreco, tdData, tdEstoque, tdStatus, tdAcoes);
 
@@ -825,22 +902,8 @@ function saveInsumo() {
   return true;
 }
 
-/**
- * Exclui um insumo com confirmação.
- * @param {Object} insumo - Insumo a excluir.
- */
-async function removeInsumo(insumo) {
-  const confirmado = window.confirm(`Excluir o insumo "${insumo.nome || ''}"?`);
-  if (!confirmado) return;
-
-  try {
-    await storage.deleteInsumo(insumo.id);
-    showToast('Insumo excluído.');
-    render();
-    onChange();
-  } catch (err) {
-    showToast(`Erro ao excluir insumo: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
-  }
+function removeInsumo(insumo) {
+  openDeleteModal('insumo', insumo);
 }
 
 /* ============================================================
@@ -1155,19 +1218,8 @@ function saveBase() {
   return true;
 }
 
-/**
- * Exclui uma base com confirmação.
- * @param {Object} b - Base a excluir.
- */
 function removeBase(b) {
-  const confirmado = window.confirm(`Excluir a base "${b.nome || ''}"?`);
-  if (!confirmado) return;
-
-  const lista = base.getBases().filter((x) => x.id !== b.id);
-  storage.saveBases(lista);
-  showToast('Base excluída.');
-  render();
-  onChange();
+  openDeleteModal('base', b);
 }
 
 /* ============================================================
