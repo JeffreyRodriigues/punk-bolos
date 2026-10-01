@@ -92,6 +92,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -4705,6 +4706,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5187,14 +5189,13 @@ html.dark .badge-purple {
 
     <div class="customer-toolbar inventory-toolbar" style="margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
       <div class="search-bar" style="flex: 1 1 280px; margin-bottom: 0;">
-        <span class="search-icon" aria-hidden="true">🔎</span>
         <input id="insumoSearch" type="search" placeholder="Buscar por código (PIN0001, PBA0001) ou nome..." autocomplete="off">
       </div>
       <div class="customer-filters inventory-filters" role="group" aria-label="Filtros por categoria">
         <button type="button" class="customer-filter-pill inventory-filter-pill active" data-filter="todos">Todos <span id="invPillTodos" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
-        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="ingredientes">🥣 Ingredientes <span id="invPillIngredientes" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
-        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="bases">🍰 Bases <span id="invPillBases" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
-        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="baixo">⚠️ Estoque Baixo <span id="invPillBaixo" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="ingredientes">Ingredientes <span id="invPillIngredientes" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="bases">Bases <span id="invPillBases" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        <button type="button" class="customer-filter-pill inventory-filter-pill" data-filter="baixo">Estoque Baixo <span id="invPillBaixo" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
       </div>
     </div>
 
@@ -5203,9 +5204,15 @@ html.dark .badge-purple {
     </div>
 
     <div id="insumoEmpty" class="empty-state" hidden>
-      <span class="empty-icon" aria-hidden="true">🧺</span>
       <p>Nenhum insumo cadastrado ainda.</p>
     </div>
+
+    <!-- Paginação do inventário -->
+    <nav id="inventoryPagination" class="order-pagination" aria-label="Navegação de páginas do inventário" hidden>
+      <button id="btnInvPrevPage" type="button" class="btn-pagination" aria-label="Página anterior">Anterior</button>
+      <span id="invPaginationInfo" class="pagination-info">Página 1 de 1</span>
+      <button id="btnInvNextPage" type="button" class="btn-pagination" aria-label="Próxima página">Próxima</button>
+    </nav>
   </main>
 
   <!-- ============================================================
@@ -5772,7 +5779,7 @@ html.dark .badge-purple {
           <div id="baseComponentes" class="base-componentes" aria-live="polite"></div>
           <div class="receita-actions-bar" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
             <button type="button" id="btnAddComponente" class="btn-add-item">＋ Adicionar insumo</button>
-            <button type="button" id="btnPasteBaseExcel" class="btn-paste-excel" title="Importar colunas do Excel">📋 Colar do Excel</button>
+            <button type="button" id="btnPasteBaseExcel" class="btn-paste-excel" title="Importar colunas do Excel">Colar do Excel</button>
           </div>
 
           <div id="baseCustoPreview" class="base-custo-preview" aria-live="polite"></div>
@@ -5819,7 +5826,7 @@ html.dark .badge-purple {
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-card modal-card-wide">
       <div class="modal-header">
-        <h2 id="modalImportExcelTitle">📋 Colar Ingredientes do Excel</h2>
+        <h2 id="modalImportExcelTitle">Colar Ingredientes do Excel</h2>
         <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
       </div>
       <div class="modal-body">

@@ -248,6 +248,26 @@ function renderStockBadge(item) {
    LISTA DE INSUMOS
    ============================================================ */
 
+const ITEMS_PER_PAGE = 10;
+let currentPage = 1;
+
+const paginationNav = document.getElementById('inventoryPagination');
+const paginationInfo = document.getElementById('invPaginationInfo');
+const btnPrevPage = document.getElementById('btnInvPrevPage');
+const btnNextPage = document.getElementById('btnInvNextPage');
+
+btnPrevPage?.addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage -= 1;
+    render();
+  }
+});
+
+btnNextPage?.addEventListener('click', () => {
+  currentPage += 1;
+  render();
+});
+
 /**
  * Renderiza a lista de insumos na tela de Inventário.
  */
@@ -305,7 +325,20 @@ export function render() {
       sortKey(a.data.codigo || a.data.nome || '').localeCompare(sortKey(b.data.codigo || b.data.nome || ''))
     );
 
-  if (countEl) countEl.textContent = itens.length;
+  const totalFiltered = itens.length;
+  if (countEl) countEl.textContent = totalFiltered;
+
+  // Cálculo de paginação
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / ITEMS_PER_PAGE));
+  if (currentPage > totalPages) {
+    currentPage = totalPages;
+  }
+  if (currentPage < 1) {
+    currentPage = 1;
+  }
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const pageItens = itens.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   if (emptyEl) {
     const msg = emptyEl.querySelector('p');
@@ -313,18 +346,40 @@ export function render() {
       if (normalizado) {
         msg.innerHTML = `Nenhum item encontrado para "<strong>${termo}</strong>".`;
       } else if (currentCategoryFilter === 'baixo') {
-        msg.innerHTML = 'Nenhum item com estoque baixo no momento. Tudo abastecido! 🟢';
+        msg.innerHTML = 'Nenhum item com estoque baixo no momento. Tudo abastecido!';
       } else {
         msg.innerHTML = 'Nenhum insumo ou base cadastrado ainda.<br>Cadastre o primeiro clicando em <strong>＋ Novo insumo</strong>.';
       }
     }
-    emptyEl.hidden = itens.length !== 0;
+    emptyEl.hidden = totalFiltered !== 0;
+  }
+
+  // Atualização dos controles de paginação
+  if (paginationNav) {
+    if (totalFiltered <= ITEMS_PER_PAGE) {
+      paginationNav.hidden = true;
+      paginationNav.setAttribute('hidden', '');
+    } else {
+      paginationNav.hidden = false;
+      paginationNav.removeAttribute('hidden');
+
+      if (paginationInfo) {
+        paginationInfo.textContent = `Página ${currentPage} de ${totalPages} (${totalFiltered} itens)`;
+      }
+
+      if (btnPrevPage) {
+        btnPrevPage.disabled = currentPage <= 1;
+      }
+      if (btnNextPage) {
+        btnNextPage.disabled = currentPage >= totalPages;
+      }
+    }
   }
 
   listEl.className = 'inv-list';
   listEl.innerHTML = '';
 
-  if (itens.length === 0) return;
+  if (totalFiltered === 0) return;
 
   const table = document.createElement('table');
   table.className = 'inv-table data-table';
@@ -344,7 +399,7 @@ export function render() {
   table.appendChild(thead);
 
   const tbody = document.createElement('tbody');
-  itens.forEach((item) => {
+  pageItens.forEach((item) => {
     tbody.appendChild(item.kind === 'base' ? renderBaseRow(item.data) : renderRow(item.data));
   });
   table.appendChild(tbody);
@@ -719,8 +774,8 @@ function renderCompras() {
 
         const del = document.createElement('button');
         del.type = 'button';
-        del.className = 'icon-btn danger';
-        del.textContent = '🗑️';
+        del.className = 'item-remove';
+        del.textContent = '✕';
         del.title = 'Remover compra';
         del.setAttribute('aria-label', 'Remover compra');
         del.addEventListener('click', () => removeCompra(compra.id));
@@ -1247,12 +1302,16 @@ document.querySelectorAll('.inventory-filter-pill').forEach((btn) => {
     document.querySelectorAll('.inventory-filter-pill').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
     currentCategoryFilter = btn.dataset.filter || 'todos';
+    currentPage = 1;
     render();
   });
 });
 
 const searchEl = document.getElementById('insumoSearch');
-if (searchEl) searchEl.addEventListener('input', () => render());
+if (searchEl) searchEl.addEventListener('input', () => {
+  currentPage = 1;
+  render();
+});
 
 const saveBtn = document.getElementById('btnSaveInsumo');
 if (saveBtn) saveBtn.addEventListener('click', () => saveInsumo());
