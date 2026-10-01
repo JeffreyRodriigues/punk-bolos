@@ -236,6 +236,13 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Feedback Visual Instantâneo (`cardapio.js` & `cardapio.css`):**
   - Produtos de pronta entrega (Fatias, Punkitos) sem estoque de produção passam a exibir badge *Esgotado por hoje*, botão desabilitado e opacidade diferenciada.
 
+### 39. Indicador de Versão e Modal de Novidades do Sistema (v2.4.0)
+- **Botão de Versão no Cabeçalho (`#btnSystemInfo` & `systemInfo.js`):**
+  - Badge fixo no canto superior direito (`v2.4.0` / *Novidades*) com indicador pulsante de novidades não visualizadas (`#versionDot` + `localStorage`).
+- **Modal Interativo de Novidades (`#modalSystemInfo`):**
+  - Painel com resumo visual das melhorias divididas por categorias: *Produção & Cozinha*, *Precificação*, *CRM de Clientes* e *Cardápio Digital*.
+  - Acessível a qualquer momento por administradores e funcionários da equipe.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

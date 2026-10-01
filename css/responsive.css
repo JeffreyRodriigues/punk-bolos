@@ -35,6 +35,19 @@
     display: none;
   }
 
+  .system-version-btn {
+    padding: 3px 6px;
+    gap: 4px;
+  }
+
+  .version-label {
+    display: none;
+  }
+
+  .release-grid {
+    grid-template-columns: 1fr;
+  }
+
   .app-layout {
     display: block;
     min-height: auto;
