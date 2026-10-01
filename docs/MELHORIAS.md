@@ -213,7 +213,28 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Pílulas de filtro por categoria (*Todos*, *Fatias*, *Punkitos*, *Bolos*) com contadores dinâmicos integrados.
 - **Modal Personalizado de Exclusão no Histórico de Produção (`#producaoDeleteModal`):**
   - Substituição do `window.confirm` nativo por modal temático de confirmação com quantidade, produto e data formatada.
-  - Botões do histórico de produção padronizados para texto limpo (`Excluir` com `action-danger`), com paginação e zero emojis.
+### 35. Matriz de Rentabilidade na Tela de Precificação
+- **Tabela Geral de Rentabilidade (`#precOverviewPanel` / `pricingView.js`):**
+  - Tabela comparativa consolidada exibindo todos os produtos do catálogo com: *Custo Unitário Real (CMV)*, *Preço de Venda*, *Lucro Bruto (R$)*, *Margem Real (%)* e *Status da Ficha*.
+  - Pílulas de filtro dinâmico (*Todos*, *Precificados*, *Sem Ficha*, *Desatualizados*) com contadores ao vivo e campo de busca instantânea.
+  - Ao clicar em qualquer produto da matriz ou no botão *Editar Ficha / Precificar*, o sistema carrega a receita e foca na edição.
+
+### 36. Resumo Consolidado de Cozinha (Produção do Dia)
+- **Impressão Direta para Bancada de Preparo (`orderList.js`):**
+  - Botão **`Resumo da Cozinha`** na barra de ferramentas da tela de Pedidos.
+  - Consolida automaticamente as quantidades totais de todos os itens a preparar a partir dos pedidos filtrados (agrupados por tipo, tamanho e sabor), além de compilar dedicatórias e restrições alimentares.
+  - Saída compatível com impressoras térmicas (80mm/58mm) e folhas A4.
+
+### 37. Padronização Visual, Paginação e Modal de Exclusão no CRM de Clientes
+- **Modal Personalizado de Exclusão (`#customerDeleteModal`):**
+  - Fim do diálogo nativo do navegador para exclusão de clientes.
+- **Ações e Navegação Paginada (`customerView.js`):**
+  - Botões de ação em texto limpo (*Histórico*, *Editar*, *Excluir* com variante `action-danger`), eliminando emojis soltos.
+  - Paginação rápida (10 clientes por página) com contador e navegação.
+
+### 38. Sinalização de "Esgotado" no Cardápio Digital Público
+- **Feedback Visual Instantâneo (`cardapio.js` & `cardapio.css`):**
+  - Produtos de pronta entrega (Fatias, Punkitos) sem estoque de produção passam a exibir badge *Esgotado por hoje*, botão desabilitado e opacidade diferenciada.
 
 ---
 

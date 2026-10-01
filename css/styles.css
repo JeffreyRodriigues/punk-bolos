@@ -3606,6 +3606,28 @@ html.dark .badge-purple {
   white-space: nowrap;
 }
 
+/* ---------- Matriz Geral de Rentabilidade ---------- */
+.prec-overview-panel {
+  margin-bottom: 24px;
+}
+
+.prec-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.prec-overview-table th {
+  background-color: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 8px;
+}
+
+.prec-overview-table tbody tr:hover {
+  background-color: var(--color-surface-alt);
+}
+
 /* ---------- Novo Layout Precificação (2 Colunas) ---------- */
 .precificacao-container {
   display: grid;

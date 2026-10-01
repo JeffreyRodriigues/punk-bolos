@@ -347,7 +347,20 @@ html.dark .menu-badge-status {
 }
 
 .menu-product-card.esgotado {
-  opacity: 0.75;
+  opacity: 0.65;
+  background-color: var(--menu-surface-alt);
+  border-color: var(--menu-border);
+}
+
+.menu-product-card.esgotado .menu-product-title,
+.menu-product-card.esgotado .menu-product-price {
+  color: var(--menu-text-muted);
+}
+
+.menu-product-card.esgotado .btn-add-item:disabled {
+  background-color: var(--menu-border);
+  color: var(--menu-text-muted);
+  cursor: not-allowed;
 }
 
 .menu-product-info {

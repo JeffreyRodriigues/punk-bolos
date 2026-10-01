@@ -4,8 +4,9 @@
    Renderiza a aba "Clientes":
    - Cards de indicadores gerais (total, aniversários, VIPs, inativos)
    - Painel de Ação Rápida de Aniversariantes com CTA para WhatsApp
-   - Tabela de clientes com busca instantânea e filtros rápidos
-   - Ações de editar e excluir clientes
+   - Tabela de clientes com busca instantânea, filtros e paginação
+   - Modal personalizado de exclusão de clientes
+   - Visual padronizado em texto limpo (sem emojis)
    ============================================================ */
 
 import * as storage from './storage.js';
@@ -17,7 +18,10 @@ import { showToast } from './toast.js';
 
 let changeListener = null;
 let currentSearch = '';
-let currentFilter = 'todos'; // 'todos' | 'aniversariantes' | 'vips' | 'inativos'
+let currentFilter = 'todos'; // 'todos' | 'aniversariantes' | 'vips' | 'inativos' | 'fidelidade'
+let customerCurrentPage = 1;
+const CUSTOMERS_PER_PAGE = 10;
+let customerToDelete = null;
 
 /** Registra listener para notificar o app sobre mudanças. */
 export function setChangeListener(listener) {
@@ -30,19 +34,44 @@ function notifyChange() {
   }
 }
 
-/** Cria um botão de ícone padronizado do app Punk Bolos. */
-function createIconBtn(icon, label, onClick, modifier = '') {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = `icon-btn${modifier ? ` ${modifier}` : ''}`;
-  btn.textContent = icon;
-  btn.title = label;
-  btn.setAttribute('aria-label', label);
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    onClick(e);
-  });
-  return btn;
+/** Abre o modal de confirmação de exclusão do cliente. */
+function openCustomerDeleteModal(customer) {
+  customerToDelete = customer;
+  const modal = document.getElementById('customerDeleteModal');
+  const descEl = document.getElementById('customerDeleteModalDesc');
+  if (descEl) {
+    descEl.textContent = `Tem certeza de que deseja excluir o cadastro de "${customer.nome}"? Esta ação removerá o cliente e não pode ser desfeita.`;
+  }
+  if (modal) {
+    modal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
+/** Fecha o modal de confirmação de exclusão do cliente. */
+function closeCustomerDeleteModal() {
+  customerToDelete = null;
+  const modal = document.getElementById('customerDeleteModal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.classList.remove('modal-open');
+  }
+}
+
+/** Confirma a exclusão do cliente. */
+async function confirmCustomerDelete() {
+  if (!customerToDelete) return;
+  const c = customerToDelete;
+
+  try {
+    await storage.deleteCustomer(c.id);
+    closeCustomerDeleteModal();
+    showToast('Cliente excluído com sucesso.');
+    render();
+    notifyChange();
+  } catch (err) {
+    showToast(`Erro ao excluir cliente: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+  }
 }
 
 /** Abre o modal de perfil e histórico detalhado (Timeline) do cliente. */
@@ -63,11 +92,11 @@ export function abrirHistoricoCliente(customer) {
   if (badgesEl) {
     let badgesHtml = '';
     const metricas = service.clientesComMetricas([fullCustomer], orders)[0];
-    if (metricas?.isVIP) badgesHtml += '<span class="badge badge-vip">👑 VIP</span> ';
-    if (metricas?.temRecompensaFidelidade) badgesHtml += '<span class="badge badge-fidelidade badge-fidelidade-ready">🎁 Brinde Pronto!</span> ';
-    if (metricas?.isInativo) badgesHtml += '<span class="badge badge-inativo">💤 Inativo</span> ';
+    if (metricas?.isVIP) badgesHtml += '<span class="badge badge-vip">VIP</span> ';
+    if (metricas?.temRecompensaFidelidade) badgesHtml += '<span class="badge badge-fidelidade badge-fidelidade-ready">Brinde Pronto</span> ';
+    if (metricas?.isInativo) badgesHtml += '<span class="badge badge-inativo">Inativo</span> ';
     if (metricas?.diasParaAniversario !== null && metricas?.diasParaAniversario <= 15) {
-      badgesHtml += `<span class="badge badge-niver">🎂 Níver (${metricas.diasParaAniversario}d)</span> `;
+      badgesHtml += `<span class="badge badge-niver">Níver (${metricas.diasParaAniversario}d)</span> `;
     }
     badgesEl.innerHTML = badgesHtml;
   }
@@ -141,7 +170,7 @@ export function abrirHistoricoCliente(customer) {
     if (loyaltyBadge) {
       if (fid.temRecompensaDisponivel) {
         loyaltyBadge.className = 'badge badge-loyalty badge-loyalty-ready';
-        loyaltyBadge.textContent = '🎁 Resgatar Brinde!';
+        loyaltyBadge.textContent = 'Resgatar Brinde!';
       } else if (fid.faltaApenasUm) {
         loyaltyBadge.className = 'badge badge-loyalty badge-loyalty-ready';
         loyaltyBadge.textContent = 'Falta 1 pedido!';
@@ -159,7 +188,7 @@ export function abrirHistoricoCliente(customer) {
         const stampEl = document.createElement('div');
         stampEl.className = `loyalty-stamp${isFilled ? ' filled' : ''}${isReward ? ' reward' : ''}`;
         stampEl.title = isReward ? (isFilled ? 'Recompensa conquistada!' : '10º pedido = Brinde Especial') : `Pedido #${i}`;
-        const icon = isReward ? (isFilled ? '🎁' : '🍰') : (isFilled ? '🧁' : '○');
+        const icon = isReward ? (isFilled ? '★' : '☆') : (isFilled ? '✓' : '○');
         stampEl.innerHTML = `<span>${icon}</span><span class="loyalty-stamp-num">${i}</span>`;
         loyaltyStamps.appendChild(stampEl);
       }
@@ -226,7 +255,7 @@ export function abrirHistoricoCliente(customer) {
           <div class="timeline-card-header">
             <div class="timeline-card-meta">
               <strong class="timeline-order-num">Pedido #${p.numero}</strong>
-              <span class="timeline-order-date">📅 ${formatDate(p.data)}</span>
+              <span class="timeline-order-date">${formatDate(p.data)}</span>
             </div>
             <span class="badge ${(p.status || 'Pendente').replace(/\s+/g, '-')}">${escapeHtml(p.status || 'Pendente')}</span>
           </div>
@@ -236,8 +265,8 @@ export function abrirHistoricoCliente(customer) {
           <div class="timeline-card-footer">
             <span class="timeline-card-total">Total: ${formatCurrency(p.valorTotal)}</span>
             <div class="timeline-card-tags">
-              ${p.entrega ? `<span>🛵 ${escapeHtml(p.entrega)}</span>` : ''}
-              ${p.pagamento ? `<span>💳 ${escapeHtml(p.pagamento)}</span>` : ''}
+              ${p.entrega ? `<span>${escapeHtml(p.entrega)}</span>` : ''}
+              ${p.pagamento ? `<span>${escapeHtml(p.pagamento)}</span>` : ''}
             </div>
           </div>
         `;
@@ -311,10 +340,10 @@ function renderAniversariantes(aniversariantes) {
     let badgeText = '';
     let badgeClass = 'birthday-badge';
     if (c.diasRestantes === 0) {
-      badgeText = 'Hoje! 🎂';
+      badgeText = 'Hoje!';
       badgeClass += ' birthday-badge-today';
     } else if (c.diasRestantes === 1) {
-      badgeText = 'Amanhã! 🎉';
+      badgeText = 'Amanhã!';
       badgeClass += ' birthday-badge-soon';
     } else {
       badgeText = `Em ${c.diasRestantes} dias`;
@@ -328,22 +357,22 @@ function renderAniversariantes(aniversariantes) {
       <div class="birthday-card-header">
         <div class="birthday-card-info">
           <strong class="birthday-name" style="cursor:pointer;" title="Ver histórico">${escapeHtml(c.nome)}</strong>
-          <span class="birthday-date">📅 ${niverFormatado}</span>
+          <span class="birthday-date">${niverFormatado}</span>
         </div>
         <span class="${badgeClass}">${badgeText}</span>
       </div>
       <div class="birthday-card-body">
         ${
           c.ultimoSabor
-            ? `<span class="birthday-flavor">🍰 Último bolo: <strong>${escapeHtml(c.ultimoSabor)}</strong></span>`
-            : `<span class="birthday-flavor">🍰 Nenhum bolo registrado ainda</span>`
+            ? `<span class="birthday-flavor">Último bolo: <strong>${escapeHtml(c.ultimoSabor)}</strong></span>`
+            : `<span class="birthday-flavor">Nenhum bolo registrado ainda</span>`
         }
       </div>
       <div class="birthday-card-actions">
         ${
           waLink
             ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-whatsapp" title="Enviar sugestão no WhatsApp">
-                <span class="whatsapp-icon">💬</span> Sugerir Bolo no WhatsApp
+                Sugerir Bolo no WhatsApp
               </a>`
             : `<span class="text-muted text-sm">Sem WhatsApp cadastrado</span>`
         }
@@ -387,21 +416,21 @@ function renderInativos(inativos) {
           <strong class="inativo-name" style="cursor:pointer;" title="Ver histórico">${escapeHtml(c.nome)}</strong>
           <span class="text-muted text-sm">${c.contato || 'Sem telefone'}</span>
         </div>
-        <span class="inativo-badge">💤 ${c.diasSemComprar}d sem pedir</span>
+        <span class="inativo-badge">${c.diasSemComprar}d sem pedir</span>
       </div>
       <div class="inativo-card-body">
-        <span>💰 Total gasto: <strong>${formatCurrency(c.totalGasto)}</strong> (${c.totalPedidos} ${c.totalPedidos === 1 ? 'pedido' : 'pedidos'})</span>
+        <span>Total gasto: <strong>${formatCurrency(c.totalGasto)}</strong> (${c.totalPedidos} ${c.totalPedidos === 1 ? 'pedido' : 'pedidos'})</span>
         ${
           c.ultimoSabor
-            ? `<span>🍰 Último bolo: <strong>${escapeHtml(c.ultimoSabor)}</strong> (${formatDate(c.ultimoPedidoData)})</span>`
-            : `<span>📅 Último pedido: ${formatDate(c.ultimoPedidoData)}</span>`
+            ? `<span>Último bolo: <strong>${escapeHtml(c.ultimoSabor)}</strong> (${formatDate(c.ultimoPedidoData)})</span>`
+            : `<span>Último pedido: ${formatDate(c.ultimoPedidoData)}</span>`
         }
       </div>
       <div class="inativo-card-actions">
         ${
           waLink
             ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-resgate-wa" title="Enviar mensagem de saudades no WhatsApp">
-                <span class="whatsapp-icon">💬</span> Enviar Mensagem de Saudades
+                Enviar Mensagem de Saudades
               </a>`
             : `<span class="text-muted text-sm">Sem WhatsApp cadastrado</span>`
         }
@@ -417,10 +446,15 @@ function renderInativos(inativos) {
   });
 }
 
-/** Renderiza a tabela de clientes com busca e filtros aplicados. */
+/** Renderiza a tabela de clientes com busca, filtros e paginação aplicados. */
 function renderTable(clientesEnriquecidos) {
   const tbody = document.getElementById('customersTableBody');
   const emptyState = document.getElementById('customersEmptyState');
+  const paginationNav = document.getElementById('customerPagination');
+  const btnPrev = document.getElementById('btnCustPrevPage');
+  const btnNext = document.getElementById('btnCustNextPage');
+  const pageInfo = document.getElementById('custPaginationInfo');
+
   if (!tbody) return;
 
   tbody.innerHTML = '';
@@ -449,6 +483,7 @@ function renderTable(clientesEnriquecidos) {
 
   if (filtrados.length === 0) {
     if (emptyState) emptyState.hidden = false;
+    if (paginationNav) paginationNav.hidden = true;
     return;
   }
   if (emptyState) emptyState.hidden = true;
@@ -456,7 +491,15 @@ function renderTable(clientesEnriquecidos) {
   // Ordena por nome alfabético
   filtrados.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
 
-  filtrados.forEach((c) => {
+  // Paginação
+  const totalPages = Math.ceil(filtrados.length / CUSTOMERS_PER_PAGE) || 1;
+  if (customerCurrentPage > totalPages) customerCurrentPage = totalPages;
+  if (customerCurrentPage < 1) customerCurrentPage = 1;
+
+  const startIdx = (customerCurrentPage - 1) * CUSTOMERS_PER_PAGE;
+  const pageItems = filtrados.slice(startIdx, startIdx + CUSTOMERS_PER_PAGE);
+
+  pageItems.forEach((c) => {
     const tr = document.createElement('tr');
     tr.className = 'customer-row';
 
@@ -470,17 +513,17 @@ function renderTable(clientesEnriquecidos) {
 
     let badges = '';
     if (c.temRecompensaFidelidade) {
-      badges += '<span class="badge badge-fidelidade badge-fidelidade-ready">🎁 Brinde Pronto!</span> ';
+      badges += '<span class="badge badge-fidelidade badge-fidelidade-ready">Brinde Pronto</span> ';
     } else if (c.fidelidade?.faltaApenasUm) {
-      badges += '<span class="badge badge-fidelidade">🎁 Falta 1</span> ';
+      badges += '<span class="badge badge-fidelidade">Falta 1</span> ';
     } else if (c.fidelidade?.selosPreenchidos > 0) {
       badges += `<span class="badge badge-fidelidade">${c.fidelidade.selosPreenchidos}/10</span> `;
     }
 
-    if (c.isVIP) badges += '<span class="badge badge-vip">👑 VIP</span> ';
-    if (c.isInativo) badges += '<span class="badge badge-inativo">💤 Inativo</span> ';
+    if (c.isVIP) badges += '<span class="badge badge-vip">VIP</span> ';
+    if (c.isInativo) badges += '<span class="badge badge-inativo">Inativo</span> ';
     if (c.diasParaAniversario !== null && c.diasParaAniversario <= 15) {
-      badges += `<span class="badge badge-niver">🎂 Níver (${c.diasParaAniversario}d)</span> `;
+      badges += `<span class="badge badge-niver">Níver (${c.diasParaAniversario}d)</span> `;
     }
 
     tr.innerHTML = `
@@ -488,8 +531,8 @@ function renderTable(clientesEnriquecidos) {
         <div class="customer-nome-wrap">
           <strong class="customer-nome" style="cursor:pointer;" title="Clique para ver o histórico completo">${escapeHtml(c.nome)}</strong>
           ${badges ? `<div class="customer-badges">${badges}</div>` : ''}
-          ${c.endereco ? `<span class="customer-endereco text-muted">📍 ${escapeHtml(c.endereco)}</span>` : ''}
-          ${c.observacoes ? `<span class="customer-obs text-muted">📝 ${escapeHtml(c.observacoes)}</span>` : ''}
+          ${c.endereco ? `<span class="customer-endereco text-muted">${escapeHtml(c.endereco)}</span>` : ''}
+          ${c.observacoes ? `<span class="customer-obs text-muted">${escapeHtml(c.observacoes)}</span>` : ''}
         </div>
       </td>
       <td class="customer-col-contato">
@@ -499,7 +542,7 @@ function renderTable(clientesEnriquecidos) {
                 <span class="customer-phone">${escapeHtml(c.contato)}</span>
                 ${
                   waLink
-                    ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-icon-wa" title="${c.isInativo ? 'Enviar mensagem de saudades' : 'Conversar no WhatsApp'}">💬</a>`
+                    ? `<a href="${waLink}" target="_blank" rel="noopener" class="btn-icon-wa" title="${c.isInativo ? 'Enviar mensagem de saudades' : 'Conversar no WhatsApp'}">WA</a>`
                     : ''
                 }
               </div>`
@@ -507,7 +550,7 @@ function renderTable(clientesEnriquecidos) {
         }
       </td>
       <td class="customer-col-niver">
-        ${niverFormatado !== '—' ? `<span class="customer-niver-date">🎂 ${niverFormatado}</span>` : '<span class="text-muted">—</span>'}
+        ${niverFormatado !== '—' ? `<span class="customer-niver-date">${niverFormatado}</span>` : '<span class="text-muted">—</span>'}
       </td>
       <td class="customer-col-pedidos">
         <div class="customer-pedidos-stat">
@@ -526,38 +569,54 @@ function renderTable(clientesEnriquecidos) {
         }
       </td>
       <td class="customer-col-actions text-right">
-        <div class="customer-actions-wrap"></div>
+        <div class="customer-actions-wrap" style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+          <button type="button" class="btn-card-action btn-cust-hist">Histórico</button>
+          <button type="button" class="btn-card-action btn-cust-edit">Editar</button>
+          <button type="button" class="btn-card-action action-danger btn-cust-del">Excluir</button>
+        </div>
       </td>
     `;
 
-    // Clique no nome abre o histórico
+    // Clique no nome ou no botão Histórico abre o histórico
     const nomeEl = tr.querySelector('.customer-nome');
     if (nomeEl) {
       nomeEl.addEventListener('click', () => abrirHistoricoCliente(c));
     }
 
-    // Adiciona botões de ação padronizados
-    const actionsWrap = tr.querySelector('.customer-actions-wrap');
-    if (actionsWrap) {
-      actionsWrap.append(
-        createIconBtn('📜', 'Ver histórico de pedidos', () => abrirHistoricoCliente(c)),
-        createIconBtn('✏️', 'Editar cliente', () => {
-          const fullCustomer = storage.getCustomerById(c.id);
-          if (fullCustomer) customerForm.openEdit(fullCustomer);
-        }),
-        createIconBtn('🗑️', 'Excluir cliente', () => {
-          if (confirm(`Tem certeza que deseja excluir o cliente "${c.nome}"?`)) {
-            storage.deleteCustomer(c.id);
-            showToast('Cliente excluído com sucesso.');
-            render();
-            notifyChange();
-          }
-        }, 'danger')
-      );
+    const btnHist = tr.querySelector('.btn-cust-hist');
+    if (btnHist) {
+      btnHist.addEventListener('click', () => abrirHistoricoCliente(c));
+    }
+
+    const btnEdit = tr.querySelector('.btn-cust-edit');
+    if (btnEdit) {
+      btnEdit.addEventListener('click', () => {
+        const fullCustomer = storage.getCustomerById(c.id);
+        if (fullCustomer) customerForm.openEdit(fullCustomer);
+      });
+    }
+
+    const btnDel = tr.querySelector('.btn-cust-del');
+    if (btnDel) {
+      btnDel.addEventListener('click', () => openCustomerDeleteModal(c));
     }
 
     tbody.appendChild(tr);
   });
+
+  // Atualiza barra de paginação
+  if (paginationNav) {
+    paginationNav.hidden = totalPages <= 1;
+    if (pageInfo) {
+      pageInfo.textContent = `Página ${customerCurrentPage} de ${totalPages} (${filtrados.length} clientes)`;
+    }
+    if (btnPrev) {
+      btnPrev.disabled = customerCurrentPage <= 1;
+    }
+    if (btnNext) {
+      btnNext.disabled = customerCurrentPage >= totalPages;
+    }
+  }
 }
 
 /** Renderiza a tela completa de Clientes & CRM. */
@@ -587,6 +646,7 @@ export function init() {
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       currentSearch = e.target.value;
+      customerCurrentPage = 1;
       const customers = storage.getAllCustomers();
       const orders = storage.getAll();
       const enriquecidos = service.clientesComMetricas(customers, orders);
@@ -600,12 +660,48 @@ export function init() {
       filterPills.forEach((p) => p.classList.remove('active'));
       pill.classList.add('active');
       currentFilter = pill.dataset.filter || 'todos';
+      customerCurrentPage = 1;
       const customers = storage.getAllCustomers();
       const orders = storage.getAll();
       const enriquecidos = service.clientesComMetricas(customers, orders);
       renderTable(enriquecidos);
     });
   });
+
+  // Paginação de Clientes
+  const btnPrev = document.getElementById('btnCustPrevPage');
+  if (btnPrev) {
+    btnPrev.addEventListener('click', () => {
+      if (customerCurrentPage > 1) {
+        customerCurrentPage--;
+        const customers = storage.getAllCustomers();
+        const orders = storage.getAll();
+        const enriquecidos = service.clientesComMetricas(customers, orders);
+        renderTable(enriquecidos);
+      }
+    });
+  }
+
+  const btnNext = document.getElementById('btnCustNextPage');
+  if (btnNext) {
+    btnNext.addEventListener('click', () => {
+      customerCurrentPage++;
+      const customers = storage.getAllCustomers();
+      const orders = storage.getAll();
+      const enriquecidos = service.clientesComMetricas(customers, orders);
+      renderTable(enriquecidos);
+    });
+  }
+
+  // Modal de Exclusão de Clientes
+  document.querySelectorAll('[data-close-customer-delete-modal]').forEach((el) => {
+    el.addEventListener('click', closeCustomerDeleteModal);
+  });
+
+  const btnConfirmDelete = document.getElementById('btnConfirmCustomerDelete');
+  if (btnConfirmDelete) {
+    btnConfirmDelete.addEventListener('click', confirmCustomerDelete);
+  }
 
   customerForm.setChangeListener(() => {
     render();
@@ -620,8 +716,14 @@ export function init() {
   }
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && modalHist && modalHist.classList.contains('open')) {
-      fecharHistoricoCliente();
+    if (event.key === 'Escape') {
+      if (modalHist && modalHist.classList.contains('open')) {
+        fecharHistoricoCliente();
+      }
+      const deleteModal = document.getElementById('customerDeleteModal');
+      if (deleteModal && deleteModal.classList.contains('open')) {
+        closeCustomerDeleteModal();
+      }
     }
   });
 }

@@ -37,6 +37,7 @@ const filterStatus = document.getElementById('filter-status');
 const btnViewGrid = document.getElementById('btnOrderViewGrid');
 const btnViewList = document.getElementById('btnOrderViewList');
 const btnImprimirPedidos = document.getElementById('btnImprimirPedidos');
+const btnImprimirCozinha = document.getElementById('btnImprimirCozinha');
 
 const paginationNav = document.getElementById('orderPagination');
 const btnPrevPage = document.getElementById('btnOrderPrevPage');
@@ -527,6 +528,131 @@ export function printOrders(ordersList = []) {
 }
 
 /**
+ * Imprime o Resumo Consolidado de Cozinha (total por produto/sabor e observações).
+ * @param {Array<Object>} ordersList - Lista de pedidos a consolidar.
+ */
+export function printKitchenSummary(ordersList = []) {
+  if (!printContainer) return;
+  if (!Array.isArray(ordersList) || ordersList.length === 0) {
+    showToast('Nenhum pedido filtrado para imprimir.', 'warn');
+    return;
+  }
+
+  // Filtra apenas pedidos não cancelados
+  const activeOrders = ordersList.filter((o) => o.status !== 'Cancelado');
+  if (activeOrders.length === 0) {
+    showToast('Nenhum pedido ativo para consolidar na cozinha.', 'warn');
+    return;
+  }
+
+  // Agrega itens por chave única (tipoProduto, tamanho, sabor)
+  const itemsMap = new Map();
+  let totalItens = 0;
+  const observacoes = [];
+
+  activeOrders.forEach((o) => {
+    const orderNum = o.numero ? `#${o.numero}` : 'Pedido';
+    const clientName = o.cliente || 'Cliente';
+
+    // Observações do pedido
+    if (o.observacoes && String(o.observacoes).trim()) {
+      observacoes.push({
+        origem: `${orderNum} (${clientName})`,
+        texto: String(o.observacoes).trim(),
+      });
+    }
+
+    const items = Array.isArray(o.itens) ? o.itens : [];
+    items.forEach((it) => {
+      const tipo = it.tipoProduto || 'Outro';
+      const sabor = it.sabor || it.titulo || 'Padrão';
+      const tamanho = it.tamanho || '';
+      const qtd = Number(it.quantidade) || 1;
+      totalItens += qtd;
+
+      const key = `${tipo}__${tamanho}__${sabor}`;
+      if (!itemsMap.has(key)) {
+        itemsMap.set(key, {
+          tipo,
+          sabor,
+          tamanho,
+          quantidade: 0,
+        });
+      }
+      itemsMap.get(key).quantidade += qtd;
+    });
+  });
+
+  // Converte para array e ordena por tipo e quantidade descrescente
+  const aggregatedItems = [...itemsMap.values()].sort((a, b) => {
+    if (a.tipo !== b.tipo) return a.tipo.localeCompare(b.tipo);
+    return b.quantidade - a.quantidade;
+  });
+
+  const range = dateFilter.getRange();
+  const periodoTxt = range.from || range.to
+    ? `Período: ${formatDate(range.from) || 'início'} até ${formatDate(range.to) || 'hoje'}`
+    : `Data de Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+
+  const rowsHtml = aggregatedItems
+    .map((it) => {
+      const tamStr = it.tamanho ? ` <span style="font-size:0.85em; opacity:0.85;">(${it.tamanho})</span>` : '';
+      return `
+        <tr>
+          <td style="padding: 6px 8px; border-bottom: 1px solid #ddd; font-weight: 700;">${it.sabor}${tamStr}</td>
+          <td style="padding: 6px 8px; border-bottom: 1px solid #ddd; text-transform: uppercase; font-size: 0.8em;">${it.tipo}</td>
+          <td style="padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: right; font-size: 1.1em; font-weight: 800;">${it.quantidade} un</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  const obsHtml = observacoes.length > 0
+    ? `
+      <div style="margin-top: 14px; padding-top: 10px; border-top: 2px dashed #333;">
+        <div style="font-weight: 800; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 6px;">Observações e Personalizações</div>
+        <ul style="margin: 0; padding-left: 16px; font-size: 0.85rem; line-height: 1.4;">
+          ${observacoes.map((ob) => `<li><strong>${ob.origem}:</strong> ${ob.texto}</li>`).join('')}
+        </ul>
+      </div>
+    `
+    : '';
+
+  const html = `
+    <div class="print-ticket" style="font-family: monospace, sans-serif; max-width: 480px; margin: 0 auto; padding: 12px; border: 1px solid #000; background: #fff; color: #000;">
+      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px;">
+        <h2 style="margin: 0 0 4px; font-size: 1.15rem; font-weight: 900; text-transform: uppercase;">PUNK BOLOS — RESUMO DE COZINHA</h2>
+        <div style="font-size: 0.8rem; font-weight: 600;">${periodoTxt}</div>
+        <div style="font-size: 0.85rem; margin-top: 4px; font-weight: 700;">${activeOrders.length} Pedidos Ativos · ${totalItens} Unidades no Total</div>
+      </div>
+
+      <div style="font-weight: 800; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 6px;">ITENS CONSOLIDADOS A PREPARAR</div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+        <thead>
+          <tr style="border-bottom: 1.5px solid #000; text-align: left; font-size: 0.75rem; text-transform: uppercase;">
+            <th style="padding: 4px 8px;">Produto / Sabor</th>
+            <th style="padding: 4px 8px;">Tipo</th>
+            <th style="padding: 4px 8px; text-align: right;">Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+
+      ${obsHtml}
+
+      <div style="text-align: center; margin-top: 14px; padding-top: 8px; border-top: 1px solid #ccc; font-size: 0.75rem; color: #555;">
+        Gerado pelo Sistema Punk Bolos
+      </div>
+    </div>
+  `;
+
+  printContainer.innerHTML = html;
+  window.print();
+}
+
+/**
  * Duplica um pedido (novo número, status Pendente) e re-renderiza.
  * @param {Object} o - Pedido a duplicar.
  */
@@ -620,3 +746,15 @@ if (btnImprimirPedidos) {
     printOrders(list);
   });
 }
+
+if (btnImprimirCozinha) {
+  btnImprimirCozinha.addEventListener('click', () => {
+    const list = getFilteredOrders();
+    if (!list || list.length === 0) {
+      showToast('Nenhum pedido filtrado para consolidar.', 'warn');
+      return;
+    }
+    printKitchenSummary(list);
+  });
+}
+

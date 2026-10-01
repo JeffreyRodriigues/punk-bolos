@@ -71,25 +71,185 @@ function showAviso(message, ok = false) {
   aviso.classList.toggle('estoque-aviso-ok', ok);
 }
 
+/** Estado de busca e filtros da Matriz de Rentabilidade */
+let precSearchTerm = '';
+let precFilterCategory = 'todos';
+
+/**
+ * Seleciona um produto na ficha técnica e rola até ela.
+ * @param {string} id - Id do produto.
+ */
+export function selectProduto(id) {
+  currentProdutoId = id;
+  const prod = product.getProducts().find((p) => p.id === id);
+  if (prod) {
+    const filtro = document.getElementById('precTipoFilter');
+    if (filtro && filtro.value && filtro.value !== prod.tipoProduto) {
+      filtro.value = '';
+      populateProdutoSelect();
+    }
+  }
+  const select = document.getElementById('precificacaoProduto');
+  if (select) select.value = id;
+  loadProduto(id);
+  const formCard = document.getElementById('precificacaoForm');
+  if (formCard) formCard.scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * Renderiza a Matriz Geral de Rentabilidade / Resumo de Custos.
+ */
+export function renderOverviewTable() {
+  const tbody = document.getElementById('precOverviewBody');
+  if (!tbody) return;
+
+  const allProducts = product.getProducts();
+  const receitas = storage.getAllPrecificacoes();
+  const insumos = storage.getAllInsumos();
+  const bases = base.getBases();
+
+  // Contadores para as pílulas de filtro
+  let countPrecificados = 0;
+  let countPendentes = 0;
+  let countDesatualizados = 0;
+
+  const dataList = allProducts.map((p) => {
+    const rec = pricing.getReceita(receitas, p.id);
+    let cmv = 0;
+    let status = 'pendente'; // 'precificado' | 'pendente' | 'desatualizado'
+    let precoSugerido = 0;
+
+    if (rec) {
+      const calc = pricing.calcular(rec, insumos, bases);
+      cmv = calc.custoRealUnitario || 0;
+      precoSugerido = calc.custoPorUnidade || 0;
+      const desatualizada = pricing.isDesatualizada(rec, insumos, bases);
+      if (desatualizada) {
+        status = 'desatualizado';
+        countDesatualizados++;
+      } else {
+        status = 'precificado';
+        countPrecificados++;
+      }
+    } else {
+      countPendentes++;
+    }
+
+    const precoVenda = Number(p.valor) || 0;
+    const lucroBruto = cmv > 0 ? precoVenda - cmv : 0;
+    const margemReal = precoVenda > 0 && cmv > 0 ? (lucroBruto / precoVenda) * 100 : 0;
+
+    return {
+      product: p,
+      receita: rec,
+      cmv,
+      precoVenda,
+      precoSugerido,
+      lucroBruto,
+      margemReal,
+      status,
+    };
+  });
+
+  // Atualiza contadores
+  const pillTodos = document.getElementById('precPillTodos');
+  const pillPrec = document.getElementById('precPillPrecificados');
+  const pillPend = document.getElementById('precPillPendentes');
+  const pillDesat = document.getElementById('precPillDesatualizados');
+
+  if (pillTodos) pillTodos.textContent = allProducts.length;
+  if (pillPrec) pillPrec.textContent = countPrecificados;
+  if (pillPend) pillPend.textContent = countPendentes;
+  if (pillDesat) pillDesat.textContent = countDesatualizados;
+
+  // Filtragem
+  let filtered = dataList;
+  if (precFilterCategory === 'precificados') {
+    filtered = filtered.filter((d) => d.status === 'precificado');
+  } else if (precFilterCategory === 'pendentes') {
+    filtered = filtered.filter((d) => d.status === 'pendente');
+  } else if (precFilterCategory === 'desatualizados') {
+    filtered = filtered.filter((d) => d.status === 'desatualizado');
+  }
+
+  if (precSearchTerm.trim()) {
+    const term = sortKey(precSearchTerm.trim().toLowerCase());
+    filtered = filtered.filter((d) => {
+      const name = sortKey((d.product.titulo || '').toLowerCase());
+      const tipo = sortKey((d.product.tipoProduto || '').toLowerCase());
+      return name.includes(term) || tipo.includes(term);
+    });
+  }
+
+  tbody.innerHTML = '';
+  if (filtered.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="8" style="text-align: center; padding: 24px; color: var(--color-text-muted);">Nenhum produto encontrado nos critérios selecionados.</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  filtered.forEach((d) => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+
+    const p = d.product;
+    const tam = p.tipoProduto === 'Bolo Inteiro' && p.tamanho ? ` (${p.tamanho})` : '';
+
+    let statusBadge = '';
+    if (d.status === 'precificado') {
+      statusBadge = '<span class="badge" style="background: var(--color-ok-soft); color: var(--color-ok);">Precificado</span>';
+    } else if (d.status === 'desatualizado') {
+      statusBadge = '<span class="badge" style="background: var(--color-warn-soft); color: var(--color-warn);">Desatualizado</span>';
+    } else {
+      statusBadge = '<span class="badge" style="background: var(--color-surface-alt); color: var(--color-text-muted); border: 1px solid var(--color-border);">Sem Ficha</span>';
+    }
+
+    const margemClass = d.margemReal >= 50 ? 'color: var(--color-ok);' : d.margemReal > 0 ? 'color: var(--color-text);' : 'color: var(--color-text-muted);';
+
+    tr.innerHTML = `
+      <td class="estoque-name"><strong>${p.titulo || 'Produto'}</strong>${tam}</td>
+      <td><span class="product-type">${p.tipoProduto || '—'}</span></td>
+      <td>${d.cmv > 0 ? formatCurrency(d.cmv) : '<span class="text-muted">—</span>'}</td>
+      <td><strong>${formatCurrency(d.precoVenda)}</strong></td>
+      <td>${d.cmv > 0 ? `<span style="${d.lucroBruto >= 0 ? 'color: var(--color-ok); font-weight: 600;' : 'color: var(--color-danger); font-weight: 600;'}">${formatCurrency(d.lucroBruto)}</span>` : '<span class="text-muted">—</span>'}</td>
+      <td>${d.cmv > 0 ? `<strong style="${margemClass}">${d.margemReal.toFixed(1)}%</strong>` : '<span class="text-muted">—</span>'}</td>
+      <td>${statusBadge}</td>
+      <td style="text-align: right;">
+        <button type="button" class="btn btn-ghost btn-sm" style="padding: 4px 10px; font-size: 0.8rem; font-weight: 700;">
+          ${d.receita ? 'Editar Ficha' : 'Precificar'}
+        </button>
+      </td>
+    `;
+
+    tr.addEventListener('click', () => selectProduto(p.id));
+    tbody.appendChild(tr);
+  });
+}
+
 /* ============================================================
    RENDER PRINCIPAL
    ============================================================ */
 
 /**
- * Renderiza a tela de Precificação (seletor de produto + formulário).
+ * Renderiza a tela de Precificação (seletor de produto + formulário + matriz geral).
  */
 export function render() {
   populateTipoFilter();
   populateProdutoSelect();
+  renderOverviewTable();
   const emptyEl = document.getElementById('precificacaoEmpty');
+  const overviewEl = document.getElementById('precOverviewPanel');
   const formEl = document.getElementById('precificacaoForm');
 
   if (product.getProducts().length === 0) {
     if (emptyEl) emptyEl.hidden = false;
+    if (overviewEl) overviewEl.hidden = true;
     if (formEl) formEl.hidden = true;
     return;
   }
   if (emptyEl) emptyEl.hidden = true;
+  if (overviewEl) overviewEl.hidden = false;
   if (formEl) formEl.hidden = false;
 
   const select = document.getElementById('precificacaoProduto');
@@ -699,3 +859,24 @@ if (usarBtn) usarBtn.addEventListener('click', () => usarPreco());
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => updatePreview());
   });
+
+// Busca na Matriz de Rentabilidade
+const searchInput = document.getElementById('precSearch');
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    precSearchTerm = e.target.value;
+    renderOverviewTable();
+  });
+}
+
+// Pílulas de filtro da Matriz de Rentabilidade
+const filterPills = document.querySelectorAll('.prec-filter-pill');
+filterPills.forEach((pill) => {
+  pill.addEventListener('click', () => {
+    filterPills.forEach((p) => p.classList.remove('active'));
+    pill.classList.add('active');
+    precFilterCategory = pill.dataset.filter || 'todos';
+    renderOverviewTable();
+  });
+});
+

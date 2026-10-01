@@ -94,6 +94,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -3793,6 +3794,28 @@ html.dark .badge-purple {
   white-space: nowrap;
 }
 
+/* ---------- Matriz Geral de Rentabilidade ---------- */
+.prec-overview-panel {
+  margin-bottom: 24px;
+}
+
+.prec-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.prec-overview-table th {
+  background-color: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 8px;
+}
+
+.prec-overview-table tbody tr:hover {
+  background-color: var(--color-surface-alt);
+}
+
 /* ---------- Novo Layout Precificação (2 Colunas) ---------- */
 .precificacao-container {
   display: grid;
@@ -4717,6 +4740,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5032,6 +5056,7 @@ html.dark .badge-purple {
 
       <div class="csv-actions" aria-label="Importar e exportar planilha">
         <button id="btnImprimirPedidos" class="btn btn-ghost" type="button" title="Imprimir pedidos filtrados na tela">Imprimir Pedidos</button>
+        <button id="btnImprimirCozinha" class="btn btn-ghost" type="button" title="Imprimir resumo consolidado de produção para a cozinha">Resumo da Cozinha</button>
         <button id="btnModeloCsv" class="btn btn-ghost" type="button" title="Baixar arquivo-modelo para preencher no Excel">Modelo CSV</button>
         <button id="btnExportOrders" class="btn btn-ghost" type="button" title="Exportar todos os pedidos em CSV">Exportar CSV</button>
         <button id="btnImportOrders" class="btn btn-ghost" type="button" title="Importar pedidos de um arquivo CSV">Importar CSV</button>
@@ -5259,10 +5284,49 @@ html.dark .badge-purple {
     </p>
 
     <div id="precificacaoEmpty" class="empty-state" hidden>
-      <span class="empty-icon" aria-hidden="true">🍰</span>
       <p>Nenhum produto cadastrado ainda.<br>
         Cadastre produtos em <strong>Produtos</strong> para começar a precificar.</p>
     </div>
+
+    <!-- Matriz Geral de Rentabilidade / Resumo de Custos -->
+    <section id="precOverviewPanel" class="estoque-panel prec-overview-panel" aria-label="Visão Geral de Rentabilidade">
+      <div class="prec-overview-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px;">
+        <div>
+          <h2 style="margin: 0 0 4px;">Matriz de Rentabilidade</h2>
+          <p class="view-subtitle" style="font-size: 0.85rem; margin: 0;">Acompanhe o custo real (CMV), margem e status de precificação de todo o cardápio:</p>
+        </div>
+      </div>
+
+      <div class="customer-toolbar prec-toolbar" style="margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+        <div class="search-bar" style="flex: 1 1 240px; margin-bottom: 0;">
+          <input id="precSearch" type="search" placeholder="Buscar produto..." autocomplete="off">
+        </div>
+        <div class="customer-filters prec-filters" role="group" aria-label="Filtros de rentabilidade">
+          <button type="button" class="customer-filter-pill prec-filter-pill active" data-filter="todos">Todos <span id="precPillTodos" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+          <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="precificados">Precificados <span id="precPillPrecificados" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+          <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="pendentes">Sem Ficha <span id="precPillPendentes" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+          <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="desatualizados">Desatualizados <span id="precPillDesatualizados" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+        </div>
+      </div>
+
+      <div class="table-container" style="overflow-x: auto; max-height: 380px;">
+        <table class="estoque-table prec-overview-table" aria-label="Matriz de Rentabilidade">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Tipo</th>
+              <th>Custo Unit. (CMV)</th>
+              <th>Preço Venda</th>
+              <th>Lucro Bruto</th>
+              <th>Margem Real</th>
+              <th>Status</th>
+              <th style="text-align: right;">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="precOverviewBody"></tbody>
+        </table>
+      </div>
+    </section>
 
     <div id="precificacaoForm" class="precificacao-container">
       <!-- Coluna da Esquerda: Seleção do Produto & Ficha de Ingredientes -->
@@ -5364,31 +5428,26 @@ html.dark .badge-purple {
     <!-- Cards de indicadores gerais -->
     <section class="dashboard customer-dashboard" aria-label="Resumo de clientes">
       <div class="stat-card">
-        <span class="stat-icon">👥</span>
         <span class="stat-label">Total de Clientes</span>
         <span class="stat-value" id="cust-stat-total">0</span>
       </div>
 
       <div class="stat-card stat-warn">
-        <span class="stat-icon">🎂</span>
         <span class="stat-label">Aniversários (15 dias)</span>
         <span class="stat-value" id="cust-stat-aniversarios">0</span>
       </div>
 
       <div class="stat-card stat-ok">
-        <span class="stat-icon">👑</span>
         <span class="stat-label">Clientes VIPs</span>
         <span class="stat-value" id="cust-stat-vips">0</span>
       </div>
 
       <div class="stat-card">
-        <span class="stat-icon">💤</span>
         <span class="stat-label">Inativos (> 60 dias)</span>
         <span class="stat-value" id="cust-stat-inativos">0</span>
       </div>
 
       <div class="stat-card stat-money">
-        <span class="stat-icon">💵</span>
         <span class="stat-label">LTV Médio</span>
         <span class="stat-value" id="cust-stat-ltv">R$ 0,00</span>
       </div>
@@ -5397,7 +5456,7 @@ html.dark .badge-purple {
     <!-- Painel de Ação Rápida de Aniversariantes -->
     <section id="customerBirthdaysSection" class="customer-birthdays-section" hidden>
       <div class="section-heading">
-        <h2>🎂 Aniversariantes Próximos (Sugira um Bolo!)</h2>
+        <h2>Aniversariantes Próximos (Sugira um Bolo!)</h2>
         <span class="section-desc">Clientes que comemoram aniversário nos próximos 15 dias:</span>
       </div>
       <div id="customerBirthdaysContainer" class="customer-birthdays-grid"></div>
@@ -5406,8 +5465,8 @@ html.dark .badge-purple {
     <!-- Painel de Ação Rápida de Clientes Inativos (Resgate / Saudades) -->
     <section id="customerInativosSection" class="customer-inativos-section" hidden>
       <div class="section-heading">
-        <h2>💤 Resgatar Clientes Inativos (> 60 dias)</h2>
-        <span class="section-desc">Clientes que não compram há mais de 2 meses. Envie uma mensagem de "saudades" para reativá-los:</span>
+        <h2>Resgatar Clientes Inativos (> 60 dias)</h2>
+        <span class="section-desc">Clientes que não compram há mais de 2 meses. Envie uma mensagem de saudades para reativá-los:</span>
       </div>
       <div id="customerInativosContainer" class="customer-inativos-grid"></div>
     </section>
@@ -5416,14 +5475,14 @@ html.dark .badge-purple {
     <section class="customer-list-section">
       <div class="customer-toolbar">
         <div class="customer-search-wrap">
-          <input type="search" id="customerSearch" placeholder="🔍 Buscar por nome, WhatsApp ou endereço..." autocomplete="off">
+          <input type="search" id="customerSearch" placeholder="Buscar por nome, WhatsApp ou endereço..." autocomplete="off">
         </div>
         <div class="customer-filters" role="group" aria-label="Filtros rápidos de clientes">
           <button type="button" class="customer-filter-pill active" data-filter="todos">Todos</button>
-          <button type="button" class="customer-filter-pill" data-filter="aniversariantes">🎂 Aniversariantes (30d)</button>
-          <button type="button" class="customer-filter-pill" data-filter="vips">👑 VIPs</button>
-          <button type="button" class="customer-filter-pill" data-filter="inativos">💤 Inativos</button>
-          <button type="button" class="customer-filter-pill" data-filter="fidelidade">🎁 Recompensa Pronta</button>
+          <button type="button" class="customer-filter-pill" data-filter="aniversariantes">Aniversariantes (30d)</button>
+          <button type="button" class="customer-filter-pill" data-filter="vips">VIPs</button>
+          <button type="button" class="customer-filter-pill" data-filter="inativos">Inativos</button>
+          <button type="button" class="customer-filter-pill" data-filter="fidelidade">Recompensa Pronta</button>
         </div>
       </div>
 
@@ -5444,9 +5503,15 @@ html.dark .badge-purple {
       </div>
 
       <div id="customersEmptyState" class="empty-state" hidden>
-        <span class="empty-icon" aria-hidden="true">👥</span>
         <p>Nenhum cliente cadastrado ainda.</p>
       </div>
+
+      <!-- Paginação de Clientes -->
+      <nav id="customerPagination" class="order-pagination" aria-label="Navegação de páginas de clientes" hidden>
+        <button id="btnCustPrevPage" type="button" class="btn-pagination" aria-label="Página anterior">Anterior</button>
+        <span id="custPaginationInfo" class="pagination-info">Página 1 de 1</span>
+        <button id="btnCustNextPage" type="button" class="btn-pagination" aria-label="Próxima página">Próxima</button>
+      </nav>
     </section>
   </main>
   </div> <!-- /.app-content -->
@@ -5921,6 +5986,29 @@ html.dark .badge-purple {
   </div>
 
   <!-- ============================================================
+       MODAL — Confirmação de Exclusão de Cliente
+       Controlado por js/modules/customerView.js
+       ============================================================ -->
+  <div id="customerDeleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="customerDeleteModalTitle">
+    <div class="modal-backdrop" data-close-customer-delete-modal></div>
+    <div class="modal-card modal-card-sm" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 id="customerDeleteModalTitle">Excluir Cliente</h2>
+        <button type="button" class="modal-close" data-close-customer-delete-modal aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p id="customerDeleteModalDesc" style="color: var(--color-text); font-size: 0.95rem; line-height: 1.5; margin-bottom: 0;">
+          Tem certeza de que deseja excluir este cliente? Esta ação não pode ser desfeita.
+        </p>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
+        <button type="button" id="btnCancelCustomerDelete" class="btn btn-ghost" data-close-customer-delete-modal>Cancelar</button>
+        <button type="button" id="btnConfirmCustomerDelete" class="btn btn-danger">Sim, Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
        MODAL — Colar / Importar do Excel (Precificação & Bases)
        Controlado por js/modules/excelModal.js
        ============================================================ -->
@@ -6142,7 +6230,7 @@ html.dark .badge-purple {
       </div>
 
       <div class="modal-footer cust-hist-footer">
-        <button type="button" id="btnEditFromHistory" class="btn btn-ghost">✏️ Editar Cadastro</button>
+        <button type="button" id="btnEditFromHistory" class="btn btn-ghost">Editar Cadastro</button>
         <div class="cust-hist-footer-right">
           <button type="button" class="btn btn-ghost" data-close-modal>Fechar</button>
           <button type="button" id="btnNewOrderForCustomer" class="btn btn-primary">＋ Novo Pedido</button>
