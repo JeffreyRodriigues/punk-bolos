@@ -184,6 +184,15 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Regras de impressão avançadas (`@page { margin: 6mm 8mm; }` e `page-break-inside: avoid`) para evitar quebra de comandas em folhas A4 e suporte natural a bobinas térmicas de 80mm/58mm.
   - Indicador numérico (badge de alerta) em tempo real na aba **Pedidos** sinalizando a quantidade de encomendas com status `Pendente` aguardando confirmação.
 
+### 32. Padronização Visual da Tela de Produtos e Modal Elegante de Exclusão
+- **Botões e Cards de Produtos Padronizados (`productList.js` & `styles.css`):**
+  - Substituição dos emojis soltos (`✏️` e `🗑️`) por botões de ação em texto limpos e elegantes (`Editar` e `Excluir` com variante `action-danger`), no mesmo padrão do painel de Pedidos.
+  - Reorganização visual dos cards com cabeçalho (tipo do produto + status do estoque), corpo tipográfico estruturado e rodapé com preço em destaque e botões de ação alinhados.
+- **Modal de Cadastro e Edição Modernizado (`index.html` & `productForm.js`):**
+  - Campos em grid harmonioso com labels claras, foco visual nos inputs e seletor de tamanho dinâmico (com opções descritivas de rendimento e medidas em cm).
+- **Modal Personalizado de Confirmação de Exclusão (`productDeleteModal`):**
+  - Substituição do `window.confirm` nativo do navegador por um diálogo modal integrado ao tema da aplicação (Dark/Light mode), exibindo o nome do produto a ser excluído, texto de alerta, botão de cancelamento e botão destrutivo (`Sim, Excluir`).
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

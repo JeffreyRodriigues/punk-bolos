@@ -376,6 +376,22 @@
     flex: 1 1 100%;
   }
 
+  /* Cards de produtos no mobile */
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .product-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .product-actions {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+
   /* Formulário do modal: campos empilhados */
   .form-grid {
     grid-template-columns: 1fr;

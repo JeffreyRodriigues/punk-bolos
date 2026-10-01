@@ -28,15 +28,21 @@ export function setChangeListener(cb) {
   onChange = cb;
 }
 
+function getFieldIdEl() {
+  return document.getElementById('field-product-id') || document.getElementById('field-id');
+}
+
 /* ---------- Visibilidade do tamanho ---------- */
 
 /**
- * Tamanho só é exibido para "Bolo Inteiro".
+ * Tamanho só é exibido para "Bolo Inteiro" e "Bolo Naked".
  */
 function updateTamanhoVisibility() {
   const tipo = document.getElementById('field-tipo-produto').value;
   const isCake = tipo === 'Bolo Inteiro' || tipo === 'Bolo Naked';
-  tamanhoWrap.hidden = !isCake;
+  if (tamanhoWrap) {
+    tamanhoWrap.hidden = !isCake;
+  }
 }
 
 /* ---------- Abertura / fechamento ---------- */
@@ -47,12 +53,13 @@ function updateTamanhoVisibility() {
 export function openNew() {
   form.reset();
   clearErrors();
-  document.getElementById('field-id').value = '';
+  const idEl = getFieldIdEl();
+  if (idEl) idEl.value = '';
   document.getElementById('field-tipo-produto').value = 'Fatia';
   document.getElementById('field-tamanho-produto').value = 'P';
   updateTamanhoVisibility();
 
-  titleEl.textContent = 'Novo produto';
+  titleEl.textContent = 'Novo Produto';
   openModal();
 }
 
@@ -64,7 +71,8 @@ export function openEdit(productToEdit) {
   form.reset();
   clearErrors();
 
-  document.getElementById('field-id').value = productToEdit.id || '';
+  const idEl = getFieldIdEl();
+  if (idEl) idEl.value = productToEdit.id || '';
   document.getElementById('field-titulo').value = productToEdit.titulo || '';
   document.getElementById('field-tipo-produto').value = productToEdit.tipoProduto || 'Fatia';
   document.getElementById('field-tamanho-produto').value = productToEdit.tamanho || 'P';
@@ -72,7 +80,7 @@ export function openEdit(productToEdit) {
   document.getElementById('field-detalhes').value = productToEdit.detalhes || '';
   updateTamanhoVisibility();
 
-  titleEl.textContent = 'Editar produto';
+  titleEl.textContent = 'Editar Produto';
   openModal();
 }
 
@@ -128,8 +136,9 @@ function showErrors(errors) {
  * @returns {Object} Dados brutos do formulário.
  */
 function readFormData() {
+  const idEl = getFieldIdEl();
   return {
-    id: document.getElementById('field-id').value,
+    id: idEl ? idEl.value : '',
     titulo: document.getElementById('field-titulo').value,
     tipoProduto: document.getElementById('field-tipo-produto').value,
     tamanho: document.getElementById('field-tamanho-produto').value,

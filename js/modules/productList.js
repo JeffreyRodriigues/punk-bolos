@@ -16,7 +16,60 @@ const emptyEl = document.getElementById('productEmpty');
 const countEl = document.getElementById('productCount');
 const filterEl = document.getElementById('productTypeFilter');
 
+/* Modal de exclusão customizado */
+const deleteModal = document.getElementById('productDeleteModal');
+const deleteDescEl = document.getElementById('productDeleteModalDesc');
+const confirmDeleteBtn = document.getElementById('btnConfirmProductDelete');
+let pendingDeleteProduct = null;
+
 filterEl?.addEventListener('change', render);
+
+// Eventos de fechamento do modal de exclusão
+deleteModal?.querySelectorAll('[data-close-delete-modal]').forEach((el) => {
+  el.addEventListener('click', closeDeleteModal);
+});
+
+// Fechar modal de exclusão com a tecla Esc
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && deleteModal?.classList.contains('open')) {
+    closeDeleteModal();
+  }
+});
+
+// Confirmação da exclusão
+confirmDeleteBtn?.addEventListener('click', async () => {
+  if (!pendingDeleteProduct) return;
+  const p = pendingDeleteProduct;
+  closeDeleteModal();
+
+  try {
+    await storage.deleteProduct(p.id);
+    showToast('Produto excluído com sucesso!');
+    render();
+    onChange();
+  } catch (err) {
+    showToast(`Erro ao excluir produto: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
+  }
+});
+
+function openDeleteModal(p) {
+  pendingDeleteProduct = p;
+  if (deleteDescEl) {
+    deleteDescEl.innerHTML = `Tem certeza de que deseja excluir o produto <strong>"${escapeHtml(p.titulo || 'Sem título')}"</strong>?<br><br><span style="color: var(--color-text-muted); font-size: 0.88rem;">Esta ação removerá o produto do catálogo e não pode ser desfeita.</span>`;
+  }
+  if (deleteModal) {
+    deleteModal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
+function closeDeleteModal() {
+  pendingDeleteProduct = null;
+  if (deleteModal) {
+    deleteModal.classList.remove('open');
+    document.body.classList.remove('modal-open');
+  }
+}
 
 /** Handlers definidos por app.js (edição abre o form). */
 let onEdit = () => {};
@@ -85,95 +138,94 @@ export function render() {
 }
 
 /**
- * Cria o card de um produto.
+ * Cria o card de um produto com visualização profissional e padronizada.
  * @param {Object} p - Produto.
  * @returns {HTMLElement} Card.
  */
-function createCard(p) {  const card = document.createElement('article');
+function createCard(p) {
+  const card = document.createElement('article');
   card.className = 'product-card';
 
-  const info = document.createElement('div');
-  info.className = 'product-info';
+  /* Cabeçalho do Card: Tipo do Produto + Badge de Estoque */
+  const header = document.createElement('div');
+  header.className = 'product-card-header';
 
   const type = document.createElement('span');
   type.className = 'product-type';
   type.textContent = p.tipoProduto || 'Sem tipo';
 
-  const name = document.createElement('div');
+  const disp = estoque.disponivel(p);
+  const stock = document.createElement('span');
+  stock.className = `stock-badge stock-${estoque.stockStatus(disp)}`;
+  stock.textContent = disp <= 0 ? 'Sem estoque' : `Estoque: ${disp}`;
+
+  header.append(type, stock);
+
+  /* Corpo do Card: Nome e Detalhes */
+  const body = document.createElement('div');
+  body.className = 'product-card-body';
+
+  const name = document.createElement('h3');
   name.className = 'product-name';
   name.textContent = p.titulo || 'Produto sem título';
 
-  const desc = document.createElement('div');
+  const desc = document.createElement('p');
   desc.className = 'product-desc';
   const size = (p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked') && p.tamanho ? p.tamanho : '';
   const parts = [size, p.detalhes].filter(Boolean);
   if (parts.length > 0) {
     desc.textContent = parts.join(' · ');
+  } else {
+    desc.textContent = 'Sem observações adicionais';
+    desc.classList.add('product-desc--empty');
   }
 
-  info.append(type, name, desc);
+  body.append(name, desc);
 
-  const price = document.createElement('div');
+  /* Rodapé do Card: Preço + Ações textuais */
+  const footer = document.createElement('div');
+  footer.className = 'product-footer';
+
+  const priceWrap = document.createElement('div');
+  priceWrap.className = 'product-price-wrap';
+
+  const priceLabel = document.createElement('span');
+  priceLabel.className = 'product-price-label';
+  priceLabel.textContent = 'Preço';
+
+  const price = document.createElement('span');
   price.className = 'product-price';
   price.textContent = formatCurrency(p.valor);
 
-  // Estoque: badge colorido para todos os produtos (produção é obrigatória)
-  const disp = estoque.disponivel(p);
-  const stock = document.createElement('span');
-  stock.className = `stock-badge stock-${estoque.stockStatus(disp)}`;
-  stock.textContent = disp <= 0 ? 'Sem estoque' : `Estoque: ${disp}`;
-  info.appendChild(stock);
+  priceWrap.append(priceLabel, price);
 
   const actions = document.createElement('div');
   actions.className = 'product-actions';
   actions.append(
-    createIconBtn('✏️', 'Editar produto', () => onEdit(p)),
-    createIconBtn('🗑️', 'Excluir produto', () => remove(p), 'danger')
+    createTextActionBtn('Editar', () => onEdit(p)),
+    createTextActionBtn('Excluir', () => openDeleteModal(p), 'action-danger')
   );
 
-  const footer = document.createElement('div');
-  footer.className = 'product-footer';
-  footer.append(price, actions);
+  footer.append(priceWrap, actions);
 
-  card.append(info, footer);
+  card.append(header, body, footer);
   return card;
 }
 
 /**
- * Cria um botão de ícone para as ações do card.
- * @param {string} icon - Emoji do botão.
- * @param {string} label - Aria-label (acessibilidade).
+ * Cria um botão de ação com rótulo em texto puro.
+ * @param {string} label - Rótulo do botão.
  * @param {Function} onClick - Handler de clique.
- * @param {string} [modifier] - Modificador opcional de cor ("danger").
- * @returns {HTMLElement} Botão.
+ * @param {string} [variant] - 'action-ok' ou 'action-danger'.
+ * @returns {HTMLButtonElement} Botão criado.
  */
-function createIconBtn(icon, label, onClick, modifier = '') {
+function createTextActionBtn(label, onClick, variant = '') {
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = `icon-btn${modifier ? ` ${modifier}` : ''}`;
-  btn.textContent = icon;
-  btn.title = label;
-  btn.setAttribute('aria-label', label);
+  btn.className = `btn-card-action ${variant}`.trim();
+  btn.textContent = label;
   btn.addEventListener('click', onClick);
   return btn;
-}
-
-/**
- * Exclui um produto com confirmação e notifica o app.
- * @param {Object} p - Produto a excluir.
- */
-async function remove(p) {
-  const confirmed = window.confirm(`Excluir o produto "${p.titulo}"?`);
-  if (!confirmed) return;
-
-  try {
-    await storage.deleteProduct(p.id);
-    showToast('Produto excluído!');
-    render();
-    onChange();
-  } catch (err) {
-    showToast(`Erro ao excluir produto: ${err && err.message ? err.message : 'Falha na conexão'}`, 'error');
-  }
 }
 
 /**

@@ -88,6 +88,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1178,6 +1180,18 @@ body.sidebar-collapsed .app-nav {
   background: var(--color-surface-alt);
 }
 
+.btn-danger {
+  background-color: var(--color-danger);
+  color: #fff;
+  border: 1px solid var(--color-danger);
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+  color: #fff;
+}
+
 /* ---------- Modal ---------- */
 /* Trava o scroll da página enquanto o modal está aberto */
 body.modal-open {
@@ -1724,26 +1738,34 @@ body.modal-open {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
 }
 
 .product-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background-color: var(--color-surface-alt);
+  justify-content: space-between;
+  gap: 12px;
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 14px;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
   border-color: var(--color-primary);
 }
 
-.product-info {
-  min-width: 0;
+.product-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .product-type {
@@ -1754,41 +1776,72 @@ body.modal-open {
   text-transform: uppercase;
   color: var(--color-primary);
   background-color: var(--color-primary-soft);
-  padding: 2px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
-  margin-bottom: 6px;
+}
+
+.product-card-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.product-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.product-desc {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.product-desc--empty {
+  font-style: italic;
+  opacity: 0.65;
 }
 
 .product-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
 }
 
-.product-name {
+.product-price-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.product-price-label {
+  font-size: 0.7rem;
   font-weight: 700;
-  color: var(--color-text);
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-
-.product-desc {
-  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--color-text-muted);
-  margin-top: 2px;
 }
 
 .product-price {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   color: var(--color-primary);
   white-space: nowrap;
 }
 
 .product-actions {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
 }
 
 /* ============================================================
@@ -4482,6 +4535,22 @@ html.dark .badge-purple {
     flex: 1 1 100%;
   }
 
+  /* Cards de produtos no mobile */
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .product-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .product-actions {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+
   /* Formulário do modal: campos empilhados */
   .form-grid {
     grid-template-columns: 1fr;
@@ -4551,6 +4620,8 @@ html.dark .badge-purple {
 
 </style>
 <!-- CSS_INLINE:END -->
+
+
 
 
 
@@ -5468,22 +5539,24 @@ html.dark .badge-purple {
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-card">
       <div class="modal-header">
-        <h2 id="productModalTitle">Novo produto</h2>
+        <h2 id="productModalTitle">Novo Produto</h2>
         <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
       </div>
 
       <form id="productForm" novalidate>
         <div class="modal-body">
-          <div class="form-field">
-            <label for="field-titulo">Título do produto</label>
-            <input id="field-titulo" type="text" placeholder="Ex.: Fatia de bolo de chocolate" autocomplete="off">
-            <span class="error-hint" id="error-titulo"></span>
-          </div>
+          <input type="hidden" id="field-product-id">
 
           <div class="form-grid">
+            <div class="form-field form-field-full">
+              <label for="field-titulo">Nome / Título do Produto *</label>
+              <input id="field-titulo" type="text" placeholder="Ex.: Fatia de Cenoura com Brigadeiro" autocomplete="off" required>
+              <span class="error-hint" id="error-titulo"></span>
+            </div>
+
             <div class="form-field">
-              <label for="field-tipo-produto">Tipo de produto</label>
-              <select id="field-tipo-produto">
+              <label for="field-tipo-produto">Tipo de Produto *</label>
+              <select id="field-tipo-produto" required>
                 <option value="Fatia">Fatia</option>
                 <option value="Punkitos">Punkitos</option>
                 <option value="Bolo Inteiro">Bolo Inteiro</option>
@@ -5495,38 +5568,61 @@ html.dark .badge-purple {
             </div>
 
             <div class="form-field">
-              <label for="field-valor">Valor (R$)</label>
-              <input id="field-valor" type="number" min="0" step="0.01" placeholder="0,00" inputmode="decimal">
+              <label for="field-valor">Preço de Venda (R$) *</label>
+              <input id="field-valor" type="number" min="0" step="0.01" placeholder="0,00" inputmode="decimal" required>
               <span class="error-hint" id="error-valor"></span>
             </div>
 
-            <div class="form-field" id="field-tamanho-wrap" hidden>
-              <label for="field-tamanho-produto">Tamanho</label>
+            <div class="form-field form-field-full" id="field-tamanho-wrap" hidden>
+              <label for="field-tamanho-produto">Tamanho do Bolo</label>
               <select id="field-tamanho-produto">
-                <option value="PP">PP</option>
-                <option value="P">P</option>
-                <option value="M">M</option>
-                <option value="G">G</option>
-                <option value="GG">GG</option>
-                <option value="Bento Cake">Bento Cake</option>
+                <option value="PP">PP (10 a 12 fatias - 15cm)</option>
+                <option value="P">P (15 a 18 fatias - 17cm)</option>
+                <option value="M">M (20 a 25 fatias - 20cm)</option>
+                <option value="G">G (30 a 35 fatias - 25cm)</option>
+                <option value="GG">GG (40 a 45 fatias - 30cm)</option>
+                <option value="Bento Cake">Bento Cake (10cm)</option>
                 <option value="Coração">Coração</option>
               </select>
               <span class="error-hint" id="error-tamanho-produto"></span>
             </div>
-          </div>
 
-          <div class="form-field">
-            <label for="field-detalhes">Detalhes do produto <small>(opcional)</small></label>
-            <textarea id="field-detalhes" rows="3" placeholder="Ex.: Fatia média com recheio de brigadeiro e morango"></textarea>
-            <span class="error-hint" id="error-detalhes"></span>
+            <div class="form-field form-field-full">
+              <label for="field-detalhes">Descrição / Detalhes <small>(opcional)</small></label>
+              <textarea id="field-detalhes" rows="3" placeholder="Ex.: Massa fofinha com recheio de brigadeiro artesanal e morangos"></textarea>
+              <span class="error-hint" id="error-detalhes"></span>
+            </div>
           </div>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveProduct">Salvar Produto</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Confirmação de Exclusão de Produto
+       Controlado por js/modules/productList.js
+       ============================================================ -->
+  <div id="productDeleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="productDeleteModalTitle">
+    <div class="modal-backdrop" data-close-delete-modal></div>
+    <div class="modal-card modal-card-sm" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 id="productDeleteModalTitle">Excluir Produto</h2>
+        <button type="button" class="modal-close" data-close-delete-modal aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p id="productDeleteModalDesc" style="color: var(--color-text); font-size: 0.95rem; line-height: 1.5; margin-bottom: 0;">
+          Tem certeza de que deseja excluir este produto? Esta ação não pode ser desfeita.
+        </p>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
+        <button type="button" id="btnCancelProductDelete" class="btn btn-ghost" data-close-delete-modal>Cancelar</button>
+        <button type="button" id="btnConfirmProductDelete" class="btn btn-danger">Sim, Excluir</button>
+      </div>
     </div>
   </div>
 
