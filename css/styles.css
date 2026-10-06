@@ -995,6 +995,24 @@ body.sidebar-collapsed .app-nav {
 
 .btn-ghost:hover {
   background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.btn-secondary {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.85rem;
 }
 
 .btn-danger {
