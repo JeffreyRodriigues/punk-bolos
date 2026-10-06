@@ -66,63 +66,85 @@ Bloco de insumos com quantidade, que pode ser usado como **item de receita** (ex
 }
 ```
 
-### 3. Receita de precificação (por produto)
+### 3. Parâmetros Globais de Custos (SENAC / Sebrae)
+
+Modelo gerenciado por `js/modules/costSettings.js`:
+
+```js
+{
+  // Custos Fixos Mensais (Estrutura)
+  aluguel: 0,
+  energia: 160,
+  gas: 130,
+  agua: 70,
+  internetSistemas: 90,
+  manutencaoDepreciacao: 80,
+  contadorOuMei: 75,
+  produtosLimpeza: 60,
+  outrosCustosFixos: 0,
+
+  // Equipe & Mão de Obra Direta (MOD)
+  proLaboreMensal: 3000,
+  salarioAjudantes: 0,
+  tipoContratacao: 'clt', // 'clt' | 'fixo'
+  encargosCltPct: 34.24,  // 13º + Férias/1/3 + FGTS + Multa Rescisória
+  beneficiosMensais: 0,
+
+  // Jornada & Horas Produtivas
+  diasTrabalhadosMes: 22,
+  horasPorDia: 8,
+
+  // Deduções sobre Venda & Segurança
+  impostoVendaPct: 4.0,       // Simples Nacional
+  taxaCartaoMediaPct: 3.5,    // Média de maquininhas/meios
+  outrasDeducoesPct: 0,
+  quebraInsumosPct: 3.0,      // Margem de quebra técnica / cocção
+  lucroLiquidoPadraoPct: 25.0 // Margem de lucro líquido real
+}
+```
+
+### 4. Ficha Técnica de Precificação (por produto)
 
 ```js
 {
   id: "prc<timestamp>-<rand>",
-  produtoId: "p123-abc",          // 1 receita por produto (sem duplicatas)
-  itens: [                         // Insumos OU bases utilizados
+  produtoId: "p123-abc",
+  itens: [
     { insumoId: "i55-xyz", quantidade: 250 },
     { baseId: "b12-abc", quantidade: 1 }
   ],
-  margem: 25,                      // % — custos incalculáveis (gás, energia)
-  multiplicador: 3,                // Lucro + mão de obra
-  rendimento: 10,                  // Quantidade de unidades produzidas
-  embalagem: 1.00,                 // Custo de embalagem por unidade (fora do multiplicador)
-  custoAdicional: "",              // Custo extra por unidade (fora do multiplicador)
-  custoAdicionalObs: "",           // Observação do custo adicional
+  tempoPreparoMinutos: 30,         // Tempo de preparo e finalização (MOD)
+  lucroLiquidoDesejado: 25,        // % Lucro Líquido Real desejado
+  rendimento: 10,                  // Unidades produzidas
+  embalagem: 1.00,                 // Custo de embalagem por unidade
+  custoAdicional: 0,               // Custo extra por unidade
+  custoAdicionalObs: "",
   // Snapshot (resultado calculado):
-  dataCalculo: "2026-08-08",
-  custoIngredientes: 9.03,         // Σ insumos + bases
-  custoRealUnitario: 1.90,         // CMV Real por unidade (ingredientes/rendimento + embalagem + custo extra)
-  custoPorUnidade: 4.39            // Preço sugerido de venda (com margem 25% + multiplicador 3x)
+  dataCalculo: "2026-10-02",
+  custoIngredientes: 9.03,         // Σ insumos brutos
+  custoRealUnitario: 1.93,         // CMV Unitário com quebra + embalagem
+  custoPorUnidade: 4.40,           // Preço sugerido de venda via Markup Divisor
+  precoMinimo: 3.21,               // Preço no ponto de equilíbrio (lucro 0)
+  lucroLiquidoValor: 1.10          // Lucro real no bolso por unidade vendida
 }
 ```
 
 ---
 
-## 3. Importador do Excel (Colar 4 Colunas)
-
-O app possui importador em modal (`js/modules/excelModal.js` e `js/modules/excelImporter.js`):
-1. **4 Colunas aceitas:** `Ingrediente` | `Custo Embalagem` | `Gramas Embalagem` | `Gramas Utilizadas`.
-2. **Reconhecimento Inteligente de Insumos e Bases:**
-   - **Bases Cadastradas (🍰):** Se o nome colado coincidir com uma Base existente (`PBA0001` ou nome da receita base como *Base Brigadeiro*), o importador reconhece como `tipo: base`, calcula o custo dinâmico proporcional ao rendimento e insere diretamente como base na receita sem cadastrar insumo duplicado.
-   - **Bases Similares:** Caso o nome seja próximo a uma Base já cadastrada, o importador sugere vinculá-la ou cadastrar como um novo insumo.
-   - **Insumos Existentes (🟢 / 🟡):** Casa com insumos cadastrados por nome exato ou similaridade, comparando o preço da planilha com a última compra.
-   - **Preço Diferente (🟡):** Permite escolher entre manter o preço atual ou atualizar o inventário com os valores da planilha.
-   - **Insumos Novos (🔵):** Cadastra novos insumos automaticamente com a primeira compra preenchida.
-
-- **Custo total da base** = soma do custo de cada componente (mesma regra de custo de insumo: `custoItem(componente, última compra)`).
-- **Custo por unidade de rendimento** = custo total ÷ rendimento.
-- Na precificação, a `quantidade` de uma base é informada na **unidade de rendimento** dela; o custo proporcional do item = custo total × (quantidade ÷ rendimento).
-
----
-
-## 3. Cálculo — fórmula definitiva
+## 3. Cálculo — Metodologia SENAC / Sebrae (Markup Divisor)
 
 ```
-1.  custoUnitárioInsumo  = custoTotalCompra ÷ quantidadeCompra
-2.  custoSubira           = custoUnitário ÷ 1000       (se kg→g ou L→ml; senão igual)
-3.  custoItemIngrediente  = quantidadeUsada × custoPorSubunidade
-4.  custoIngredientes     = Σ custoItemIngredienteIl
-5.  comMargem             = custoIngredientes × (1 + margem/100)      [default 25%]
-6.  comMultiplicador      = comMargem × multiplicador                 [default 3]
-7.  porUnidade            = comMultiplicador ÷ rendimento             [default 10]
-8.  custoPorUnidadeFinal  = porUnidade + embalagem + custoAdicional   [por unidade]
+1.  custoIngredientesComQuebra = custoIngredientes × (1 + quebraInsumosPct / 100)
+2.  custoMaoDeObraLote        = tempoPreparoMinutos × custoMinutoMaoDeObra
+3.  custoFixoLote             = tempoPreparoMinutos × custoMinutoFixo
+4.  custoUnitarioTotal        = (custoIngredientesComQuebra ÷ rendimento) + embalagem + custoAdicional +
+                                (custoMaoDeObraLote ÷ rendimento) + (custoFixoLote ÷ rendimento)
+5.  deducoesVendaPct          = impostoVendaPct + taxaCartaoMediaPct + outrasDeducoesPct
+6.  divisorMarkup             = (100 - deducoesVendaPct - lucroLiquidoDesejado) ÷ 100
+7.  precoSugerido             = custoUnitarioTotal ÷ divisorMarkup
+8.  precoMinimo               = custoUnitarioTotal ÷ ((100 - deducoesVendaPct) ÷ 100)
+9.  lucroLiquidoValor         = precoSugerido - custoUnitarioTotal - (precoSugerido × deducoesVendaPct ÷ 100)
 ```
-
-**Ordem obrigatória:** a margem de 25% é somada **sobre o custo dos ingredientes** e o multiplicador (×3) incide **depois** da adição da margem. Custos adicionais (embalagem e custo personalizado) entram **fora** do multiplicador, somados ao final por unidade.
 
 **Arredondamento:** **todos** os valores com **2 casas decimais** (no final de cada etapa).
 

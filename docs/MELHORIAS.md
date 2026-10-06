@@ -237,11 +237,22 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Produtos de pronta entrega (Fatias, Punkitos) sem estoque de produção passam a exibir badge *Esgotado por hoje*, botão desabilitado e opacidade diferenciada.
 
 ### 39. Indicador de Versão e Modal de Novidades do Sistema (v2.4.0)
-- **Botão de Versão no Cabeçalho (`#btnSystemInfo` & `systemInfo.js`):**
-  - Badge fixo no canto superior direito (`v2.4.0` / *Novidades*) com indicador pulsante de novidades não visualizadas (`#versionDot` + `localStorage`).
+- **Botão de Versão no Rodapé do Menu (`#btnSystemInfo` & `systemInfo.js`):**
+  - Badge fixo na barra lateral esquerda (`v2.4.0` / *Novidades*) com indicador pulsante de novidades não visualizadas (`#versionDot` + `localStorage`).
 - **Modal Interativo de Novidades (`#modalSystemInfo`):**
   - Painel com resumo visual das melhorias divididas por categorias: *Produção & Cozinha*, *Precificação*, *CRM de Clientes* e *Cardápio Digital*.
   - Acessível a qualquer momento por administradores e funcionários da equipe.
+
+### 40. Precificação Profissional & Parâmetros de Custos (SENAC / Sebrae)
+- **Modal de Parâmetros Globais de Custo (`costSettings.js` & `#modalCostSettings`):**
+  - Cadastro consolidado de custos fixos mensais (aluguel, energia, gás, água, internet, assessoria contábil/MEI, limpeza, manutenção de maquinário).
+  - Gestão de equipe e mão de obra com cálculo automático de encargos trabalhistas CLT (13º, férias + 1/3, FGTS, provisão rescisória) e jornada útil $\rightarrow$ determinação do custo exato do minuto de trabalho.
+  - Configuração de alíquotas de imposto (% Simples Nacional), taxas médias de cartão e margem técnica de quebra de insumos (3%).
+- **Nova Ficha Técnica com DRE Unitário & Markup Divisor (`pricing.js` & `pricingView.js`):**
+  - Cálculo oficial por Markup Divisor eliminando perdas ocultas por multiplicador fixo.
+  - Apontamento de tempo de preparo/decoração em minutos e margem de lucro líquido real desejada.
+  - Demonstrativo de Preço (DRE) com detalhamento de insumos, mão de obra, custos fixos rateados, embalagens, preço mínimo viável (ponto de equilíbrio), preço sugerido e lucro líquido em R$ por unidade.
+  - Interface 100% texto puro, sem emojis, com botões e badges elegantes integrados ao tema.
 
 ---
 

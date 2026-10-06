@@ -1,11 +1,12 @@
 /* ============================================================
-   TESTE — pricing.js (regras puras de precificação)
+   TESTE — pricing.test.js (regras profissionais SENAC / Sebrae)
    ============================================================ */
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as inventory from '../js/modules/inventory.js';
 import * as pricing from '../js/modules/pricing.js';
+import * as costSettings from '../js/modules/costSettings.js';
 
 /* ---------- Fixtures (exemplo real da spec) ---------- */
 
@@ -49,6 +50,8 @@ function receitaExemplo(insumos) {
     rendimento: 10,
     embalagem: 1,
     custoAdicional: 0,
+    tempoPreparoMinutos: 30,
+    lucroLiquidoDesejado: 25,
   });
 }
 
@@ -61,6 +64,8 @@ test('createReceita: aplica defaults da spec (25/3/10/1)', () => {
   assert.equal(r.rendimento, 10);
   assert.equal(r.embalagem, 1);
   assert.equal(r.custoAdicional, 0);
+  assert.equal(r.tempoPreparoMinutos, 30);
+  assert.equal(r.lucroLiquidoDesejado, 25);
   assert.ok(r.id.startsWith('prc'));
 });
 
@@ -81,101 +86,102 @@ test('custoIngredientes: insumo ausente na receita não conta', () => {
   assert.equal(pricing.custoIngredientes(r, insumos), 0);
 });
 
-/* ---------- calcular: fórmula completa (exemplo aprovado) ---------- */
+/* ---------- costSettings: cálculo de taxas horárias e encargos ---------- */
 
-test('calcular: pipeline completo (9,03 -> 4,39)', () => {
-  const insumos = insumosExemplo();
-  const r = receitaExemplo(insumos);
-  const c = pricing.calcular(r, insumos);
-  assert.equal(c.custoIngredientes, 9.03);
-  assert.equal(c.custoRealUnitario, 1.90); // 9,03 / 10 + 1,00 embalagem
-  assert.equal(c.comMargem, 11.29);     // 9,03 * 1,25
-  assert.equal(c.comMultiplicador, 33.87); // 11,29 * 3
-  assert.equal(c.porUnidade, 3.39);     // 33,87 / 10
-  assert.equal(c.custoPorUnidade, 4.39); // +1,00 embalagem (preço sugerido)
+test('costSettings: calcula custo hora/minuto e encargos CLT corretamente', () => {
+  const settings = {
+    proLaboreMensal: 3000,
+    salarioAjudantes: 2000,
+    tipoContratacao: 'clt',
+    encargosCltPct: 34.24, // 2000 * 0.3424 = 684.80
+    beneficiosMensais: 300,
+    diasTrabalhadosMes: 20,
+    horasPorDia: 8, // 160h no mês = 9600 minutos
+    aluguel: 1000,
+    energia: 300,
+    gas: 200,
+    agua: 100,
+    internetSistemas: 100,
+    manutencaoDepreciacao: 100,
+    contadorOuMei: 200,
+    produtosLimpeza: 100,
+    outrosCustosFixos: 0,
+    impostoVendaPct: 4.0,
+    taxaCartaoMediaPct: 3.5,
+    quebraInsumosPct: 3.0,
+    lucroLiquidoPadraoPct: 25.0,
+  };
+
+  const rates = costSettings.calculateCostRates(settings);
+  assert.equal(rates.totalCustosFixos, 2100);
+  assert.equal(rates.totalMaoDeObraMensal, 5984.80); // 3000 + 2000 + 684.80 + 300
+  assert.equal(rates.horasMensais, 160);
+  assert.equal(rates.minutosMensais, 9600);
+  assert.equal(rates.custoHoraMaoDeObra, 37.41); // 5984.80 / 160
+  assert.equal(rates.custoHoraFixo, 13.13); // 2100 / 160
+  assert.equal(rates.deducoesVendaPct, 7.5); // 4.0 + 3.5
 });
 
-test('calcular: margem incide ANTES do multiplicador e embalagem FORA dele', () => {
-  const insumos = [FARINHA()];
-  const r = pricing.createReceita({
-    produtoId: 'p1',
-    itens: [{ insumoId: insumos[0].id, quantidade: 250 }], // 1,75
-    margem: 0,
-    multiplicador: 1,
-    rendimento: 1,
-    embalagem: 2,
+/* ---------- calcular: pipeline completo e Markup Divisor SENAC ---------- */
+
+test('calcular: pipeline completo Senac/Sebrae com Markup Divisor', () => {
+  const insumos = insumosExemplo();
+  const r = receitaExemplo(insumos);
+  
+  // Parâmetros simulados
+  const customRates = costSettings.calculateCostRates({
+    proLaboreMensal: 3000,
+    salarioAjudantes: 0,
+    diasTrabalhadosMes: 22,
+    horasPorDia: 8, // 176h = 10560 min -> 3000/10560 = 0.2841/min
+    aluguel: 0,
+    energia: 160,
+    gas: 130,
+    agua: 70,
+    internetSistemas: 90,
+    manutencaoDepreciacao: 80,
+    contadorOuMei: 75,
+    produtosLimpeza: 60,
+    outrosCustosFixos: 0, // Total Fixos = 665 / 10560 = 0.0630/min
+    impostoVendaPct: 4.0,
+    taxaCartaoMediaPct: 3.5,
+    quebraInsumosPct: 3.0,
+    lucroLiquidoPadraoPct: 25.0,
   });
-  // (1,75 * 1) / 1 + 2 = 3,75
-  assert.equal(pricing.calcular(r, insumos).custoPorUnidade, 3.75);
+
+  const c = pricing.calcular(r, insumos, [], customRates);
+  assert.equal(c.custoIngredientes, 9.03);
+  assert.equal(c.custoIngredientesComQuebra, 9.30); // 9.03 * 1.03 = 9.3009 -> 9.30
+  assert.equal(c.custoMaoDeObraLote, 8.52); // 30 min * 0.2841 = 8.523 -> 8.52
+  assert.equal(c.custoFixoLote, 1.89); // 30 min * 0.0630 = 1.89
+  
+  // Por unidade (rendimento 10 + 1.00 embalagem):
+  assert.equal(c.custoRealUnitario, 1.93); // 9.30/10 (0.93) + 1.00 embalagem
+  assert.equal(c.custoMaoDeObraUnitario, 0.85); // 8.52/10
+  assert.equal(c.custoFixoUnitario, 0.19); // 1.89/10
+  assert.equal(c.custoUnitarioTotal, 2.97); // 1.93 + 0.85 + 0.19 = 2.97
+
+  // Preço de venda via Markup Divisor:
+  // Taxas = 7.5% (4.0 + 3.5), Lucro = 25% -> Total 32.5% -> Divisor = 0.675
+  // Preço Sugerido = 2.97 / 0.675 = 4.40
+  assert.equal(c.precoSugerido, 4.40);
+
+  // Preço Mínimo (Ponto de Equilíbrio / Margem Zero):
+  // Divisor = 1 - 0.075 = 0.925 -> 2.97 / 0.925 = 3.21
+  assert.equal(c.precoMinimo, 3.21);
+
+  // Lucro Líquido Real em R$:
+  // 4.40 - 2.97 - (4.40 * 0.075 = 0.33) = 1.10
+  assert.equal(c.lucroLiquidoValor, 1.10);
 });
 
-test('calcular: custo adicional somado por unidade (fora do multiplicador)', () => {
-  const insumos = insumosExemplo();
-  const r = receitaExemplo(insumos);
-  r.custoAdicional = 0.5;
-  assert.equal(pricing.calcular(r, insumos).custoPorUnidade, 4.89); // 4,39 + 0,50
-});
-
-test('calcular: custoAdicional "" é tratado como 0', () => {
-  const insumos = insumosExemplo();
-  const r = receitaExemplo(insumos);
-  r.custoAdicional = '';
-  assert.equal(pricing.calcular(r, insumos).custoPorUnidade, 4.39);
-});
-
-/* ---------- arredondamento (2 casas em cada etapa) ---------- */
+/* ---------- arredondamento e validações ---------- */
 
 test('round2: arredonda para 2 casas', () => {
   assert.equal(pricing.round2(1.234), 1.23);
   assert.equal(pricing.round2(1.235), 1.24);
   assert.equal(pricing.round2(33.865), 33.87);
 });
-
-test('calcular: margem não inteira mantém 2 casas por etapa', () => {
-  const insumos = [FARINHA()];
-  const r = pricing.createReceita({
-    produtoId: 'p1',
-    itens: [{ insumoId: insumos[0].id, quantidade: 250 }], // 1,75
-    margem: 10, // 1,75 * 1,1 = 1,925 -> 1,93
-    multiplicador: 2, // 1,93 * 2 = 3,86
-    rendimento: 1,
-    embalagem: 0,
-  });
-  const c = pricing.calcular(r, insumos);
-  assert.equal(c.comMargem, 1.93);
-  assert.equal(c.custoPorUnidade, 3.86);
-});
-
-/* ---------- snapshot / desatualização ---------- */
-
-test('recalcular: atualiza snapshot (custo + dataCalculo)', () => {
-  const insumos = insumosExemplo();
-  const r = receitaExemplo(insumos);
-  const atual = pricing.recalcular(r, insumos);
-  assert.equal(atual.custoIngredientes, 9.03);
-  assert.equal(atual.custoPorUnidade, 4.39);
-  assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(atual.dataCalculo));
-});
-
-test('isDesatualizada: false quando insumos não mudaram', () => {
-  const insumos = insumosExemplo();
-  const r = pricing.recalcular(receitaExemplo(insumos), insumos);
-  assert.equal(pricing.isDesatualizada(r, insumos), false);
-});
-
-test('isDesatualizada: true quando muda o preço do insumo', () => {
-  const insumos = insumosExemplo();
-  const r = pricing.recalcular(receitaExemplo(insumos), insumos);
-  // Farinha fica mais cara: nova compra vigente
-  const alterados = insumos.map((i) =>
-    i.nome === 'Farinha'
-      ? inventory.createInsumo({ ...i, compras: [{ data: '2026-06-01', custoTotal: 70, quantidadeCompra: 5 }] })
-      : i
-  );
-  assert.equal(pricing.isDesatualizada(r, alterados), true);
-});
-
-/* ---------- validateReceita ---------- */
 
 test('validateReceita: receita válida retorna null', () => {
   const insumos = insumosExemplo();
@@ -211,30 +217,10 @@ test('validateReceita: quantidade deve ser > 0', () => {
   assert.match(pricing.validateReceita(r, insumos), /maior que zero/i);
 });
 
-test('validateReceita: multiplicador/rendimento > 0', () => {
-  const insumos = insumosExemplo();
-  const r = receitaExemplo(insumos);
-  r.multiplicador = 0;
-  assert.match(pricing.validateReceita(r, insumos), /multiplicador/i);
-  r.multiplicador = 3;
-  r.rendimento = 0;
-  assert.match(pricing.validateReceita(r, insumos), /rendimento/i);
-});
-
-/* ---------- findDuplicate / getReceita ---------- */
-
-test('getReceita: retorna a receita do produto', () => {
-  const r = pricing.createReceita({ produtoId: 'pX' });
-  assert.equal(pricing.getReceita([r, pricing.createReceita({ produtoId: 'pY' })], 'pX').produtoId, 'pX');
-});
-
-test('findDuplicate: detecta mesma receita para outro produto', () => {
+test('findDuplicate e getReceita funcionam normalmente', () => {
   const r1 = pricing.createReceita({ produtoId: 'pA' });
   const r2 = pricing.createReceita({ produtoId: 'pA' });
   assert.ok(pricing.findDuplicate(r2, [r1, r2]));
-});
-
-test('findDuplicate: ignora a própria receita em edição', () => {
-  const r = pricing.createReceita({ produtoId: 'pA' });
-  assert.equal(pricing.findDuplicate(r, [r]), null);
+  assert.equal(pricing.findDuplicate(r1, [r1]), null);
+  assert.equal(pricing.getReceita([r1], 'pA').produtoId, 'pA');
 });

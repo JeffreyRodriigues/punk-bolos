@@ -98,6 +98,10 @@
 
 
 
+
+
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -4432,6 +4436,82 @@ html.dark .badge-purple {
   margin: 0;
 }
 
+/* ============================================================
+   PARÂMETROS DE CUSTOS & PRECIFICAÇÃO PROFISSIONAL (SENAC)
+   ============================================================ */
+
+.cost-settings-card {
+  max-width: 800px;
+  width: 95%;
+}
+
+.cost-settings-body {
+  padding: 16px 20px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.cost-settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cost-settings-section {
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.cost-section-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 12px 0;
+  border-bottom: 1px dashed var(--color-border);
+  padding-bottom: 6px;
+}
+
+.cost-rates-summary-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.cost-rates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.cost-rate-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.cost-rate-label {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.cost-rate-val {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+
 
 </style>
 
@@ -5016,6 +5096,10 @@ html.dark .badge-purple {
 
 
 
+
+
+
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5117,11 +5201,6 @@ html.dark .badge-purple {
     .prec-preview-final {
       color: var(--color-primary);
       font-size: 1.05rem;
-    }
-
-    #btnUsarPreco:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
     }
   </style>
 </head>
@@ -5559,15 +5638,13 @@ html.dark .badge-purple {
        Controlada por js/modules/pricingView.js
        ============================================================ -->
   <main id="view-precificacao" class="view">
-    <div class="page-title">
-      <h1>Precificação</h1>
+    <div class="page-title page-title-with-actions">
+      <div>
+        <h1>Precificação</h1>
+        <p class="view-subtitle">Ficha técnica profissional, custos de mão de obra e formação de preços via Markup Divisor (SENAC / Sebrae).</p>
+      </div>
+      <button type="button" id="btnOpenCostSettings" class="btn btn-primary" title="Configurar custos fixos, mão de obra e taxas de venda">Parâmetros de Custo</button>
     </div>
-
-    <p class="view-subtitle">
-      Monte a receita de cada produto (insumos + quantidades) e o sistema calcula
-      o <strong>custo por unidade</strong> com margem e multiplicador. O valor de
-      venda é sempre manual.
-    </p>
 
     <div id="precificacaoEmpty" class="empty-state" hidden>
       <p>Nenhum produto cadastrado ainda.<br>
@@ -5576,41 +5653,44 @@ html.dark .badge-purple {
 
     <!-- Matriz Geral de Rentabilidade / Resumo de Custos -->
     <section id="precOverviewPanel" class="estoque-panel prec-overview-panel" aria-label="Visão Geral de Rentabilidade">
-      <div class="prec-overview-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px;">
+      <div class="prec-overview-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
         <div>
           <h2 style="margin: 0 0 4px;">Matriz de Rentabilidade</h2>
           <p class="view-subtitle" style="font-size: 0.85rem; margin: 0;">Acompanhe o custo real (CMV), margem e status de precificação de todo o cardápio:</p>
         </div>
+        <button type="button" id="btnToggleOverview" class="btn btn-secondary btn-sm" aria-expanded="false">Expandir Matriz</button>
       </div>
 
-      <div class="customer-toolbar prec-toolbar" style="margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
-        <div class="search-bar" style="flex: 1 1 240px; margin-bottom: 0;">
-          <input id="precSearch" type="search" placeholder="Buscar produto..." autocomplete="off">
+      <div id="precOverviewContent" hidden style="margin-top: 14px;">
+        <div class="customer-toolbar prec-toolbar" style="margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+          <div class="search-bar" style="flex: 1 1 240px; margin-bottom: 0;">
+            <input id="precSearch" type="search" placeholder="Buscar produto..." autocomplete="off">
+          </div>
+          <div class="customer-filters prec-filters" role="group" aria-label="Filtros de rentabilidade">
+            <button type="button" class="customer-filter-pill prec-filter-pill active" data-filter="todos">Todos <span id="precPillTodos" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+            <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="precificados">Precificados <span id="precPillPrecificados" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+            <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="pendentes">Sem Ficha <span id="precPillPendentes" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+            <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="desatualizados">Desatualizados <span id="precPillDesatualizados" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
+          </div>
         </div>
-        <div class="customer-filters prec-filters" role="group" aria-label="Filtros de rentabilidade">
-          <button type="button" class="customer-filter-pill prec-filter-pill active" data-filter="todos">Todos <span id="precPillTodos" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
-          <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="precificados">Precificados <span id="precPillPrecificados" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
-          <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="pendentes">Sem Ficha <span id="precPillPendentes" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
-          <button type="button" class="customer-filter-pill prec-filter-pill" data-filter="desatualizados">Desatualizados <span id="precPillDesatualizados" class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">0</span></button>
-        </div>
-      </div>
 
-      <div class="table-container" style="overflow-x: auto; max-height: 380px;">
-        <table class="estoque-table prec-overview-table" aria-label="Matriz de Rentabilidade">
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th>Tipo</th>
-              <th>Custo Unit. (CMV)</th>
-              <th>Preço Venda</th>
-              <th>Lucro Bruto</th>
-              <th>Margem Real</th>
-              <th>Status</th>
-              <th style="text-align: right;">Ação</th>
-            </tr>
-          </thead>
-          <tbody id="precOverviewBody"></tbody>
-        </table>
+        <div class="table-container" style="overflow-x: auto; max-height: 380px;">
+          <table class="estoque-table prec-overview-table" aria-label="Matriz de Rentabilidade">
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Tipo</th>
+                <th>Custo Unit. (CMV)</th>
+                <th>Preço Venda</th>
+                <th>Lucro Bruto</th>
+                <th>Margem Real</th>
+                <th>Status</th>
+                <th style="text-align: right;">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="precOverviewBody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -5637,8 +5717,8 @@ html.dark .badge-purple {
           <div class="prec-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-top: 22px; margin-bottom: 8px;">
             <h2 class="insumo-section-title" style="margin: 0;">Receita (Ingredientes e Bases)</h2>
             <div id="precEditActions" class="receita-actions-bar" style="display: flex; gap: 8px;">
-              <button type="button" id="btnAddPrecInsumo" class="btn-add-item">＋ Adicionar insumo</button>
-              <button type="button" id="btnPastePrecExcel" class="btn-paste-excel" title="Importar colunas do Excel">📋 Colar do Excel</button>
+              <button type="button" id="btnAddPrecInsumo" class="btn-add-item">＋ Adicionar Insumo</button>
+              <button type="button" id="btnPastePrecExcel" class="btn-paste-excel" title="Importar colunas do Excel">Colar do Excel</button>
             </div>
           </div>
 
@@ -5648,20 +5728,23 @@ html.dark .badge-purple {
 
       <!-- Coluna da Direita: Fatores & Resumo Financeiro / Ações -->
       <div class="precificacao-side-col">
-        <!-- Card de Fatores -->
+        <!-- Card de Fatores de Precificação Profissional -->
         <div class="estoque-panel precificacao-card">
-          <h2 class="insumo-section-title" style="margin-top: 0;">Fatores de Custo</h2>
+          <div class="prec-header-row">
+            <h2 class="insumo-section-title" style="margin: 0;">Parâmetros da Ficha</h2>
+            <span class="badge" id="precRatesBadge" style="font-size: 0.75rem;">Markup Divisor</span>
+          </div>
           <div class="form-grid prec-fatores-grid">
             <div class="form-field">
-              <label for="precMargem">Margem (%)</label>
-              <input type="number" id="precMargem" min="0" step="0.01" value="25" aria-label="Margem percentual">
+              <label for="precTempoPreparo">Tempo de Preparo (min)</label>
+              <input type="number" id="precTempoPreparo" min="0" step="1" value="30" placeholder="Ex.: 30" aria-label="Tempo de preparo e decoração em minutos">
             </div>
             <div class="form-field">
-              <label for="precMultiplicador">Multiplicador</label>
-              <input type="number" id="precMultiplicador" min="0" step="0.01" value="3" aria-label="Multiplicador">
+              <label for="precLucroLiquido">Lucro Líquido Desejado (%)</label>
+              <input type="number" id="precLucroLiquido" min="0" max="89" step="0.5" value="25" aria-label="Margem de lucro líquido desejada">
             </div>
             <div class="form-field">
-              <label for="precRendimento">Rendimento (un)</label>
+              <label for="precRendimento">Rendimento (unidades)</label>
               <input type="number" id="precRendimento" min="1" step="1" value="10" aria-label="Rendimento em unidades">
             </div>
             <div class="form-field">
@@ -5669,28 +5752,31 @@ html.dark .badge-purple {
               <input type="number" id="precEmbalagem" min="0" step="0.01" value="1" aria-label="Custo de embalagem por unidade">
             </div>
             <div class="form-field form-field-full">
-              <label for="precCustoAdicional">Custo adicional (R$/un)</label>
+              <label for="precCustoAdicional">Custo Adicional (R$/un)</label>
               <input type="number" id="precCustoAdicional" min="0" step="0.01" value="0" aria-label="Custo adicional por unidade">
             </div>
             <div class="form-field form-field-full">
-              <label for="precCustoAdicionalObs">Observação do custo adicional</label>
-              <input type="text" id="precCustoAdicionalObs" placeholder="Ex.: gás / energia / fita" autocomplete="off">
+              <label for="precCustoAdicionalObs">Observação do Custo Adicional</label>
+              <input type="text" id="precCustoAdicionalObs" placeholder="Ex.: fita especial, topo de bolo, vela" autocomplete="off">
             </div>
+            <!-- Inputs legados ocultos para retrocompatibilidade -->
+            <input type="hidden" id="precMargem" value="25">
+            <input type="hidden" id="precMultiplicador" value="3">
           </div>
         </div>
 
         <!-- Card de Resultado / Preview -->
         <div class="estoque-panel precificacao-card prec-preview-panel">
-          <h2 class="insumo-section-title" style="margin-top: 0;">Resumo de Custos</h2>
+          <h2 class="insumo-section-title" style="margin-top: 0;">Demonstrativo de Preço (DRE)</h2>
           <div id="precPreview" class="prec-preview" aria-live="polite"></div>
 
           <p id="precAviso" class="estoque-aviso" hidden></p>
 
           <div class="prec-actions-footer">
-            <button type="button" id="btnEditPrecificacao" class="btn btn-primary" style="width: 100%;">✏️ Editar Precificação</button>
+            <button type="button" id="btnEditPrecificacao" class="btn btn-ghost" style="width: 100%;">Editar Ficha Técnica</button>
             <div id="precEditingButtons" class="prec-editing-buttons" style="display: none; gap: 8px; width: 100%;">
               <button type="button" id="btnCancelEditPrec" class="btn btn-ghost" style="flex: 1;">Cancelar</button>
-              <button type="button" id="btnSavePrecificacao" class="btn btn-primary" style="flex: 1;">💾 Salvar</button>
+              <button type="button" id="btnSavePrecificacao" class="btn btn-primary" style="flex: 1;">Salvar Ficha</button>
             </div>
           </div>
         </div>
@@ -6526,6 +6612,155 @@ html.dark .badge-purple {
   </div>
 
   <!-- ============================================================
+       MODAL — Parâmetros Globais de Custos (SENAC / Sebrae)
+       Controlado por js/modules/costSettings.js e pricingView.js
+       ============================================================ -->
+  <div id="modalCostSettings" class="modal" role="dialog" aria-modal="true" aria-labelledby="costSettingsTitle">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card modal-card-wide cost-settings-card">
+      <div class="modal-header">
+        <div>
+          <h2 id="costSettingsTitle">Parâmetros de Custos da Confeitaria</h2>
+          <p class="view-subtitle" style="font-size: 0.85rem; margin: 2px 0 0 0;">Defina as despesas fixas, equipe e taxas para a formação profissional de preços (SENAC / Sebrae).</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="costSettingsForm" novalidate>
+        <div class="modal-body cost-settings-body">
+          <div class="cost-settings-grid">
+            
+            <!-- Bloco 1: Custos Fixos Mensais -->
+            <div class="cost-settings-section">
+              <h3 class="cost-section-title">Custos Fixos Mensais (Estrutura)</h3>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="costAluguel">Aluguel do Espaço (R$)</label>
+                  <input type="number" id="costAluguel" min="0" step="10" placeholder="0,00">
+                </div>
+                <div class="form-field">
+                  <label for="costEnergia">Energia Elétrica (R$)</label>
+                  <input type="number" id="costEnergia" min="0" step="5" placeholder="160,00">
+                </div>
+                <div class="form-field">
+                  <label for="costGas">Gás GLP / Forno (R$)</label>
+                  <input type="number" id="costGas" min="0" step="5" placeholder="130,00">
+                </div>
+                <div class="form-field">
+                  <label for="costAgua">Água e Saneamento (R$)</label>
+                  <input type="number" id="costAgua" min="0" step="5" placeholder="70,00">
+                </div>
+                <div class="form-field">
+                  <label for="costInternet">Internet e Sistemas (R$)</label>
+                  <input type="number" id="costInternet" min="0" step="5" placeholder="90,00">
+                </div>
+                <div class="form-field">
+                  <label for="costManutencao">Manutenção / Depreciação (R$)</label>
+                  <input type="number" id="costManutencao" min="0" step="5" placeholder="80,00">
+                </div>
+                <div class="form-field">
+                  <label for="costContador">Contador ou DAS-MEI (R$)</label>
+                  <input type="number" id="costContador" min="0" step="5" placeholder="75,00">
+                </div>
+                <div class="form-field">
+                  <label for="costLimpeza">Produtos de Limpeza (R$)</label>
+                  <input type="number" id="costLimpeza" min="0" step="5" placeholder="60,00">
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco 2: Equipe e Mão de Obra -->
+            <div class="cost-settings-section">
+              <h3 class="cost-section-title">Mão de Obra & Equipe</h3>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="costProLabore">Pró-Labore do Confeiteiro (R$)</label>
+                  <input type="number" id="costProLabore" min="0" step="50" placeholder="3000,00">
+                </div>
+                <div class="form-field">
+                  <label for="costSalarioAjudantes">Salário de Ajudantes (R$)</label>
+                  <input type="number" id="costSalarioAjudantes" min="0" step="50" placeholder="0,00">
+                </div>
+                <div class="form-field">
+                  <label for="costTipoContrato">Regime de Contratação</label>
+                  <select id="costTipoContrato">
+                    <option value="clt">CLT (+13º, Férias, FGTS e Encargos)</option>
+                    <option value="fixo">Prestador / Fixo (Sem encargos)</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="costEncargosPct">Encargos Sociais CLT (%)</label>
+                  <input type="number" id="costEncargosPct" min="0" step="0.1" placeholder="34,24">
+                </div>
+                <div class="form-field">
+                  <label for="costDiasMes">Dias Trabalhados no Mês</label>
+                  <input type="number" id="costDiasMes" min="1" max="31" step="1" placeholder="22">
+                </div>
+                <div class="form-field">
+                  <label for="costHorasDia">Horas por Dia</label>
+                  <input type="number" id="costHorasDia" min="1" max="24" step="1" placeholder="8">
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco 3: Taxas de Venda e Segurança -->
+            <div class="cost-settings-section form-field-full">
+              <h3 class="cost-section-title">Taxas de Venda, Segurança e Lucro</h3>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="costImpostoPct">Imposto sobre Venda (%)</label>
+                  <input type="number" id="costImpostoPct" min="0" step="0.1" placeholder="4,0">
+                </div>
+                <div class="form-field">
+                  <label for="costTaxaCartaoPct">Taxa Média Maquininha (%)</label>
+                  <input type="number" id="costTaxaCartaoPct" min="0" step="0.1" placeholder="3,5">
+                </div>
+                <div class="form-field">
+                  <label for="costQuebraPct">Quebra Técnica Insumos (%)</label>
+                  <input type="number" id="costQuebraPct" min="0" step="0.5" placeholder="3,0">
+                </div>
+                <div class="form-field">
+                  <label for="costLucroPadraoPct">Margem de Lucro Padrão (%)</label>
+                  <input type="number" id="costLucroPadraoPct" min="1" max="89" step="1" placeholder="25,0">
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Resumo das Taxas Calculadas -->
+          <div class="cost-rates-summary-card">
+            <h4 style="margin: 0 0 10px 0; font-size: 0.9rem;">Taxas Calculadas em Tempo Real:</h4>
+            <div class="cost-rates-grid">
+              <div class="cost-rate-item">
+                <span class="cost-rate-label">Custo da Hora de Produção</span>
+                <strong class="cost-rate-val" id="rateCustoHora">R$ 0,00 / h</strong>
+              </div>
+              <div class="cost-rate-item">
+                <span class="cost-rate-label">Custo do Minuto (MOD)</span>
+                <strong class="cost-rate-val" id="rateCustoMinuto">R$ 0,00 / min</strong>
+              </div>
+              <div class="cost-rate-item">
+                <span class="cost-rate-label">Taxa Horária de Custo Fixo</span>
+                <strong class="cost-rate-val" id="rateCustoFixoHora">R$ 0,00 / h</strong>
+              </div>
+              <div class="cost-rate-item">
+                <span class="cost-rate-label">Deduções Totais de Venda</span>
+                <strong class="cost-rate-val" id="rateDeducoesPct">0,0%</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Parâmetros</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
        MODAL — Versão e Novidades do Sistema
        Controlado por js/modules/systemInfo.js
        ============================================================ -->
@@ -6613,6 +6848,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=49"></script>
+  <script type="module" src="js/app.js?v=50"></script>
 </body>
 </html>
