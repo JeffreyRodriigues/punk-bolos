@@ -238,3 +238,11 @@ test('ensureProduct: não herda produtoId de fatia quando o item for Bolo Inteir
   assert.equal(boloResult.titulo, 'Tiramissu');
   assert.equal(boloResult.valor, 120);
 });
+
+test('createProduct e validateProduct com tipo Docinho', () => {
+  const p = product.createProduct({ titulo: 'Brigadeiro', tipoProduto: 'Docinho', valor: 4 });
+  assert.equal(p.tipoProduto, 'Docinho');
+  assert.equal(p.tamanho, '');
+  const val = product.validateProduct(p);
+  assert.equal(val.valid, true);
+});

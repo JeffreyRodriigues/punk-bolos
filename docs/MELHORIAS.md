@@ -244,15 +244,18 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Acessível a qualquer momento por administradores e funcionários da equipe.
 
 ### 40. Precificação Profissional & Parâmetros de Custos (SENAC / Sebrae)
-- **Modal de Parâmetros Globais de Custo (`costSettings.js` & `#modalCostSettings`):**
-  - Cadastro consolidado de custos fixos mensais (aluguel, energia, gás, água, internet, assessoria contábil/MEI, limpeza, manutenção de maquinário).
-  - Gestão de equipe e mão de obra com cálculo automático de encargos trabalhistas CLT (13º, férias + 1/3, FGTS, provisão rescisória) e jornada útil $\rightarrow$ determinação do custo exato do minuto de trabalho.
-  - Configuração de alíquotas de imposto (% Simples Nacional), taxas médias de cartão e margem técnica de quebra de insumos (3%).
 - **Nova Ficha Técnica com DRE Unitário & Markup Divisor (`pricing.js` & `pricingView.js`):**
   - Cálculo oficial por Markup Divisor eliminando perdas ocultas por multiplicador fixo.
   - Apontamento de tempo de preparo/decoração em minutos e margem de lucro líquido real desejada.
   - Demonstrativo de Preço (DRE) com detalhamento de insumos, mão de obra, custos fixos rateados, embalagens, preço mínimo viável (ponto de equilíbrio), preço sugerido e lucro líquido em R$ por unidade.
   - Interface 100% texto puro, sem emojis, com botões e badges elegantes integrados ao tema.
+
+### 41. Novo Tipo "Docinho" e Filtragem de Itens Não Precificáveis
+- **Novo Tipo de Produto "Docinho" (`PRODUCT_TYPES`):**
+  - Adicionado suporte nativo ao tipo `Docinho` em todo o ecossistema (catálogo de produtos, pedidos, controle de estoque e precificação).
+  - Produto de exemplo **Brigadeiro** criado como padrão (`tipoProduto: 'Docinho'`, `valor: R$ 4,00`, `detalhes: 'Brigadeiro tradicional artesanal 100% cacau'`).
+- **Filtragem Inteligente na Tela de Precificação (`pricingView.js`):**
+  - Itens dos tipos `Adicional` e `Decoração` passam a ser ocultados da tela de Precificação (seletor de produtos, filtro de tipos e Matriz de Rentabilidade), uma vez que são itens acessórios/complementares que não passam por ficha técnica.
 
 ---
 

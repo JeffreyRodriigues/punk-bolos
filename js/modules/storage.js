@@ -219,10 +219,12 @@ function migrateProduct(product) {
       tipoProduto = 'Adicional';
     } else if (/\bpunkitos\b/i.test(rawLower)) {
       tipoProduto = 'Punkitos';
+    } else if (/\b(brigadeiro|beijinho|docinho|trufa|bombom|cajuzinho|bicho\s+de\s+pe)\b/i.test(rawLower)) {
+      tipoProduto = 'Docinho';
     }
   }
 
-  const VALID_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Bolo Naked', 'Adicional', 'Decoração'];
+  const VALID_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Bolo Naked', 'Docinho', 'Adicional', 'Decoração'];
   if (!VALID_TYPES.includes(tipoProduto)) {
     tipoProduto = 'Fatia';
   }
@@ -636,6 +638,19 @@ export function getAllProducts() {
     productsCache.push(sampleNaked);
     localStorage.setItem(PRODUTOS_KEY, JSON.stringify(productsCache));
   }
+  if (productsCache && !productsCache.some((p) => p.tipoProduto === 'Docinho')) {
+    const sampleDocinho = {
+      id: 'prod_docinho_brigadeiro',
+      titulo: 'Brigadeiro',
+      tipoProduto: 'Docinho',
+      tamanho: '',
+      valor: 4.0,
+      detalhes: 'Brigadeiro tradicional artesanal 100% cacau',
+      controlaEstoque: true,
+    };
+    productsCache.push(sampleDocinho);
+    localStorage.setItem(PRODUTOS_KEY, JSON.stringify(productsCache));
+  }
   return productsCache;
 }
 export const getProducts = getAllProducts;
@@ -820,6 +835,18 @@ export async function init() {
         controlaEstoque: false,
       };
       productsCache.push(sampleNaked);
+    }
+    if (productsCache && !productsCache.some((p) => p.tipoProduto === 'Docinho')) {
+      const sampleDocinho = {
+        id: 'prod_docinho_brigadeiro',
+        titulo: 'Brigadeiro',
+        tipoProduto: 'Docinho',
+        tamanho: '',
+        valor: 4.0,
+        detalhes: 'Brigadeiro tradicional artesanal 100% cacau',
+        controlaEstoque: true,
+      };
+      productsCache.push(sampleDocinho);
     }
 
     // Atualiza o LocalStorage local com os dados da nuvem para manter o cache sincronizado

@@ -97,13 +97,23 @@ export function selectProduto(id) {
 }
 
 /**
+ * Retorna apenas os produtos aptos para precificação (exclui Adicional e Decoração).
+ * @returns {Array<Object>}
+ */
+export function getPrecificavelProducts() {
+  return product
+    .getProducts()
+    .filter((p) => p.tipoProduto !== 'Adicional' && p.tipoProduto !== 'Decoração');
+}
+
+/**
  * Renderiza a Matriz Geral de Rentabilidade / Resumo de Custos.
  */
 export function renderOverviewTable() {
   const tbody = document.getElementById('precOverviewBody');
   if (!tbody) return;
 
-  const allProducts = product.getProducts();
+  const allProducts = getPrecificavelProducts();
   const receitas = storage.getAllPrecificacoes();
   const insumos = storage.getAllInsumos();
   const bases = base.getBases();
@@ -258,7 +268,7 @@ export function render() {
   const overviewEl = document.getElementById('precOverviewPanel');
   const formEl = document.getElementById('precificacaoForm');
 
-  if (product.getProducts().length === 0) {
+  if (getPrecificavelProducts().length === 0) {
     if (emptyEl) emptyEl.hidden = false;
     if (overviewEl) overviewEl.hidden = true;
     if (formEl) formEl.hidden = true;
@@ -278,7 +288,7 @@ export function render() {
 function populateTipoFilter() {
   const filtro = document.getElementById('precTipoFilter');
   if (!filtro) return;
-  const tipos = [...new Set(product.getProducts().map((p) => p.tipoProduto).filter(Boolean))].sort();
+  const tipos = [...new Set(getPrecificavelProducts().map((p) => p.tipoProduto).filter(Boolean))].sort();
   const anterior = filtro.value;
   filtro.innerHTML = '';
   const all = document.createElement('option');
@@ -304,7 +314,7 @@ function populateProdutoSelect() {
   const filtro = document.getElementById('precTipoFilter');
   const tipo = filtro ? filtro.value : '';
 
-  const produtos = [...product.getProducts()]
+  const produtos = [...getPrecificavelProducts()]
     .filter((p) => !tipo || p.tipoProduto === tipo)
     .sort((a, b) =>
       (sortKey(a.titulo || '') + sortKey(a.tamanho || '')).localeCompare(

@@ -23,7 +23,7 @@
 import * as storage from './storage.js';
 
 /** Tipos de produto aceitos pelo sistema. */
-export const PRODUCT_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Bolo Naked', 'Decoração', 'Adicional'];
+export const PRODUCT_TYPES = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Bolo Naked', 'Docinho', 'Decoração', 'Adicional'];
 
 /** Tamanhos válidos apenas para "Bolo Inteiro". */
 export const CAKE_SIZES = ['Mini', 'PP', 'P', 'M', 'G', 'GG', 'Bento Cake', 'Coração'];
