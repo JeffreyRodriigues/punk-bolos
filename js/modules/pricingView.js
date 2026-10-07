@@ -697,9 +697,10 @@ function updatePreview() {
   add('Custo Unitário de Produção', `${formatCurrency(c.custoUnitarioTotal)} /un`, false, false, 'var(--color-text)');
   add('Preço Mínimo (Ponto de Equilíbrio)', `${formatCurrency(c.precoMinimo)} /un`, false, true, 'var(--color-warn)');
   
-  // 3. Preço Sugerido com Lucro Líquido
-  add(`Preço Sugerido (Lucro ${c.lucroLiquidoPct}%)`, `${formatCurrency(c.precoSugerido)} /un`, true, false, 'var(--color-primary)');
-  add('Lucro Líquido Real', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, true, 'var(--color-ok)');
+  // 3. Preço Sugerido com Margem Líquida e Margem de Contribuição
+  add(`Preço Sugerido (Margem ${c.lucroLiquidoPct}%)`, `${formatCurrency(c.precoSugerido)} /un`, true, false, 'var(--color-primary)');
+  add('Margem de Contribuição', `${formatCurrency(c.margemContribuicaoValor)} /un (${c.margemContribuicaoPct.toFixed(1)}%)`, false, false, 'var(--color-text)');
+  add('Margem Líquida Real', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, true, 'var(--color-ok)');
 
   // Status: atualizada / desatualizada / sem precificação
   if (status) {

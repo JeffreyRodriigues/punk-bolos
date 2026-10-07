@@ -257,6 +257,15 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Filtragem Inteligente na Tela de Precificação (`pricingView.js`):**
   - Itens dos tipos `Adicional` e `Decoração` passam a ser ocultados da tela de Precificação (seletor de produtos, filtro de tipos e Matriz de Rentabilidade), uma vez que são itens acessórios/complementares que não passam por ficha técnica.
 
+### 42. Padronização de Nomenclaturas Financeiras & Margem de Contribuição
+- **Margem de Contribuição no DRE (`pricing.js` & `pricingView.js`):**
+  - Adicionada linha explícita no Demonstrativo de Preço exibindo a **Margem de Contribuição** em R$ e % por unidade.
+- **Nomenclaturas Padronizadas e Claras (`index.html` & `pricingView.js`):**
+  - Ficha Técnica: Atualizado para *Margem Líquida Desejada (%)*.
+  - Demonstrativo: Atualizado para *Margem Líquida Real: R$ X,XX /un (XX.X%)*.
+  - Matriz de Rentabilidade: Colunas renomeadas para *Lucro Líquido (R$)* e *Margem Líquida (%)*.
+  - Parâmetros de Custo: Atualizado para *Margem Líquida Padrão (%)*.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

@@ -170,9 +170,11 @@ test('calcular: pipeline completo Senac/Sebrae com Markup Divisor', () => {
   // Divisor = 1 - 0.075 = 0.925 -> 2.97 / 0.925 = 3.21
   assert.equal(c.precoMinimo, 3.21);
 
-  // Lucro Líquido Real em R$:
+  // Lucro Líquido Real e Margem de Contribuição:
   // 4.40 - 2.97 - (4.40 * 0.075 = 0.33) = 1.10
   assert.equal(c.lucroLiquidoValor, 1.10);
+  assert.equal(c.margemContribuicaoValor, 2.14); // 4.40 - 1.93 - 0.33
+  assert.equal(c.margemContribuicaoPct, 48.64);
 });
 
 /* ---------- arredondamento e validações ---------- */

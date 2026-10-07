@@ -164,8 +164,10 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
   const divisorMinimo = Math.max(0.05, (100 - taxasDeducoesPct) / 100);
   const precoMinimo = round2(custoUnitarioTotal / divisorMinimo);
 
-  // 6. Lucro Líquido Real em R$ por unidade vendida
+  // 6. Margem de Contribuição e Lucro Líquido Real por unidade vendida
   const deducoesValor = round2(precoSugerido * (taxasDeducoesPct / 100));
+  const margemContribuicaoValor = round2(precoSugerido - custoRealUnitario - deducoesValor);
+  const margemContribuicaoPct = precoSugerido > 0 ? round2((margemContribuicaoValor / precoSugerido) * 100) : 0;
   const lucroLiquidoValor = round2(precoSugerido - custoUnitarioTotal - deducoesValor);
   const margemLucroRealPct = precoSugerido > 0 ? round2((lucroLiquidoValor / precoSugerido) * 100) : 0;
 
@@ -193,8 +195,10 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
     precoMinimo,             // Preço no Ponto de Equilíbrio
     precoSugerido,           // Preço Recomendado com Lucro Real
     custoPorUnidade: precoSugerido,
+    margemContribuicaoValor, // Margem de Contribuição em R$
+    margemContribuicaoPct,   // Índice da Margem de Contribuição em %
     lucroLiquidoValor,       // R$ que fica no caixa
-    margemLucroRealPct,
+    margemLucroRealPct,      // Margem Líquida Real em %
 
     // Campos de compatibilidade
     comMargem,

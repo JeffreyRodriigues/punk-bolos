@@ -104,6 +104,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -5122,6 +5124,8 @@ html.dark .badge-purple {
 
 
 
+
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5705,8 +5709,8 @@ html.dark .badge-purple {
                 <th>Tipo</th>
                 <th>Custo Unit. (CMV)</th>
                 <th>Preço Venda</th>
-                <th>Lucro Bruto</th>
-                <th>Margem Real</th>
+                <th>Lucro Líquido (R$)</th>
+                <th>Margem Líquida (%)</th>
                 <th>Status</th>
                 <th style="text-align: right;">Ação</th>
               </tr>
@@ -5763,8 +5767,8 @@ html.dark .badge-purple {
               <input type="number" id="precTempoPreparo" min="0" step="1" value="30" placeholder="Ex.: 30" aria-label="Tempo de preparo e decoração em minutos">
             </div>
             <div class="form-field">
-              <label for="precLucroLiquido">Lucro Líquido Desejado (%)</label>
-              <input type="number" id="precLucroLiquido" min="0" max="89" step="0.5" value="25" aria-label="Margem de lucro líquido desejada">
+              <label for="precLucroLiquido">Margem Líquida Desejada (%)</label>
+              <input type="number" id="precLucroLiquido" min="0" max="89" step="0.5" value="25" aria-label="Margem líquida desejada">
             </div>
             <div class="form-field">
               <label for="precRendimento">Rendimento (unidades)</label>
@@ -6744,7 +6748,7 @@ html.dark .badge-purple {
                   <input type="number" id="costQuebraPct" min="0" step="0.5" placeholder="3,0">
                 </div>
                 <div class="form-field">
-                  <label for="costLucroPadraoPct">Margem de Lucro Padrão (%)</label>
+                  <label for="costLucroPadraoPct">Margem Líquida Padrão (%)</label>
                   <input type="number" id="costLucroPadraoPct" min="1" max="89" step="1" placeholder="25,0">
                 </div>
               </div>
