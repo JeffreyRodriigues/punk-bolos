@@ -106,6 +106,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -5126,6 +5128,8 @@ html.dark .badge-purple {
 
 
 
+
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5318,6 +5322,29 @@ html.dark .badge-purple {
 
     <!-- Abas de filtro por tipo de produto (Ideia 1) -->
     <div id="dash-type-tabs" class="dash-type-tabs" role="tablist" aria-label="Filtrar por tipo de produto"></div>
+
+    <!-- Card de Acompanhamento do Ponto de Equilíbrio Operacional -->
+    <section id="dashBreakevenCard" class="estoque-panel dash-breakeven-card" style="margin-bottom: 16px; padding: 14px 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+        <div>
+          <h2 style="margin: 0; font-size: 1rem; font-weight: 700;">Ponto de Equilíbrio do Mês</h2>
+          <p class="view-subtitle" style="margin: 2px 0 0 0; font-size: 0.82rem;">
+            Meta de Margem de Contribuição para cobrir Custos Fixos + Pró-Labore:
+          </p>
+        </div>
+        <span id="dashBreakevenBadge" class="badge" style="font-weight: 700; font-size: 0.82rem;">0% Atingido</span>
+      </div>
+
+      <div class="progress-bar-wrap" style="height: 10px; background: var(--color-surface-alt); border-radius: 999px; overflow: hidden; border: 1px solid var(--color-border); margin: 8px 0 8px;">
+        <div id="dashBreakevenFill" style="height: 100%; width: 0%; background: var(--color-primary); transition: width 0.4s ease;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem; flex-wrap: wrap; gap: 8px;">
+        <span><strong>Margem Gerada:</strong> <span id="dashBreakevenMargem">R$ 0,00</span></span>
+        <span><strong>Meta Mensal:</strong> <span id="dashBreakevenMeta">R$ 0,00</span></span>
+        <span id="dashBreakevenStatus" style="font-weight: 600; color: var(--color-text-muted);">Calculando...</span>
+      </div>
+    </section>
 
     <section class="dashboard" aria-label="Resumo de vendas">
       <div class="stat-card stat-money" id="stat-receita">

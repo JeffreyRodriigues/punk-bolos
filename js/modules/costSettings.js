@@ -74,8 +74,11 @@ export function calculateCostRates(settings = {}) {
   // 2. Mão de Obra e Encargos
   const proLabore = Number(s.proLaboreMensal || 0);
   const salarioAjudantes = Number(s.salarioAjudantes || 0);
+  const encargosPct = s.encargosCltPct !== undefined && s.encargosCltPct !== null && s.encargosCltPct !== ''
+    ? Number(s.encargosCltPct)
+    : 34.24;
   const encargos = s.tipoContratacao === 'clt' 
-    ? (salarioAjudantes * (Number(s.encargosCltPct || 34.24) / 100)) 
+    ? (salarioAjudantes * (encargosPct / 100)) 
     : 0;
   const beneficios = Number(s.beneficiosMensais || 0);
   const totalMaoDeObraMensal = round2(proLabore + salarioAjudantes + encargos + beneficios);

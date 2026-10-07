@@ -122,6 +122,22 @@ test('costSettings: calcula custo hora/minuto e encargos CLT corretamente', () =
   assert.equal(rates.deducoesVendaPct, 7.5); // 4.0 + 3.5
 });
 
+test('costSettings: regime prestador / fixo zera encargos sociais', () => {
+  const settings = {
+    proLaboreMensal: 3000,
+    salarioAjudantes: 2000,
+    tipoContratacao: 'fixo',
+    encargosCltPct: 0,
+    beneficiosMensais: 0,
+    diasTrabalhadosMes: 20,
+    horasPorDia: 8,
+  };
+
+  const rates = costSettings.calculateCostRates(settings);
+  assert.equal(rates.totalMaoDeObraMensal, 5000); // 3000 + 2000 sem encargos
+  assert.equal(rates.custoHoraMaoDeObra, 31.25); // 5000 / 160
+});
+
 /* ---------- calcular: pipeline completo e Markup Divisor SENAC ---------- */
 
 test('calcular: pipeline completo Senac/Sebrae com Markup Divisor', () => {
@@ -175,6 +191,12 @@ test('calcular: pipeline completo Senac/Sebrae com Markup Divisor', () => {
   assert.equal(c.lucroLiquidoValor, 1.10);
   assert.equal(c.margemContribuicaoValor, 2.14); // 4.40 - 1.93 - 0.33
   assert.equal(c.margemContribuicaoPct, 48.64);
+
+  // Ponto de Equilíbrio Operacional do Produto
+  assert.equal(c.totalGastosFixosMensais, 3665.00);
+  assert.equal(c.pontoEquilibrioUnidadesMensal, 1713);
+  assert.equal(c.pontoEquilibrioUnidadesDiario, 78);
+  assert.equal(c.pontoEquilibrioFaturamentoMensal, 7537.20);
 });
 
 /* ---------- arredondamento e validações ---------- */

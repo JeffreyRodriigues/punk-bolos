@@ -443,3 +443,60 @@ export function rankingsByType(orders, limit = 5) {
   });
   return result;
 }
+
+/**
+ * Calcula a Margem de Contribuição total dos pedidos ativos no período
+ * e compara com a meta mensal de Custos Fixos + Pró-Labore.
+ * @param {Array<Object>} orders - Pedidos do período.
+ * @param {Array<Object>} products - Catálogo de produtos.
+ * @param {Array<Object>} receitas - Fichas técnicas de precificação.
+ * @param {Function} [calcularPricingFn] - Função de cálculo de precificação (pricing.calcular).
+ * @param {Array<Object>} [insumos] - Insumos cadastrados.
+ * @param {Array<Object>} [bases] - Bases cadastradas.
+ * @param {Object} [rates] - Parâmetros de custos calculados.
+ * @returns {{ metaMensal: number, margemTotal: number, percentual: number, restante: number, atingido: boolean }}
+ */
+export function breakEvenProgress(orders, products = [], receitas = [], calcularPricingFn = null, insumos = [], bases = [], rates = null) {
+  const metaMensal = round2((rates && rates.totalCustosFixos ? rates.totalCustosFixos : 0) + (rates && rates.totalMaoDeObraMensal ? rates.totalMaoDeObraMensal : 0));
+  const taxasDeducoesPct = Number(rates && rates.deducoesVendaPct ? rates.deducoesVendaPct : 0);
+
+  const prodById = new Map((products || []).map((p) => [p.id, p]));
+  const recsByProd = new Map((receitas || []).map((r) => [r.produtoId, r]));
+
+  let margemTotal = 0;
+
+  activeOrders(orders).forEach((order) => {
+    (order.itens || []).forEach((item) => {
+      if (item.cortesia) return;
+      const qtd = Number(item.quantidade) || 0;
+      const precoUnit = Number(item.valorUnitario) || 0;
+      if (qtd <= 0 || precoUnit <= 0) return;
+
+      const prod = prodById.get(item.produtoId);
+      const rec = prod ? recsByProd.get(prod.id) : null;
+      let cmvUnit = 0;
+
+      if (rec && typeof calcularPricingFn === 'function') {
+        const calc = calcularPricingFn(rec, insumos, bases, rates);
+        cmvUnit = calc.custoRealUnitario || 0;
+      }
+
+      const deducoesUnit = precoUnit * (taxasDeducoesPct / 100);
+      const mcUnit = Math.max(0, precoUnit - cmvUnit - deducoesUnit);
+      margemTotal += mcUnit * qtd;
+    });
+  });
+
+  margemTotal = round2(margemTotal);
+  const percentual = metaMensal > 0 ? Math.min(100, round2((margemTotal / metaMensal) * 100)) : (margemTotal > 0 ? 100 : 0);
+  const restante = metaMensal > margemTotal ? round2(metaMensal - margemTotal) : 0;
+  const atingido = metaMensal > 0 && margemTotal >= metaMensal;
+
+  return {
+    metaMensal,
+    margemTotal,
+    percentual,
+    restante,
+    atingido,
+  };
+}

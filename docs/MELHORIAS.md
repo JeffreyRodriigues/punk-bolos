@@ -266,6 +266,17 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Matriz de Rentabilidade: Colunas renomeadas para *Lucro Líquido (R$)* e *Margem Líquida (%)*.
   - Parâmetros de Custo: Atualizado para *Margem Líquida Padrão (%)*.
 
+### 43. Indicadores de Ponto de Equilíbrio Operacional (Break-Even) & Ajustes nos Parâmetros de Custo
+- **Ponto de Equilíbrio por Produto na Precificação (`pricing.js` & `pricingView.js`):**
+  - Cálculo automático da meta de vendas em unidades por mês e por dia útil necessárias para cobrir o total de custos fixos e pró-labore da empresa através da Margem de Contribuição unitária.
+  - Box informativo no DRE da Precificação destacando a meta mensal (`un/mês`), meta diária (`un/dia`) e o faturamento mínimo mensal correspondente.
+- **Card de Progresso do Ponto de Equilíbrio no Dashboard (`dashboard.js`, `dashboardService.js` & `index.html`):**
+  - Painel de acompanhamento em tempo real no topo da tela inicial de Vendas.
+  - Mede a Margem de Contribuição acumulada pelos pedidos ativos no período contra a meta mensal dos Gastos Fixos Operacionais (Custos Fixos + Pró-Labore/Equipe).
+  - Barra de progresso visual com badge percentual e status dinâmico (*Faltam R$ X,XX para o ponto de equilíbrio* / *Contas do mês 100% pagas!*).
+- **Regime de Contratação nos Parâmetros de Custo (`costSettings.js` & `pricingView.js`):**
+  - Ao alternar para o regime *Prestador / Fixo (Sem encargos)*, o campo *Encargos Sociais CLT (%)* é automaticamente zerado e configurado como somente leitura, recalculando as taxas horárias e persistindo `0%` sem reverter para o padrão. Ao retornar para *CLT*, o campo é reabilitado para edição.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

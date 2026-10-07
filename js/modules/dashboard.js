@@ -15,6 +15,10 @@
 
 import * as storage from './storage.js';
 import * as order from './order.js';
+import * as product from './product.js';
+import * as pricing from './pricing.js';
+import * as base from './base.js';
+import * as costSettings from './costSettings.js';
 import * as dateFilter from './dateFilter.js';
 import * as service from './dashboardService.js';
 import { formatCurrency, formatDate } from '../utils/money.js';
@@ -489,6 +493,56 @@ function renderTypeRankings(orders) {
 /* ---------- Render principal ---------- */
 
 /**
+ * Renderiza o card de termômetro de Ponto de Equilíbrio Operacional do Mês.
+ */
+function renderBreakEvenCard(orders) {
+  const badgeEl = document.getElementById('dashBreakevenBadge');
+  const fillEl = document.getElementById('dashBreakevenFill');
+  const margemEl = document.getElementById('dashBreakevenMargem');
+  const metaEl = document.getElementById('dashBreakevenMeta');
+  const statusEl = document.getElementById('dashBreakevenStatus');
+  if (!badgeEl || !fillEl || !margemEl || !metaEl || !statusEl) return;
+
+  const products = product.getProducts();
+  const receitas = storage.getAllPrecificacoes();
+  const insumos = storage.getAllInsumos();
+  const bases = base.getBases();
+  const rates = costSettings.getCostSettings();
+
+  const progress = service.breakEvenProgress(orders, products, receitas, pricing.calcular, insumos, bases, rates);
+
+  margemEl.textContent = formatCurrency(progress.margemTotal);
+  metaEl.textContent = formatCurrency(progress.metaMensal);
+  fillEl.style.width = `${progress.percentual}%`;
+
+  if (progress.metaMensal <= 0) {
+    badgeEl.textContent = 'Sem Metas';
+    badgeEl.className = 'badge';
+    badgeEl.style.background = 'var(--color-surface-alt)';
+    badgeEl.style.color = 'var(--color-text-muted)';
+    statusEl.textContent = 'Configure os custos fixos na aba Precificação';
+    statusEl.style.color = 'var(--color-text-muted)';
+    return;
+  }
+
+  badgeEl.textContent = `${progress.percentual.toFixed(1)}% Atingido`;
+  if (progress.atingido) {
+    badgeEl.className = 'badge badge-success';
+    badgeEl.style.background = 'var(--color-ok-soft)';
+    badgeEl.style.color = 'var(--color-ok)';
+    fillEl.style.background = 'var(--color-ok)';
+    statusEl.innerHTML = '<span style="color: var(--color-ok); font-weight: 700;">Contas do mês 100% pagas!</span>';
+  } else {
+    badgeEl.className = 'badge badge-warning';
+    badgeEl.style.background = 'var(--color-warn-soft)';
+    badgeEl.style.color = 'var(--color-warn)';
+    fillEl.style.background = 'var(--color-primary)';
+    statusEl.innerHTML = `Faltam <strong>${formatCurrency(progress.restante)}</strong> para o ponto de equilíbrio`;
+    statusEl.style.color = 'var(--color-text-muted)';
+  }
+}
+
+/**
  * Renderiza o dashboard completo para o período filtrado.
  */
 export function render() {
@@ -504,6 +558,7 @@ export function render() {
   }
 
   renderTypeTabs();
+  renderBreakEvenCard(periodFiltered);
   renderStats(orders);
 
   const theme = chartTheme();

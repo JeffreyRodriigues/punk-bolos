@@ -702,6 +702,33 @@ function updatePreview() {
   add('Margem de Contribuição', `${formatCurrency(c.margemContribuicaoValor)} /un (${c.margemContribuicaoPct.toFixed(1)}%)`, false, false, 'var(--color-text)');
   add('Margem Líquida Real', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, true, 'var(--color-ok)');
 
+  // 4. Box de Ponto de Equilíbrio Operacional do Produto
+  if (c.pontoEquilibrioUnidadesMensal > 0) {
+    addDivider();
+    const beBox = document.createElement('div');
+    beBox.className = 'prec-breakeven-box';
+    beBox.style.marginTop = '8px';
+    beBox.style.padding = '8px 10px';
+    beBox.style.background = 'var(--color-surface-alt)';
+    beBox.style.border = '1px solid var(--color-border)';
+    beBox.style.borderRadius = 'var(--radius-sm)';
+    beBox.innerHTML = `
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">Ponto de Equilíbrio deste Produto:</div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.84rem; margin-bottom: 2px;">
+        <span>Meta Mensal:</span>
+        <strong>${c.pontoEquilibrioUnidadesMensal.toLocaleString('pt-BR')} un/mês</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.84rem; margin-bottom: 2px;">
+        <span>Meta Diária (${c.diasTrabalhadosMes} dias):</span>
+        <strong>${c.pontoEquilibrioUnidadesDiario.toLocaleString('pt-BR')} un/dia</strong>
+      </div>
+      <div style="font-size: 0.76rem; color: var(--color-text-muted); margin-top: 4px; text-align: right;">
+        Faturamento mín.: <strong>${formatCurrency(c.pontoEquilibrioFaturamentoMensal)}/mês</strong> (paga R$ ${formatCurrency(c.totalGastosFixosMensais)})
+      </div>
+    `;
+    preview.appendChild(beBox);
+  }
+
   // Status: atualizada / desatualizada / sem precificação
   if (status) {
     const desatualizada = editingReceita && pricing.isDesatualizada(editingReceita, insumos, bases);
@@ -833,7 +860,34 @@ function initCostSettingsModal() {
     lucroPadraoPct: document.getElementById('costLucroPadraoPct'),
   };
 
+  function updateEncargosFieldState() {
+    const isFixo = inputs.tipoContrato?.value === 'fixo';
+    if (inputs.encargosPct) {
+      if (isFixo) {
+        inputs.encargosPct.value = '0';
+        inputs.encargosPct.readOnly = true;
+        inputs.encargosPct.style.backgroundColor = 'var(--color-surface-alt)';
+        inputs.encargosPct.style.cursor = 'not-allowed';
+      } else {
+        inputs.encargosPct.readOnly = false;
+        inputs.encargosPct.style.backgroundColor = '';
+        inputs.encargosPct.style.cursor = '';
+        if (Number(inputs.encargosPct.value) === 0 || !inputs.encargosPct.value) {
+          inputs.encargosPct.value = '34.24';
+        }
+      }
+    }
+  }
+
   function getFormValues() {
+    const tipo = inputs.tipoContrato?.value || 'clt';
+    const isFixo = tipo === 'fixo';
+    let encargos = 0;
+    if (!isFixo) {
+      const rawEnc = inputs.encargosPct?.value;
+      encargos = rawEnc !== '' && rawEnc !== null && !isNaN(Number(rawEnc)) ? Number(rawEnc) : 34.24;
+    }
+
     return {
       aluguel: Number(inputs.aluguel?.value) || 0,
       energia: Number(inputs.energia?.value) || 0,
@@ -845,8 +899,8 @@ function initCostSettingsModal() {
       produtosLimpeza: Number(inputs.limpeza?.value) || 0,
       proLaboreMensal: Number(inputs.proLabore?.value) || 0,
       salarioAjudantes: Number(inputs.salarioAjudantes?.value) || 0,
-      tipoContratacao: inputs.tipoContrato?.value || 'clt',
-      encargosCltPct: Number(inputs.encargosPct?.value) || 34.24,
+      tipoContratacao: tipo,
+      encargosCltPct: encargos,
       diasTrabalhadosMes: Number(inputs.diasMes?.value) || 22,
       horasPorDia: Number(inputs.horasDia?.value) || 8,
       impostoVendaPct: Number(inputs.impostoPct?.value) || 0,
@@ -873,25 +927,26 @@ function initCostSettingsModal() {
 
   function openModal() {
     const current = costSettings.getCostSettings();
-    if (inputs.aluguel) inputs.aluguel.value = current.aluguel || 0;
-    if (inputs.energia) inputs.energia.value = current.energia || 160;
-    if (inputs.gas) inputs.gas.value = current.gas || 130;
-    if (inputs.agua) inputs.agua.value = current.agua || 70;
-    if (inputs.internet) inputs.internet.value = current.internetSistemas || 90;
-    if (inputs.manutencao) inputs.manutencao.value = current.manutencaoDepreciacao || 80;
-    if (inputs.contador) inputs.contador.value = current.contadorOuMei || 75;
-    if (inputs.limpeza) inputs.limpeza.value = current.produtosLimpeza || 60;
-    if (inputs.proLabore) inputs.proLabore.value = current.proLaboreMensal || 3000;
-    if (inputs.salarioAjudantes) inputs.salarioAjudantes.value = current.salarioAjudantes || 0;
+    if (inputs.aluguel) inputs.aluguel.value = current.aluguel ?? 0;
+    if (inputs.energia) inputs.energia.value = current.energia ?? 160;
+    if (inputs.gas) inputs.gas.value = current.gas ?? 130;
+    if (inputs.agua) inputs.agua.value = current.agua ?? 70;
+    if (inputs.internet) inputs.internet.value = current.internetSistemas ?? 90;
+    if (inputs.manutencao) inputs.manutencao.value = current.manutencaoDepreciacao ?? 80;
+    if (inputs.contador) inputs.contador.value = current.contadorOuMei ?? 75;
+    if (inputs.limpeza) inputs.limpeza.value = current.produtosLimpeza ?? 60;
+    if (inputs.proLabore) inputs.proLabore.value = current.proLaboreMensal ?? 3000;
+    if (inputs.salarioAjudantes) inputs.salarioAjudantes.value = current.salarioAjudantes ?? 0;
     if (inputs.tipoContrato) inputs.tipoContrato.value = current.tipoContratacao || 'clt';
-    if (inputs.encargosPct) inputs.encargosPct.value = current.encargosCltPct || 34.24;
-    if (inputs.diasMes) inputs.diasMes.value = current.diasTrabalhadosMes || 22;
-    if (inputs.horasDia) inputs.horasDia.value = current.horasPorDia || 8;
-    if (inputs.impostoPct) inputs.impostoPct.value = current.impostoVendaPct || 4.0;
-    if (inputs.taxaCartaoPct) inputs.taxaCartaoPct.value = current.taxaCartaoMediaPct || 3.5;
-    if (inputs.quebraPct) inputs.quebraPct.value = current.quebraInsumosPct || 3.0;
-    if (inputs.lucroPadraoPct) inputs.lucroPadraoPct.value = current.lucroLiquidoPadraoPct || 25.0;
+    if (inputs.encargosPct) inputs.encargosPct.value = current.tipoContratacao === 'fixo' ? 0 : (current.encargosCltPct ?? 34.24);
+    if (inputs.diasMes) inputs.diasMes.value = current.diasTrabalhadosMes ?? 22;
+    if (inputs.horasDia) inputs.horasDia.value = current.horasPorDia ?? 8;
+    if (inputs.impostoPct) inputs.impostoPct.value = current.impostoVendaPct ?? 4.0;
+    if (inputs.taxaCartaoPct) inputs.taxaCartaoPct.value = current.taxaCartaoMediaPct ?? 3.5;
+    if (inputs.quebraPct) inputs.quebraPct.value = current.quebraInsumosPct ?? 3.0;
+    if (inputs.lucroPadraoPct) inputs.lucroPadraoPct.value = current.lucroLiquidoPadraoPct ?? 25.0;
 
+    updateEncargosFieldState();
     updateModalRatesSummary();
     modal.classList.add('open');
   }
@@ -901,6 +956,13 @@ function initCostSettingsModal() {
   modal.querySelectorAll('[data-close-modal]').forEach((el) => {
     el.addEventListener('click', () => modal.classList.remove('open'));
   });
+
+  if (inputs.tipoContrato) {
+    inputs.tipoContrato.addEventListener('change', () => {
+      updateEncargosFieldState();
+      updateModalRatesSummary();
+    });
+  }
 
   form.addEventListener('input', updateModalRatesSummary);
 

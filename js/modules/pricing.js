@@ -171,7 +171,14 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
   const lucroLiquidoValor = round2(precoSugerido - custoUnitarioTotal - deducoesValor);
   const margemLucroRealPct = precoSugerido > 0 ? round2((lucroLiquidoValor / precoSugerido) * 100) : 0;
 
-  // 7. Compatibilidade Legada (Fórmula antiga baseada em multiplicador)
+  // 7. Ponto de Equilíbrio Operacional (Break-Even)
+  const totalGastosFixosMensais = round2((Number(rates.totalCustosFixos) || 0) + (Number(rates.totalMaoDeObraMensal) || 0));
+  const diasTrabalhadosMes = Number(rates.diasTrabalhadosMes || 22);
+  const pontoEquilibrioUnidadesMensal = margemContribuicaoValor > 0 ? Math.ceil(totalGastosFixosMensais / margemContribuicaoValor) : 0;
+  const pontoEquilibrioUnidadesDiario = (pontoEquilibrioUnidadesMensal > 0 && diasTrabalhadosMes > 0) ? Math.ceil(pontoEquilibrioUnidadesMensal / diasTrabalhadosMes) : 0;
+  const pontoEquilibrioFaturamentoMensal = round2(pontoEquilibrioUnidadesMensal * precoSugerido);
+
+  // 8. Compatibilidade Legada (Fórmula antiga baseada em multiplicador)
   const margemLegada = Number(receita.margem) || 0;
   const multiplicadorLegado = Number(receita.multiplicador) || 1;
   const comMargem = round2(ci * (1 + margemLegada / 100));
@@ -199,6 +206,11 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
     margemContribuicaoPct,   // Índice da Margem de Contribuição em %
     lucroLiquidoValor,       // R$ que fica no caixa
     margemLucroRealPct,      // Margem Líquida Real em %
+    totalGastosFixosMensais, // Total a cobrir no mês (Estrutura + Salário)
+    pontoEquilibrioUnidadesMensal,
+    pontoEquilibrioUnidadesDiario,
+    pontoEquilibrioFaturamentoMensal,
+    diasTrabalhadosMes,
 
     // Campos de compatibilidade
     comMargem,

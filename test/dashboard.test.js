@@ -246,3 +246,47 @@ test('summaryByType: soma das receitas por tipo bate exatamente com revenue gera
   const somaTipos = summary['Fatia'].receita + summary['Punkitos'].receita + summary['Bolo Inteiro'].receita;
   assert.equal(somaTipos, totalRev);
 });
+
+test('breakEvenProgress: calcula meta, margem gerada e percentual de atingimento', () => {
+  const products = [
+    { id: 'p1', titulo: 'Bolo Fatia', tipoProduto: 'Fatia', valor: 10 },
+  ];
+  const receitas = [
+    { produtoId: 'p1' },
+  ];
+  const rates = {
+    totalCustosFixos: 1000,
+    totalMaoDeObraMensal: 3000,
+    deducoesVendaPct: 10, // 10% de dedução
+  };
+  // Mock pricing calculator: custo unitario 3.00
+  const mockCalcular = () => ({ custoRealUnitario: 3.00 });
+
+  // Pedido com 100 fatias vendidas a 10 cada
+  // Preço unit = 10, CMV = 3, Deduções = 10 * 10% = 1 -> Margem unit = 10 - 3 - 1 = 6.00
+  // Margem total = 100 * 6 = 600.00
+  // Meta = 1000 + 3000 = 4000.00
+  // Percentual = (600 / 4000) * 100 = 15.0%
+  // Restante = 4000 - 600 = 3400.00
+  const orders = [
+    {
+      status: 'Concluído',
+      itens: [
+        { produtoId: 'p1', quantidade: 100, valorUnitario: 10 },
+      ],
+    },
+    {
+      status: 'Cancelado',
+      itens: [
+        { produtoId: 'p1', quantidade: 50, valorUnitario: 10 },
+      ],
+    },
+  ];
+
+  const res = s.breakEvenProgress(orders, products, receitas, mockCalcular, [], [], rates);
+  assert.equal(res.metaMensal, 4000);
+  assert.equal(res.margemTotal, 600);
+  assert.equal(res.percentual, 15);
+  assert.equal(res.restante, 3400);
+  assert.equal(res.atingido, false);
+});
