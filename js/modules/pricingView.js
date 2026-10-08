@@ -685,48 +685,28 @@ function updatePreview() {
     preview.appendChild(hr);
   };
 
-  // 1. Custos Diretos e Indiretos do Lote
-  add('Insumos (c/ 3% quebra técnica)', formatCurrency(c.custoIngredientesComQuebra));
-  add(`Mão de Obra (${receita.tempoPreparoMinutos} min)`, formatCurrency(c.custoMaoDeObraLote));
-  add('Custos Fixos / Estrutura', formatCurrency(c.custoFixoLote));
-  add('Embalagem & Adicionais (por un)', formatCurrency(Number(receita.embalagem || 0) + Number(receita.custoAdicional || 0)));
+  const embalagemUnit = Number(receita.embalagem || 0) + Number(receita.custoAdicional || 0);
+
+  // 1. Composição de Custo
+  add('Insumos (c/ 3% quebra técnica)', formatCurrency(c.custoIngredientesComQuebra), false, true);
+  add(`Mão de Obra (${receita.tempoPreparoMinutos} min)`, formatCurrency(c.custoMaoDeObraLote), false, true);
+  add('Custos Fixos / Estrutura', formatCurrency(c.custoFixoLote), false, true);
+  if (embalagemUnit > 0) {
+    add('Embalagem & Adicionais (por un)', formatCurrency(embalagemUnit), false, true);
+  }
+  add('Custo Unitário Total', `${formatCurrency(c.custoUnitarioTotal)} /un`, false, false, 'var(--color-text)');
 
   addDivider();
 
-  // 2. Custo Total de Produção por Unidade
-  add('Custo Unitário de Produção', `${formatCurrency(c.custoUnitarioTotal)} /un`, false, false, 'var(--color-text)');
-  add('Preço Mínimo (Ponto de Equilíbrio)', `${formatCurrency(c.precoMinimo)} /un`, false, true, 'var(--color-warn)');
-  
-  // 3. Preço Sugerido com Margem Líquida e Margem de Contribuição
+  // 2. Preço de Venda & Lucro
   add(`Preço Sugerido (Margem ${c.lucroLiquidoPct}%)`, `${formatCurrency(c.precoSugerido)} /un`, true, false, 'var(--color-primary)');
-  add('Margem de Contribuição', `${formatCurrency(c.margemContribuicaoValor)} /un (${c.margemContribuicaoPct.toFixed(1)}%)`, false, false, 'var(--color-text)');
-  add('Margem Líquida Real', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, true, 'var(--color-ok)');
+  add('Lucro Líquido no Caixa', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, false, 'var(--color-ok)');
 
-  // 4. Box de Ponto de Equilíbrio Operacional do Produto
+  // 3. Metas & Desempenho
   if (c.pontoEquilibrioUnidadesMensal > 0) {
     addDivider();
-    const beBox = document.createElement('div');
-    beBox.className = 'prec-breakeven-box';
-    beBox.style.marginTop = '8px';
-    beBox.style.padding = '8px 10px';
-    beBox.style.background = 'var(--color-surface-alt)';
-    beBox.style.border = '1px solid var(--color-border)';
-    beBox.style.borderRadius = 'var(--radius-sm)';
-    beBox.innerHTML = `
-      <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">Ponto de Equilíbrio deste Produto:</div>
-      <div style="display: flex; justify-content: space-between; font-size: 0.84rem; margin-bottom: 2px;">
-        <span>Meta Mensal:</span>
-        <strong>${c.pontoEquilibrioUnidadesMensal.toLocaleString('pt-BR')} un/mês</strong>
-      </div>
-      <div style="display: flex; justify-content: space-between; font-size: 0.84rem; margin-bottom: 2px;">
-        <span>Meta Diária (${c.diasTrabalhadosMes} dias):</span>
-        <strong>${c.pontoEquilibrioUnidadesDiario.toLocaleString('pt-BR')} un/dia</strong>
-      </div>
-      <div style="font-size: 0.76rem; color: var(--color-text-muted); margin-top: 4px; text-align: right;">
-        Faturamento mín.: <strong>${formatCurrency(c.pontoEquilibrioFaturamentoMensal)}/mês</strong> (paga R$ ${formatCurrency(c.totalGastosFixosMensais)})
-      </div>
-    `;
-    preview.appendChild(beBox);
+    add('Margem de Contribuição', `${c.margemContribuicaoPct.toFixed(1)}% (${formatCurrency(c.margemContribuicaoValor)} /un)`, false, false, 'var(--color-text)');
+    add('Meta Ponto de Equilíbrio', `${c.pontoEquilibrioUnidadesMensal} un/mês (${c.pontoEquilibrioUnidadesDiario} un/dia)`, false, false, 'var(--color-primary)');
   }
 
   // Status: atualizada / desatualizada / sem precificação
