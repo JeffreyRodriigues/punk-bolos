@@ -731,7 +731,7 @@ function updatePreview() {
 
   // 3. Ponto de Equilíbrio do Produto (PEF)
   if (c.pontoEquilibrioUnidadesMensal > 0) {
-    addHeader(`Ponto de Equilíbrio (Pagar R$ ${formatCurrency(c.totalGastosFixosMensais)}/mês)`);
+    addHeader(`Ponto de Equilíbrio (Pagar ${formatCurrency(c.totalGastosFixosMensais)}/mês)`);
     add('Meta em Unidades', `${c.pontoEquilibrioUnidadesMensal} un/mês (${c.pontoEquilibrioUnidadesDiario} un/dia)`, false, false, 'var(--color-primary)');
     add('Meta em Faturamento', `${formatCurrency(c.pontoEquilibrioFaturamentoMensal)} /mês`, false, true, 'var(--color-text-muted)');
     addDivider();
