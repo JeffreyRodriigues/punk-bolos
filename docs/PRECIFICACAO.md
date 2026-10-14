@@ -131,43 +131,42 @@ Modelo gerenciado por `js/modules/costSettings.js`:
 
 ---
 
-## 3. Cálculo — Metodologia SENAC / Sebrae (Markup Divisor)
+## 3. Cálculo — Metodologia SENAC / Sebrae (Markup Divisor Profissional)
 
 ```
-1.  custoIngredientesComQuebra = custoIngredientes × (1 + quebraInsumosPct / 100)
-2.  custoMaoDeObraLote        = tempoPreparoMinutos × custoMinutoMaoDeObra
-3.  custoFixoLote             = tempoPreparoMinutos × custoMinutoFixo
-4.  custoUnitarioTotal        = (custoIngredientesComQuebra ÷ rendimento) + embalagem + custoAdicional +
-                                (custoMaoDeObraLote ÷ rendimento) + (custoFixoLote ÷ rendimento)
-5.  deducoesVendaPct          = impostoVendaPct + taxaCartaoMediaPct + outrasDeducoesPct
-6.  divisorMarkup             = (100 - deducoesVendaPct - lucroLiquidoDesejado) ÷ 100
-7.  precoSugerido             = custoUnitarioTotal ÷ divisorMarkup
-8.  precoMinimo               = custoUnitarioTotal ÷ ((100 - deducoesVendaPct) ÷ 100)
-9.  lucroLiquidoValor         = precoSugerido - custoUnitarioTotal - (precoSugerido × deducoesVendaPct ÷ 100)
+1. custoIngredientesComQuebra = custoIngredientes × (1 + quebraInsumosPct / 100)
+2. custoMaoDeObraLote        = tempoPreparoMinutos × custoMinutoMaoDeObra
+3. custoFixoLote             = tempoPreparoMinutos × custoMinutoFixo
+4. custoUnitarioTotal        = ((custoIngredientesComQuebra + custoMaoDeObraLote + custoFixoLote) ÷ rendimento) + embalagem + custoAdicional
+5. deducoesVendaPct          = impostoVendaPct + taxaCartaoMediaPct + outrasDeducoesPct
+6. divisorMarkup             = (100 - deducoesVendaPct - lucroLiquidoDesejado) ÷ 100
+7. precoSugerido             = custoUnitarioTotal ÷ divisorMarkup
+8. lucroLiquidoValor         = precoSugerido - custoUnitarioTotal - (precoSugerido × deducoesVendaPct ÷ 100)
+9. margemContribuicaoValor   = precoSugerido - ((custoIngredientesComQuebra ÷ rendimento) + embalagem) - (precoSugerido × deducoesVendaPct ÷ 100)
+10. pontoEquilibrioMensal    = Math.ceil((totalCustosFixos + totalMaoDeObraMensal) ÷ margemContribuicaoValor)
+11. pontoEquilibrioDiario    = Math.ceil(pontoEquilibrioMensal ÷ diasTrabalhadosMes)
 ```
 
 **Arredondamento:** **todos** os valores com **2 casas decimais** (no final de cada etapa).
 
-### Exemplo real (aprovado)
+### Estrutura do Demonstrativo de Preço (DRE no Sistema)
 
-| Ingrediente | Qtd | Custo inventário | Custo receita |
-|---|---|---|---|
-| Farinha | 250 g | R$ 7,00/kg | 2,23 |
-| Açúcar | 150 g | R$ 6,00/kg | 0,90 |
-| Chocolate em pó | 50 g | R$ 12,00/300g | 2,00 |
-| Leite | 200 ml | R$ 4,50/L | 0,90 |
-| Fermento | 5 g | R$ 3,00/15g | 1,00 |
-| Ovos | 100 g | R$ 12,00/dúzia (100g≈) | 2,00 |
+O sistema organiza a ficha técnica em 3 blocos estratégicos:
 
-```
-custoIngredientes   = 2,23+0,90+2,00+0,90+1,00+2,00  =  9,03
-× margem 25%        = 9,03 × 1,25                     =  11,29
-× multiplicador 3   = 11,29 × 3                       =  33,87
-÷ rendimento 10     = 33,87 ÷ 10                      =   3,39
-+ embalagem 1,00    = 3,39 + 1,00                     =   4,39  ← preço sugerido/unit.
-```
+1. **COMPOSIÇÃO DE CUSTO:**
+   - Insumos (c/ 3% quebra técnica)
+   - Mão de Obra (MOD por tempo de preparo)
+   - Custos Fixos / Estrutura (rateio por tempo)
+   - Embalagem & Adicionais
+   - **Custo Unitário Total de Produção**
 
-(Demonstração que o usuário validou: “Ficou exatamente como eu gostaria”.)
+2. **PREÇO DE VENDA & LUCRO:**
+   - **Preço Sugerido (Cardápio):** Formado via Markup Divisor.
+   - **Lucro Líquido no Caixa (R$ e %):** Lucro líquido real que fica na empresa por unidade.
+
+3. **METAS & DESEMPENHO ESTRATÉGICO:**
+   - **Margem de Contribuição (% e R$):** Quanto cada venda contribui para pagar a estrutura fixa.
+   - **Meta Ponto de Equilíbrio (un/mês e un/dia):** Quantidade necessária para cobrir 100% dos custos fixos e do pró-labore.
 
 ---
 
