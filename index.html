@@ -111,6 +111,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -5136,6 +5137,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5333,7 +5335,7 @@ html.dark .badge-purple {
     <section id="dashBreakevenCard" class="estoque-panel dash-breakeven-card" style="margin-bottom: 16px; padding: 14px 16px;">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
         <div>
-          <h2 style="margin: 0; font-size: 1rem; font-weight: 700;">Ponto de Equilíbrio do Mês</h2>
+          <h2 id="dashBreakevenTitle" style="margin: 0; font-size: 1rem; font-weight: 700;">Ponto de Equilíbrio do Mês</h2>
           <p class="view-subtitle" style="margin: 2px 0 0 0; font-size: 0.82rem;">
             Meta de Margem de Contribuição para cobrir Custos Fixos + Pró-Labore:
           </p>
@@ -5346,7 +5348,7 @@ html.dark .badge-purple {
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem; flex-wrap: wrap; gap: 8px;">
-        <span><strong>Margem Gerada:</strong> <span id="dashBreakevenMargem">R$ 0,00</span></span>
+        <span><strong>Margem Gerada (Total):</strong> <span id="dashBreakevenMargem">R$ 0,00</span></span>
         <span><strong>Meta Mensal:</strong> <span id="dashBreakevenMeta">R$ 0,00</span></span>
         <span id="dashBreakevenStatus" style="font-weight: 600; color: var(--color-text-muted);">Calculando...</span>
       </div>
@@ -6909,6 +6911,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=50"></script>
+  <script type="module" src="js/app.js?v=51"></script>
 </body>
 </html>

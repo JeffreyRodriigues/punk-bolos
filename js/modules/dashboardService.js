@@ -488,8 +488,9 @@ export function breakEvenProgress(orders, products = [], receitas = [], calcular
   });
 
   margemTotal = round2(margemTotal);
-  const percentual = metaMensal > 0 ? Math.min(100, round2((margemTotal / metaMensal) * 100)) : (margemTotal > 0 ? 100 : 0);
+  const percentual = metaMensal > 0 ? round2((margemTotal / metaMensal) * 100) : (margemTotal > 0 ? 100 : 0);
   const restante = metaMensal > margemTotal ? round2(metaMensal - margemTotal) : 0;
+  const excedente = margemTotal > metaMensal ? round2(margemTotal - metaMensal) : 0;
   const atingido = metaMensal > 0 && margemTotal >= metaMensal;
 
   return {
@@ -497,6 +498,86 @@ export function breakEvenProgress(orders, products = [], receitas = [], calcular
     margemTotal,
     percentual,
     restante,
+    excedente,
     atingido,
+  };
+}
+
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+/**
+ * Analisa a faixa de datas para contextualizar o card de Ponto de Equilíbrio.
+ * Detecta se o filtro selecionado corresponde a um mês calendário já encerrado
+ * ou a um período em aberto (mês atual / padrão).
+ * @param {{ from?: string, to?: string }} range - Faixa de datas { from, to } em ISO (YYYY-MM-DD).
+ * @param {Date} [now=new Date()] - Data de referência (injetável para testes).
+ * @returns {{ isClosed: boolean, isPastMonth: boolean, isCurrentMonth: boolean, label: string }}
+ */
+export function analyzePeriod(range, now = new Date()) {
+  const from = (range && range.from) || '';
+  const to = (range && range.to) || '';
+
+  const nowY = now.getFullYear();
+  const nowM = now.getMonth() + 1; // 1..12
+
+  if (!from && !to) {
+    return {
+      isClosed: false,
+      isPastMonth: false,
+      isCurrentMonth: true,
+      label: 'Mês Atual (Em Aberto)',
+    };
+  }
+
+  const fromParts = from ? from.split('-').map(Number) : [];
+  const toParts = to ? to.split('-').map(Number) : [];
+
+  if (fromParts.length === 3 && toParts.length === 3) {
+    const [fY, fM, fD] = fromParts;
+    const [tY, tM, tD] = toParts;
+
+    const lastDayOfMonth = new Date(fY, fM, 0).getDate();
+    const isFullMonth = fY === tY && fM === tM && fD === 1 && tD === lastDayOfMonth;
+
+    if (isFullMonth) {
+      const isPast = (fY < nowY) || (fY === nowY && fM < nowM);
+      const monthName = MONTH_NAMES[fM - 1] || '';
+      if (isPast) {
+        return {
+          isClosed: true,
+          isPastMonth: true,
+          isCurrentMonth: false,
+          label: `${monthName}/${fY} (Mês Encerrado)`,
+        };
+      }
+      if (fY === nowY && fM === nowM) {
+        return {
+          isClosed: false,
+          isPastMonth: false,
+          isCurrentMonth: true,
+          label: 'Mês Atual (Em Aberto)',
+        };
+      }
+    }
+
+    const startOfCurrentMonthISO = `${nowY}-${String(nowM).padStart(2, '0')}-01`;
+    if (to < startOfCurrentMonthISO) {
+      return {
+        isClosed: true,
+        isPastMonth: false,
+        isCurrentMonth: false,
+        label: 'Período Encerrado',
+      };
+    }
+  }
+
+  return {
+    isClosed: false,
+    isPastMonth: false,
+    isCurrentMonth: true,
+    label: 'Mês Atual (Em Aberto)',
   };
 }

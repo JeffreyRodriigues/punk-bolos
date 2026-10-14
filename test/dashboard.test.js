@@ -288,5 +288,84 @@ test('breakEvenProgress: calcula meta, margem gerada e percentual de atingimento
   assert.equal(res.margemTotal, 600);
   assert.equal(res.percentual, 15);
   assert.equal(res.restante, 3400);
+  assert.equal(res.excedente, 0);
   assert.equal(res.atingido, false);
+});
+
+test('breakEvenProgress: calcula meta atingida com excedente quando margem supera custos fixos', () => {
+  const products = [{ id: 'p1', tipoProduto: 'Fatia', valor: 20 }];
+  const receitas = [{ produtoId: 'p1' }];
+  const rates = { totalCustosFixos: 2000, totalMaoDeObraMensal: 2000, deducoesVendaPct: 10 }; // Meta = 4000
+  // Preço 20, CMV 5, Dedução 2 => MC = 13
+  const mockCalcular = () => ({ custoRealUnitario: 5 });
+  // 400 fatias vendidas => Margem = 400 * 13 = 5200
+  const orders = [
+    { status: 'Concluído', itens: [{ produtoId: 'p1', quantidade: 400, valorUnitario: 20 }] },
+  ];
+
+  const res = s.breakEvenProgress(orders, products, receitas, mockCalcular, [], [], rates);
+  assert.equal(res.metaMensal, 4000);
+  assert.equal(res.margemTotal, 5200);
+  assert.equal(res.percentual, 130);
+  assert.equal(res.restante, 0);
+  assert.equal(res.excedente, 1200);
+  assert.equal(res.atingido, true);
+});
+
+test('analyzePeriod: classifica corretamente mês encerrado, mês atual e período customizado', () => {
+  const refNow = new Date('2026-10-15T12:00:00Z');
+
+  // Vazio / sem range
+  assert.deepEqual(s.analyzePeriod(null, refNow), {
+    isClosed: false,
+    isPastMonth: false,
+    isCurrentMonth: true,
+    label: 'Mês Atual (Em Aberto)',
+  });
+  assert.deepEqual(s.analyzePeriod({ from: '', to: '' }, refNow), {
+    isClosed: false,
+    isPastMonth: false,
+    isCurrentMonth: true,
+    label: 'Mês Atual (Em Aberto)',
+  });
+
+  // Mês passado completo (ex.: Agosto/2026)
+  assert.deepEqual(s.analyzePeriod({ from: '2026-08-01', to: '2026-08-31' }, refNow), {
+    isClosed: true,
+    isPastMonth: true,
+    isCurrentMonth: false,
+    label: 'Agosto/2026 (Mês Encerrado)',
+  });
+
+  // Mês passado completo de ano anterior (ex.: Dezembro/2025)
+  assert.deepEqual(s.analyzePeriod({ from: '2025-12-01', to: '2025-12-31' }, refNow), {
+    isClosed: true,
+    isPastMonth: true,
+    isCurrentMonth: false,
+    label: 'Dezembro/2025 (Mês Encerrado)',
+  });
+
+  // Mês atual completo (ex.: Outubro/2026)
+  assert.deepEqual(s.analyzePeriod({ from: '2026-10-01', to: '2026-10-31' }, refNow), {
+    isClosed: false,
+    isPastMonth: false,
+    isCurrentMonth: true,
+    label: 'Mês Atual (Em Aberto)',
+  });
+
+  // Mês atual parcial (ex.: 01/10 a 15/10)
+  assert.deepEqual(s.analyzePeriod({ from: '2026-10-01', to: '2026-10-15' }, refNow), {
+    isClosed: false,
+    isPastMonth: false,
+    isCurrentMonth: true,
+    label: 'Mês Atual (Em Aberto)',
+  });
+
+  // Faixa customizada encerrada anterior ao mês atual (ex.: 10/08 a 20/08)
+  assert.deepEqual(s.analyzePeriod({ from: '2026-08-10', to: '2026-08-20' }, refNow), {
+    isClosed: true,
+    isPastMonth: false,
+    isCurrentMonth: false,
+    label: 'Período Encerrado',
+  });
 });

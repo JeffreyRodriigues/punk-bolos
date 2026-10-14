@@ -494,14 +494,22 @@ function renderTypeRankings(orders) {
 
 /**
  * Renderiza o card de termômetro de Ponto de Equilíbrio Operacional do Mês.
+ * @param {Array<Object>} orders - Pedidos do período.
+ * @param {{ from?: string, to?: string }} [currentRange] - Faixa de datas atual do filtro.
  */
-function renderBreakEvenCard(orders) {
+function renderBreakEvenCard(orders, currentRange) {
+  const titleEl = document.getElementById('dashBreakevenTitle');
   const badgeEl = document.getElementById('dashBreakevenBadge');
   const fillEl = document.getElementById('dashBreakevenFill');
   const margemEl = document.getElementById('dashBreakevenMargem');
   const metaEl = document.getElementById('dashBreakevenMeta');
   const statusEl = document.getElementById('dashBreakevenStatus');
   if (!badgeEl || !fillEl || !margemEl || !metaEl || !statusEl) return;
+
+  const periodInfo = service.analyzePeriod(currentRange);
+  if (titleEl) {
+    titleEl.textContent = `Ponto de Equilíbrio — ${periodInfo.label}`;
+  }
 
   const products = product.getProducts();
   const receitas = storage.getAllPrecificacoes();
@@ -513,7 +521,7 @@ function renderBreakEvenCard(orders) {
 
   margemEl.textContent = formatCurrency(progress.margemTotal);
   metaEl.textContent = formatCurrency(progress.metaMensal);
-  fillEl.style.width = `${progress.percentual}%`;
+  fillEl.style.width = `${Math.min(100, Math.max(0, progress.percentual))}%`;
 
   if (progress.metaMensal <= 0) {
     badgeEl.textContent = 'Sem Metas';
@@ -525,20 +533,45 @@ function renderBreakEvenCard(orders) {
     return;
   }
 
-  badgeEl.textContent = `${progress.percentual.toFixed(1)}% Atingido`;
-  if (progress.atingido) {
-    badgeEl.className = 'badge badge-success';
-    badgeEl.style.background = 'var(--color-ok-soft)';
-    badgeEl.style.color = 'var(--color-ok)';
-    fillEl.style.background = 'var(--color-ok)';
-    statusEl.innerHTML = '<span style="color: var(--color-ok); font-weight: 700;">Contas do mês 100% pagas!</span>';
+  if (periodInfo.isClosed) {
+    // Mês ou período encerrado
+    if (progress.atingido) {
+      badgeEl.textContent = `Meta Atingida (${progress.percentual.toFixed(1)}%)`;
+      badgeEl.className = 'badge badge-success';
+      badgeEl.style.background = 'var(--color-ok-soft)';
+      badgeEl.style.color = 'var(--color-ok)';
+      fillEl.style.background = 'var(--color-ok)';
+      const excedenteTxt = progress.excedente > 0 ? ` + ${formatCurrency(progress.excedente)} de lucro excedente.` : '.';
+      statusEl.innerHTML = `<span style="color: var(--color-ok); font-weight: 700;">Mês fechado com sucesso!</span> Contas 100% pagas${excedenteTxt}`;
+      statusEl.style.color = 'var(--color-text)';
+    } else {
+      badgeEl.textContent = `Não Atingido (${progress.percentual.toFixed(1)}%)`;
+      badgeEl.className = 'badge badge-warning';
+      badgeEl.style.background = 'var(--color-warn-soft)';
+      badgeEl.style.color = 'var(--color-warn)';
+      fillEl.style.background = 'var(--color-warn)';
+      statusEl.innerHTML = `O mês encerrou abaixo da meta. Faltaram <strong>${formatCurrency(progress.restante)}</strong> para o ponto de equilíbrio.`;
+      statusEl.style.color = 'var(--color-text-muted)';
+    }
   } else {
-    badgeEl.className = 'badge badge-warning';
-    badgeEl.style.background = 'var(--color-warn-soft)';
-    badgeEl.style.color = 'var(--color-warn)';
-    fillEl.style.background = 'var(--color-primary)';
-    statusEl.innerHTML = `Faltam <strong>${formatCurrency(progress.restante)}</strong> para o ponto de equilíbrio`;
-    statusEl.style.color = 'var(--color-text-muted)';
+    // Mês atual / em aberto
+    badgeEl.textContent = `${progress.percentual.toFixed(1)}% Atingido`;
+    if (progress.atingido) {
+      badgeEl.className = 'badge badge-success';
+      badgeEl.style.background = 'var(--color-ok-soft)';
+      badgeEl.style.color = 'var(--color-ok)';
+      fillEl.style.background = 'var(--color-ok)';
+      const excedenteTxt = progress.excedente > 0 ? ` Excedente: ${formatCurrency(progress.excedente)}.` : '';
+      statusEl.innerHTML = `<span style="color: var(--color-ok); font-weight: 700;">Contas do mês 100% pagas!</span>${excedenteTxt} Próximas vendas geram lucro puro.`;
+      statusEl.style.color = 'var(--color-text)';
+    } else {
+      badgeEl.className = 'badge badge-warning';
+      badgeEl.style.background = 'var(--color-warn-soft)';
+      badgeEl.style.color = 'var(--color-warn)';
+      fillEl.style.background = 'var(--color-primary)';
+      statusEl.innerHTML = `Faltam <strong>${formatCurrency(progress.restante)}</strong> para o ponto de equilíbrio`;
+      statusEl.style.color = 'var(--color-text-muted)';
+    }
   }
 }
 
@@ -547,7 +580,8 @@ function renderBreakEvenCard(orders) {
  */
 export function render() {
   const all = order.getOrders();
-  const periodFiltered = service.filterByRange(all, dateFilter.getRange());
+  const range = dateFilter.getRange();
+  const periodFiltered = service.filterByRange(all, range);
   // Aplica o filtro de tipo quando uma aba específica está ativa
   const orders = service.filterByType(periodFiltered, activeType === 'all' ? null : activeType);
   const hasData = periodFiltered.length > 0;
@@ -558,7 +592,7 @@ export function render() {
   }
 
   renderTypeTabs();
-  renderBreakEvenCard(periodFiltered);
+  renderBreakEvenCard(periodFiltered, range);
   renderStats(orders);
 
   const theme = chartTheme();

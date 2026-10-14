@@ -284,6 +284,18 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Termômetro oficial do Sebrae indicando a qualidade da margem: *Excelente (> 50%)*, *Saudável (30% a 50%)* ou *Alerta (< 30%)*.
   - Ponto de Equilíbrio do Produto (PEF) com meta em unidades (mês e dia) e meta em faturamento mínimo mensal para quitar os gastos fixos operacionais.
 
+### 45. Fechamento Financeiro & Validação de Período no Ponto de Equilíbrio
+- **Detecção Inteligente do Período no Ponto de Equilíbrio (`dashboardService.js` & `dashboard.js`):**
+  - Implementada a função pura `analyzePeriod(range, now)` que identifica se o período selecionado no filtro de datas é um mês completo do passado (*Mês Encerrado*), o mês corrente (*Mês Atual - Em Aberto*) ou uma faixa customizada.
+  - O título do card no Dashboard agora reflete a contextualização do período: `Ponto de Equilíbrio — [Mês]/[Ano] (Mês Encerrado)` ou `Ponto de Equilíbrio — Mês Atual (Em Aberto)`.
+- **Status de Atingimento e Lucro Excedente (`dashboardService.js`, `dashboard.js` & `index.html`):**
+  - **Mês Encerrado:** exibe o veredito final de fechamento financeiro:
+    - Se a meta foi batida: badge verde `Meta Atingida (XX.X%)` acompanhado da mensagem com o valor do lucro excedente (`Mês fechado com sucesso! Contas 100% pagas + R$ X,XX de lucro excedente`).
+    - Se a meta não foi batida: badge âmbar `Não Atingido (XX.X%)` acompanhado do déficit restante (`O mês encerrou abaixo da meta. Faltaram R$ X,XX para o ponto de equilíbrio`).
+  - **Mês Atual (Em Aberto):** mantém o acompanhamento progressivo em tempo real (`XX.X% Atingido`), com barra de progresso e valores restantes até o ponto de equilíbrio ou excedente acumulado.
+- **Rótulo Esclarecedor no Dashboard (`index.html`):**
+  - Rótulo atualizado para `Margem Gerada (Total):`, deixando evidente que o cálculo engloba a margem de contribuição de todos os produtos vendidos no período em toda a confeitaria.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).
