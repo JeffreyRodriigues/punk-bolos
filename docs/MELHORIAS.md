@@ -277,6 +277,13 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Regime de Contratação nos Parâmetros de Custo (`costSettings.js` & `pricingView.js`):**
   - Ao alternar para o regime *Prestador / Fixo (Sem encargos)*, o campo *Encargos Sociais CLT (%)* é automaticamente zerado e configurado como somente leitura, recalculando as taxas horárias e persistindo `0%` sem reverter para o padrão. Ao retornar para *CLT*, o campo é reabilitado para edição.
 
+### 44. DRE com Metodologia Sebrae Pura e Termômetro de Margem de Contribuição
+- **Estrutura Explícita da Margem de Contribuição (`pricingView.js` & `pricing.js`):**
+  - Demonstração clara e direta da dedução de Custos Variáveis (Insumos + Embalagem) e Despesas Variáveis (Taxas da Maquininha + Impostos) sobre o Preço de Venda.
+  - Exibição da Margem de Contribuição monetária (R$/un) e percentual (MC%).
+  - Termômetro oficial do Sebrae indicando a qualidade da margem: *Excelente (> 50%)*, *Saudável (30% a 50%)* ou *Alerta (< 30%)*.
+  - Ponto de Equilíbrio do Produto (PEF) com meta em unidades (mês e dia) e meta em faturamento mínimo mensal para quitar os gastos fixos operacionais.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

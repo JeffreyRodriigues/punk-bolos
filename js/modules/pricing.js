@@ -198,6 +198,7 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
     custoRealUnitario,       // CMV Unitário
     custoUnitarioTotal,      // Custo Base Total Unitário
     taxasDeducoesPct,        // % Impostos + Cartão
+    deducoesValor,           // Valor R$ das taxas e impostos sobre a venda
     lucroLiquidoPct: lucroPct,
     precoMinimo,             // Preço no Ponto de Equilíbrio
     precoSugerido,           // Preço Recomendado com Lucro Real

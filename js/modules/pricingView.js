@@ -685,29 +685,68 @@ function updatePreview() {
     preview.appendChild(hr);
   };
 
-  const embalagemUnit = Number(receita.embalagem || 0) + Number(receita.custoAdicional || 0);
+  const addHeader = (title) => {
+    const h = document.createElement('div');
+    h.style.fontSize = '0.74rem';
+    h.style.fontWeight = '700';
+    h.style.textTransform = 'uppercase';
+    h.style.letterSpacing = '0.04em';
+    h.style.color = 'var(--color-text-muted)';
+    h.style.margin = '6px 0 2px 0';
+    h.textContent = title;
+    preview.appendChild(h);
+  };
 
-  // 1. Composição de Custo
-  add('Insumos (c/ 3% quebra técnica)', formatCurrency(c.custoIngredientesComQuebra), false, true);
-  add(`Mão de Obra (${receita.tempoPreparoMinutos} min)`, formatCurrency(c.custoMaoDeObraLote), false, true);
-  add('Custos Fixos / Estrutura', formatCurrency(c.custoFixoLote), false, true);
-  if (embalagemUnit > 0) {
-    add('Embalagem & Adicionais (por un)', formatCurrency(embalagemUnit), false, true);
-  }
-  add('Custo Unitário Total', `${formatCurrency(c.custoUnitarioTotal)} /un`, false, false, 'var(--color-text)');
+  const embalagemUnit = Number(receita.embalagem || 0) + Number(receita.custoAdicional || 0);
+  const deducoesValor = c.deducoesValor != null ? c.deducoesValor : (c.precoSugerido * (c.taxasDeducoesPct / 100));
+
+  // 1. Preço de Venda
+  add('Preço Sugerido (Cardápio)', `${formatCurrency(c.precoSugerido)} /un`, true, false, 'var(--color-primary)');
 
   addDivider();
 
-  // 2. Preço de Venda & Lucro
-  add(`Preço Sugerido (Margem ${c.lucroLiquidoPct}%)`, `${formatCurrency(c.precoSugerido)} /un`, true, false, 'var(--color-primary)');
-  add('Lucro Líquido no Caixa', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, false, 'var(--color-ok)');
+  // 2. Margem de Contribuição (Metodologia Sebrae)
+  addHeader('Margem de Contribuição (Sebrae)');
+  add('(-) Custos Variáveis (Insumos + Emb.)', `- ${formatCurrency(c.custoRealUnitario)} /un`, false, true);
+  add(`(-) Despesas Variáveis (Taxas ${c.taxasDeducoesPct.toFixed(1)}%)`, `- ${formatCurrency(deducoesValor)} /un`, false, true);
 
-  // 3. Metas & Desempenho
-  if (c.pontoEquilibrioUnidadesMensal > 0) {
-    addDivider();
-    add('Margem de Contribuição', `${c.margemContribuicaoPct.toFixed(1)}% (${formatCurrency(c.margemContribuicaoValor)} /un)`, false, false, 'var(--color-text)');
-    add('Meta Ponto de Equilíbrio', `${c.pontoEquilibrioUnidadesMensal} un/mês (${c.pontoEquilibrioUnidadesDiario} un/dia)`, false, false, 'var(--color-primary)');
+  // Classificação Sebrae da Margem de Contribuição
+  let mcBadge = '';
+  let mcColor = 'var(--color-text)';
+  if (c.margemContribuicaoPct >= 50) {
+    mcBadge = 'Excelente (> 50%)';
+    mcColor = 'var(--color-ok)';
+  } else if (c.margemContribuicaoPct >= 30) {
+    mcBadge = 'Saudável (30% a 50%)';
+    mcColor = 'var(--color-primary)';
+  } else {
+    mcBadge = 'Alerta (< 30%)';
+    mcColor = 'var(--color-warn)';
   }
+
+  add('(=) Margem de Contribuição (MC)', `${formatCurrency(c.margemContribuicaoValor)} /un (${c.margemContribuicaoPct.toFixed(1)}%)`, false, false, mcColor);
+  add('Classificação Sebrae', mcBadge, false, true, mcColor);
+
+  addDivider();
+
+  // 3. Ponto de Equilíbrio do Produto (PEF)
+  if (c.pontoEquilibrioUnidadesMensal > 0) {
+    addHeader(`Ponto de Equilíbrio (Pagar R$ ${formatCurrency(c.totalGastosFixosMensais)}/mês)`);
+    add('Meta em Unidades', `${c.pontoEquilibrioUnidadesMensal} un/mês (${c.pontoEquilibrioUnidadesDiario} un/dia)`, false, false, 'var(--color-primary)');
+    add('Meta em Faturamento', `${formatCurrency(c.pontoEquilibrioFaturamentoMensal)} /mês`, false, true, 'var(--color-text-muted)');
+    addDivider();
+  }
+
+  // 4. Detalhamento de Custo & Lucro Líquido Real
+  addHeader('Custo & Lucro Líquido Real');
+  add('Insumos (c/ 3% quebra)', formatCurrency(c.custoIngredientesComQuebra), false, true);
+  add(`Mão de Obra (${receita.tempoPreparoMinutos} min)`, formatCurrency(c.custoMaoDeObraLote), false, true);
+  add('Custos Fixos Rateados', formatCurrency(c.custoFixoLote), false, true);
+  if (embalagemUnit > 0) {
+    add('Embalagem & Adicionais', formatCurrency(embalagemUnit), false, true);
+  }
+  add('Custo Unitário Total', `${formatCurrency(c.custoUnitarioTotal)} /un`, false, false, 'var(--color-text)');
+  add('Lucro Líquido no Caixa', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, false, 'var(--color-ok)');
 
   // Status: atualizada / desatualizada / sem precificação
   if (status) {
