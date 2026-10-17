@@ -296,6 +296,12 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Rótulo Esclarecedor no Dashboard (`index.html`):**
   - Rótulo atualizado para `Margem Gerada (Total):`, deixando evidente que o cálculo engloba a margem de contribuição de todos os produtos vendidos no período em toda a confeitaria.
 
+### 46. Planilha Simulador de Precificação & DRE Sebrae Atualizada
+- **Atualização Completa da Planilha (`docs/Punk_Bolos_Precificacao_Simulador.xlsx`):**
+  - **Aba "Parâmetros de Custo":** inclusão de coluna com explicações práticas e detalhadas para cada parâmetro (Custos Fixos da Estrutura, Mão de Obra e Pró-Labore, Jornada de Trabalho, Taxas Horárias por Minuto e Deduções sobre Vendas).
+  - **Aba "Ficha Técnica & DRE Sebrae":** atualizada com o produto real de referência (*Bolo Fatia - 11 fatias*), incorporando o DRE com Markup Divisor, dedução explícita de Custos e Despesas Variáveis, Margem de Contribuição monetária e percentual, Classificação Sebrae (*Excelente*), Ponto de Equilíbrio (unidades e faturamento) e Lucro Líquido Real no Caixa.
+  - **Aba "Ponto de Equilíbrio & Metas":** inclusão do simulador de 5 cenários por volume de vendas e o guia didático dos 3 estágios financeiros da confeitaria (Sobrevivência, Equilíbrio e Lucro Excedente).
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).
