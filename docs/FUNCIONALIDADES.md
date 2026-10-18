@@ -13,11 +13,13 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 
 ### 1.1 Dashboard
 - **Cards de Métricas:** Faturamento total, quantidade de pedidos, ticket médio, lucro bruto e contadores por status.
-- **Gráficos e Rankings:** Top 5 sabores mais vendidos, top 3 tipos de produto e faturamento diário.
+- **Ponto de Equilíbrio Inteligente:** Barra de progresso com status de meta mensal e diária, identificação automática de mês encerrado (*Meta Atingida com excedente* ou *Não Atingido*) e acompanhamento em tempo real para meses em aberto.
+- **Gráficos e Rankings:** Top 5 sabores mais vendidos, faturamento diário e distribuição por categoria.
+- **Paridade de Categorias (Abas e Resumo):** Filtros rápidos e cards de desempenho para 4 frentes: Fatias, Punkitos, Bolos (incluindo Bolo Naked) e Docinhos.
 - **Filtro por Período:** Hoje, 7 dias, Este Mês e Faixa Customizada (De/Até).
 
 ### 1.2 Produtos
-- **Catálogo Completo:** Cadastro de bolos inteiros, bolos naked, fatias, punkitos, adicionais e confeitos.
+- **Catálogo Completo:** Cadastro de bolos inteiros, bolos naked, fatias, punkitos, docinhos, adicionais e confeitos.
 - **Tamanhos e Detalhes:** Tamanhos exclusivos para bolos inteiros e bolos naked (Mini, PP, P, M, G, GG, Bento Cake, Coração).
 - **Valores e Descrições:** Valores de venda sugeridos e integração com controle de estoque.
 
@@ -48,14 +50,13 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Filtros Rápidos por Categoria:** `[ Todos ]`, `[ 🥣 Ingredientes ]`, `[ 🍰 Bases ]` e `[ ⚠️ Estoque Baixo ]`.
 - **Entrada Inteligente de Compras:** Ao cadastrar uma compra, o estoque atual é somado automaticamente.
 
-### 1.7 Precificação & Custos
+### 1.7 Precificação & Ficha Técnica Profissional
+- **Metodologia Sebrae & Markup Divisor:** Formação de preço profissional dividida em Custos Variáveis (Insumos + Embalagens), Despesas Variáveis (Taxas + Impostos) e Margem de Contribuição unitária com termômetro Sebrae (*Excelente > 50%*, *Saudável 30-50%*, *Alerta < 30%*).
+- **Preço Alvo / Fixar Preço:** Campo de formação reversa que permite fixar o preço de venda pretendido (ex.: R$ 22,80) e calcula a margem líquida real automaticamente.
+- **Alerta de Insumo com Custo Zero:** Sinalização visual nas linhas de ingredientes e banner de aviso caso algum insumo esteja sem compra cadastrada no Inventário.
+- **Ponto de Equilíbrio Operacional:** Metas em unidades (mês/dia) e faturamento mínimo para pagamento dos gastos fixos da confeitaria.
 - **Montagem de Receitas:** Associação de insumos e bases com quantidades exatas.
 - **Importador Rápido do Excel:** Modal para colar 4 colunas (`Ingrediente`, `Custo Embalagem`, `Gramas Embalagem`, `Gramas Utilizadas`) com reconhecimento inteligente de insumos e **Bases cadastradas (`PBA`)**, cálculo de custo em tempo real e criação facilitada.
-- **Fatores de Custo:**
-  - Margem para custos incalculáveis (gás, energia).
-  - Multiplicador de lucro e mão de obra.
-  - Rendimento e custo de embalagem por unidade.
-- **Grid Padronizado:** Layout com alinhamento pixel-perfect para pesagem em gramas, ml ou unidades.
 
 ---
 

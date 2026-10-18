@@ -2190,7 +2190,7 @@ body.modal-open {
 
 .type-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
 
@@ -2214,6 +2214,7 @@ body.modal-open {
 .type-summary-card.type-fatia    { border-top: 3px solid #e91e63; }
 .type-summary-card.type-punkitos { border-top: 3px solid #7e57c2; }
 .type-summary-card.type-bolo     { border-top: 3px solid #f59e0b; }
+.type-summary-card.type-docinho  { border-top: 3px solid #26a69a; }
 
 html.dark .type-summary-card:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
@@ -2326,7 +2327,7 @@ html.dark .type-summary-card:hover {
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .type-summary-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
   .type-rankings-grid {
     grid-template-columns: 1fr;

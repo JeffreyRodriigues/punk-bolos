@@ -2,11 +2,11 @@
    SYSTEMINFO.JS — Modal de Novidades e Versão do Sistema
    ------------------------------------------------------------
    Gerencia a abertura e fechamento do modal com o resumo de
-   funcionalidades e melhorias do sistema (v2.4.0), bem como
+   funcionalidades e melhorias do sistema (v2.5.0), bem como
    o badge/indicador de novidades não lidas.
    ============================================================ */
 
-const CURRENT_VERSION = '2.4.0';
+const CURRENT_VERSION = '2.5.0';
 const STORAGE_KEY = 'punk_seen_version';
 
 let modalEl = null;

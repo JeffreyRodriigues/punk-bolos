@@ -242,9 +242,44 @@ test('summaryByType: soma das receitas por tipo bate exatamente com revenue gera
   assert.equal(summary['Fatia'].receita, 80); // 50 + 30
   assert.equal(summary['Punkitos'].receita, 50); // 50
   assert.equal(summary['Bolo Inteiro'].receita, 0); // cortesia
+  assert.equal(summary['Docinho'].receita, 0);
 
-  const somaTipos = summary['Fatia'].receita + summary['Punkitos'].receita + summary['Bolo Inteiro'].receita;
+  const somaTipos = summary['Fatia'].receita + summary['Punkitos'].receita + summary['Bolo Inteiro'].receita + summary['Docinho'].receita;
   assert.equal(somaTipos, totalRev);
+});
+
+test('filterByType e summaryByType: suportam Docinho e agrupam Bolo Naked sob Bolo Inteiro', () => {
+  const orders = [
+    {
+      status: 'Concluído',
+      valorTotal: 160,
+      pagamento: 'PIX',
+      itens: [
+        { tipoProduto: 'Docinho', quantidade: 50, valorUnitario: 2, sabor: 'Brigadeiro' },
+        { tipoProduto: 'Bolo Naked', quantidade: 1, valorUnitario: 60, sabor: 'Frutas Vermelhas' },
+      ],
+    },
+  ];
+
+  // Docinho isolado
+  const docinhos = s.filterByType(orders, 'Docinho');
+  assert.equal(docinhos.length, 1);
+  assert.equal(docinhos[0].itens[0].tipoProduto, 'Docinho');
+  assert.equal(docinhos[0].valorTotal, 100);
+
+  // Bolo Naked agrupado sob Bolo Inteiro
+  const bolos = s.filterByType(orders, 'Bolo Inteiro');
+  assert.equal(bolos.length, 1);
+  assert.equal(bolos[0].itens[0].tipoProduto, 'Bolo Naked');
+  assert.equal(bolos[0].valorTotal, 60);
+
+  // Resumo por tipo
+  const summary = s.summaryByType(orders);
+  assert.equal(summary['Docinho'].quantidade, 50);
+  assert.equal(summary['Docinho'].receita, 100);
+  assert.equal(summary['Docinho'].topSabor, 'Brigadeiro');
+  assert.equal(summary['Bolo Inteiro'].quantidade, 1);
+  assert.equal(summary['Bolo Inteiro'].receita, 60);
 });
 
 test('breakEvenProgress: calcula meta, margem gerada e percentual de atingimento', () => {

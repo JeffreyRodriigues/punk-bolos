@@ -14,7 +14,7 @@
    ============================================================ */
 
 /** Tipos de produto conhecidos (para ordenação estável). */
-export const PRODUCT_ORDER = ['Fatia', 'Punkitos', 'Bolo Inteiro'];
+export const PRODUCT_ORDER = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Docinho'];
 
 /** Status exibidos na distribuição por status. */
 export const STATUS_ORDER = [
@@ -380,7 +380,7 @@ function roundMap(map) {
  * O valorTotal é recalculado a partir dos itens filtrados.
  * Pedidos sem nenhum item do tipo são excluídos.
  * @param {Array<Object>} orders - Pedidos.
- * @param {string} type - Tipo de produto ('Fatia' | 'Punkitos' | 'Bolo Inteiro').
+ * @param {string} type - Tipo de produto ('Fatia' | 'Punkitos' | 'Bolo Inteiro' | 'Docinho').
  * @returns {Array<Object>} Pedidos projetados para o tipo.
  */
 export function filterByType(orders, type) {
@@ -388,9 +388,11 @@ export function filterByType(orders, type) {
   return (orders || [])
     .map((o) => {
       const isCortesiaOrder = o.pagamento === 'Cortesia';
-      const itens = (Array.isArray(o.itens) ? o.itens : []).filter(
-        (item) => item.tipoProduto === type
-      );
+      const itens = (Array.isArray(o.itens) ? o.itens : []).filter((item) => {
+        if (item.tipoProduto === type) return true;
+        if (type === 'Bolo Inteiro' && item.tipoProduto === 'Bolo Naked') return true;
+        return false;
+      });
       if (itens.length === 0) return null;
       const valorTotal = isCortesiaOrder
         ? 0
@@ -413,7 +415,7 @@ export function filterByType(orders, type) {
  * @returns {Object} Mapa tipo -> { quantidade, receita, topSabor }.
  */
 export function summaryByType(orders) {
-  const tipos = ['Fatia', 'Punkitos', 'Bolo Inteiro'];
+  const tipos = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Docinho'];
   const result = {};
   tipos.forEach((tipo) => {
     const filtered = filterByType(activeOrders(orders), tipo);
@@ -435,7 +437,7 @@ export function summaryByType(orders) {
  * @returns {Object} Mapa tipo -> Array<{ sabor, quantidade }>.
  */
 export function rankingsByType(orders, limit = 5) {
-  const tipos = ['Fatia', 'Punkitos', 'Bolo Inteiro'];
+  const tipos = ['Fatia', 'Punkitos', 'Bolo Inteiro', 'Docinho'];
   const result = {};
   tipos.forEach((tipo) => {
     const filtered = filterByType(activeOrders(orders), tipo);

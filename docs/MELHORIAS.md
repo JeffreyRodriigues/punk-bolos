@@ -300,7 +300,22 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Atualização Completa da Planilha (`docs/Punk_Bolos_Precificacao_Simulador.xlsx`):**
   - **Aba "Parâmetros de Custo":** inclusão de coluna com explicações práticas e detalhadas para cada parâmetro (Custos Fixos da Estrutura, Mão de Obra e Pró-Labore, Jornada de Trabalho, Taxas Horárias por Minuto e Deduções sobre Vendas).
   - **Aba "Ficha Técnica & DRE Sebrae":** atualizada com o produto real de referência (*Bolo Fatia - 11 fatias*), incorporando o DRE com Markup Divisor, dedução explícita de Custos e Despesas Variáveis, Margem de Contribuição monetária e percentual, Classificação Sebrae (*Excelente*), Ponto de Equilíbrio (unidades e faturamento) e Lucro Líquido Real no Caixa.
-  - **Aba "Ponto de Equilíbrio & Metas":** inclusão do simulador de 5 cenários por volume de vendas e o guia didático dos 3 estágios financeiros da confeitaria (Sobrevivência, Equilíbrio e Lucro Excedente).
+### 47. Release v2.5.0 — Paridade no Dashboard, Preço Alvo e Alerta Preventivo de Insumos
+- **Paridade de Categorias no Dashboard (`dashboard.js`, `dashboardService.js`, `css/styles.css`):**
+  - Adicionado suporte completo à categoria `Docinho` nas abas de filtro rápido (`dash-type-tabs`) e no grid de resumo por tipo (`summaryByType`).
+  - Card de resumo expandido para 4 categorias (Fatias, Punkitos, Bolos e Docinhos) com destaque ciano/teal (`.type-summary-card.type-docinho`) e grid responsivo (4 colunas desktop, 2 colunas tablet, 1 coluna mobile).
+  - Agrupamento de `Bolo Naked` sob a visão unificada de `Bolo Inteiro` ("Bolos") nos filtros e resumos.
+- **Preço Alvo na Precificação (`pricing.js`, `pricingView.js`, `index.html`):**
+  - Implementada a função pura `calcularMargemPorPrecoAlvo(custoUnitarioTotal, precoAlvo, deducoesVendaPct)` aplicando a fórmula reversa do Markup Divisor oficial.
+  - Campo inteligente `Preço Alvo / Fixar Preço (R$)` adicionado à Ficha Técnica: ao digitar o preço final de venda desejado no cardápio, a Margem Líquida Desejada (%) é recalculada e preenchida instantaneamente.
+  - Recalcula DRE Sebrae, Margem de Contribuição e Ponto de Equilíbrio em tempo real, com alerta se o preço pretendido for inferior ao custo mínimo de produção.
+- **Alerta Preventivo de Insumos com Custo Zero (`pricingView.js`):**
+  - Na Ficha Técnica, ingredientes sem registro de compra no Inventário são destacados visualmente com `Sem compra (R$ 0)`.
+  - A coluna "Quanto custou" exibe `R$ 0,00 (!)` em tom de aviso quando o ingrediente possui quantidade informada mas custo nulo.
+  - Banner de aviso do painel (`#precAviso`) alerta preventivamente sobre ingredientes com custo zero antes de salvar a ficha.
+- **Consolidação da Versão Estável v2.5.0 (`systemInfo.js`, `index.html`, `cardapio.html`):**
+  - Versão atualizada para `v2.5.0` no cabeçalho de navegação, badge e modal de novidades.
+  - Incremento e sincronização dos cache-busters para forçar atualização sem resíduos de cache (`app.js?v=52` e `cardapio.js?v=25`).
 
 ---
 

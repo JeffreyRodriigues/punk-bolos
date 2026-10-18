@@ -399,6 +399,7 @@ const TYPE_TABS = [
   { value: 'Fatia',        label: 'Fatias',   icon: '🍰' },
   { value: 'Punkitos',     label: 'Punkitos', icon: '🧁' },
   { value: 'Bolo Inteiro', label: 'Bolos',    icon: '🎂' },
+  { value: 'Docinho',      label: 'Docinhos', icon: '🍬' },
 ];
 
 /**
@@ -428,10 +429,11 @@ const TYPE_CONFIG = {
   'Fatia':        { icon: '🍰', label: 'Fatias',   color: 'type-fatia' },
   'Punkitos':     { icon: '🧁', label: 'Punkitos', color: 'type-punkitos' },
   'Bolo Inteiro': { icon: '🎂', label: 'Bolos',    color: 'type-bolo' },
+  'Docinho':      { icon: '🍬', label: 'Docinhos', color: 'type-docinho' },
 };
 
 /**
- * Renderiza os 3 cards de resumo rápido por tipo (sempre visíveis).
+ * Renderiza os cards de resumo rápido por tipo (sempre visíveis).
  * @param {Array<Object>} orders - Pedidos do período (sem filtro de tipo).
  */
 function renderTypeSummaryCards(orders) {

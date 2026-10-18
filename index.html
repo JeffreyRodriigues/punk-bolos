@@ -112,6 +112,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -2395,7 +2397,7 @@ body.modal-open {
 
 .type-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
 
@@ -2419,6 +2421,7 @@ body.modal-open {
 .type-summary-card.type-fatia    { border-top: 3px solid #e91e63; }
 .type-summary-card.type-punkitos { border-top: 3px solid #7e57c2; }
 .type-summary-card.type-bolo     { border-top: 3px solid #f59e0b; }
+.type-summary-card.type-docinho  { border-top: 3px solid #26a69a; }
 
 html.dark .type-summary-card:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
@@ -2531,7 +2534,7 @@ html.dark .type-summary-card:hover {
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .type-summary-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
   .type-rankings-grid {
     grid-template-columns: 1fr;
@@ -5138,6 +5141,8 @@ html.dark .badge-purple {
 
 
 
+
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5285,7 +5290,7 @@ html.dark .badge-purple {
       <div class="nav-footer">
         <button id="btnSystemInfo" class="nav-version-btn" type="button" title="Ver versão e novidades do sistema" aria-label="Ver versão e novidades do sistema">
           <div class="nav-version-info">
-            <span class="version-tag">v2.4.0</span>
+            <span class="version-tag">v2.5.0</span>
             <span class="version-label">Novidades</span>
           </div>
           <span class="version-dot" id="versionDot"></span>
@@ -5804,6 +5809,10 @@ html.dark .badge-purple {
             <div class="form-field">
               <label for="precLucroLiquido">Margem Líquida Desejada (%)</label>
               <input type="number" id="precLucroLiquido" min="0" max="89" step="0.5" value="25" aria-label="Margem líquida desejada">
+            </div>
+            <div class="form-field">
+              <label for="precPrecoAlvo">Preço Alvo / Fixar Preço (R$)</label>
+              <input type="number" id="precPrecoAlvo" min="0" step="0.10" placeholder="Ex.: 22,80" aria-label="Preço de venda alvo em reais">
             </div>
             <div class="form-field">
               <label for="precRendimento">Rendimento (unidades)</label>
@@ -6833,7 +6842,7 @@ html.dark .badge-purple {
       <div class="modal-header system-info-header">
         <div class="system-info-header-content">
           <div class="system-info-badge-row">
-            <span class="badge badge-version">v2.4.0</span>
+            <span class="badge badge-version">v2.5.0</span>
             <span class="badge badge-status-prod">Ambiente Atual</span>
           </div>
           <h2 id="systemInfoTitle" class="system-info-title">Novidades do Sistema Punk Bolos</h2>
@@ -6844,51 +6853,52 @@ html.dark .badge-purple {
 
       <div class="modal-body system-info-body">
         <div class="release-grid">
-          <!-- Card 1: Produção & Cozinha -->
+          <!-- Card 1: Precificação & Ficha Técnica Profissional -->
           <div class="release-card">
             <div class="release-card-header">
-              <span class="release-category-tag tag-producao">Produção & Cozinha</span>
-              <h3 class="release-card-title">Apontamento Inteligente & Comanda Cozinha</h3>
+              <span class="release-category-tag tag-precificacao">Precificação Profissional</span>
+              <h3 class="release-card-title">DRE Sebrae, Preço Alvo & Alertas</h3>
             </div>
             <ul class="release-list">
-              <li><strong>Modal Dedicado de Produção:</strong> Ao inserir produtos prontos, um modal moderno com botões rápidos (+1, +5, +10, +20) e cálculo automático de rendimento e consumo de receitas substitui o input direto na tabela.</li>
-              <li><strong>Resumo da Cozinha:</strong> Botão exclusivo na tela de Pedidos que gera uma comanda consolidada para impressão ou conferência com todos os bolos e itens pendentes para o dia selecionado.</li>
+              <li><strong>Formação de Preço via Markup Divisor:</strong> Demonstrativo completo DRE com Margem de Contribuição Sebrae, custos variáveis (insumos + embalagens) e despesas de taxas de cartão/impostos.</li>
+              <li><strong>Preço Alvo / Fixar Preço:</strong> Campo inteligente que permite fixar o preço de venda pretendido e calcula a margem líquida automaticamente.</li>
+              <li><strong>Alerta de Custo Zero:</strong> Sinalização imediata caso algum ingrediente esteja sem compra cadastrada no estoque.</li>
             </ul>
           </div>
 
-          <!-- Card 2: Precificação & Ficha Técnica -->
+          <!-- Card 2: Dashboard & Indicadores de Equilíbrio -->
           <div class="release-card">
             <div class="release-card-header">
-              <span class="release-category-tag tag-precificacao">Precificação</span>
-              <h3 class="release-card-title">Matriz de Rentabilidade & Fichas Técnicas</h3>
+              <span class="release-category-tag tag-producao">Dashboard Gerencial</span>
+              <h3 class="release-card-title">Ponto de Equilíbrio & Categorias</h3>
             </div>
             <ul class="release-list">
-              <li><strong>Visão Geral de Lucratividade:</strong> Painel comparativo de todos os produtos cadastrados com CMV (%), Margem de Contribuição e Lucro Líquido unitário calculado em tempo real.</li>
-              <li><strong>Alerta de Margem Baixa:</strong> Sinalização imediata para produtos com margem de lucro abaixo de 20% para revisão de custos de insumos.</li>
+              <li><strong>Metas & Fechamento de Mês:</strong> Indicador inteligente de Ponto de Equilíbrio mensal e diário com status de Meta Atingida (excedente) ou Não Atingido em meses encerrados.</li>
+              <li><strong>Suporte a Docinhos e Bolos Naked:</strong> Visualização e filtros rápidos de desempenho por categoria expandidos para 4 frentes (Fatias, Punkitos, Bolos e Docinhos).</li>
             </ul>
           </div>
 
-          <!-- Card 3: CRM & Clientes -->
+          <!-- Card 3: Produção & Estoque do Dia -->
           <div class="release-card">
             <div class="release-card-header">
-              <span class="release-category-tag tag-clientes">CRM de Clientes</span>
-              <h3 class="release-card-title">Gestão, Paginação & Cartão Fidelidade</h3>
+              <span class="release-category-tag tag-clientes">Produção & Cozinha</span>
+              <h3 class="release-card-title">Apontamento Inteligente & Histórico</h3>
             </div>
             <ul class="release-list">
-              <li><strong>Interface Padronizada:</strong> Grid de cards e tabela com paginação limpa, badges de engajamento (VIP, Ativo, Inativo) e histórico completo de compras.</li>
-              <li><strong>Confirmação de Segurança:</strong> Modal moderno para confirmação ao excluir cadastros de clientes com histórico de pedidos.</li>
+              <li><strong>Modal Dedicado de Produção:</strong> Registro rápido de fornadas e lotes com data, histórico auditável e sincronização automática com o cardápio.</li>
+              <li><strong>Resumo da Cozinha:</strong> Comanda consolidada de bolos e encomendas do dia pronta para conferência e impressão.</li>
             </ul>
           </div>
 
-          <!-- Card 4: Cardápio Digital Público -->
+          <!-- Card 4: Cardápio Digital Público & Fidelidade -->
           <div class="release-card">
             <div class="release-card-header">
-              <span class="release-category-tag tag-cardapio">Cardápio Digital</span>
-              <h3 class="release-card-title">Controle de Disponibilidade & Estoque</h3>
+              <span class="release-category-tag tag-cardapio">Cardápio & Fidelidade</span>
+              <h3 class="release-card-title">Cartão Fidelidade & Busca de CEP</h3>
             </div>
             <ul class="release-list">
-              <li><strong>Selo "Esgotado por Hoje":</strong> Produtos que zeram no estoque do dia recebem aviso visual automático no cardápio online com desativação do botão de pedido.</li>
-              <li><strong>Integração com WhatsApp:</strong> Envio de pedidos direto para o WhatsApp da confeitaria com cálculos precisos de taxa de entrega e total.</li>
+              <li><strong>Programa de Selos Fidelidade:</strong> Acompanhamento transparente de pedidos acumulados com recompensa automática a cada 10 compras.</li>
+              <li><strong>Checkout com CEP Automático:</strong> Preenchimento ágil de endereço via ViaCEP com validação de taxas de entrega e envio direto ao WhatsApp.</li>
             </ul>
           </div>
         </div>
@@ -6911,6 +6921,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=51"></script>
+  <script type="module" src="js/app.js?v=52"></script>
 </body>
 </html>

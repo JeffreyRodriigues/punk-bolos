@@ -222,6 +222,25 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
 }
 
 /**
+ * Calcula a margem líquida necessária para atingir um preço de venda pretendido (preço alvo).
+ * Aplica a fórmula inversa do Markup Divisor oficial:
+ * Lucro% = (1 - CustoUnitarioTotal / PrecoAlvo) * 100 - DeducoesVenda%
+ * @param {number} custoUnitarioTotal - Custo integral total da unidade (insumos + mão de obra + fixos + embalagem).
+ * @param {number} precoAlvo - Preço de venda pretendido no cardápio.
+ * @param {number} [deducoesVendaPct=0] - Alíquota total de deduções e taxas sobre a venda (ex: 7.5%).
+ * @returns {number|null} Margem líquida percentual (ex: 25.5), ou null se inválido.
+ */
+export function calcularMargemPorPrecoAlvo(custoUnitarioTotal, precoAlvo, deducoesVendaPct = 0) {
+  const custo = Number(custoUnitarioTotal) || 0;
+  const preco = Number(precoAlvo) || 0;
+  const deducoes = Number(deducoesVendaPct) || 0;
+  if (preco <= 0 || custo <= 0) return null;
+  const margem = (1 - (custo / preco)) * 100 - deducoes;
+  const res = round2(margem);
+  return res === 0 ? 0 : res;
+}
+
+/**
  * Recalcula e devolve uma NOVA receita com os campos de snapshot atualizados.
  * @param {Object} receita
  * @param {Array<Object>} insumos

@@ -350,6 +350,7 @@ function saveSnapshot() {
   originalSnapshot = {
     tempoPreparo: (document.getElementById('precTempoPreparo') || {}).value,
     lucroLiquido: (document.getElementById('precLucroLiquido') || {}).value,
+    precoAlvo: (document.getElementById('precPrecoAlvo') || {}).value,
     rendimento: (document.getElementById('precRendimento') || {}).value,
     embalagem: (document.getElementById('precEmbalagem') || {}).value,
     custoAdicional: (document.getElementById('precCustoAdicional') || {}).value,
@@ -369,6 +370,7 @@ function restoreSnapshot() {
   };
   setVal('precTempoPreparo', originalSnapshot.tempoPreparo);
   setVal('precLucroLiquido', originalSnapshot.lucroLiquido);
+  setVal('precPrecoAlvo', originalSnapshot.precoAlvo);
   setVal('precRendimento', originalSnapshot.rendimento);
   setVal('precEmbalagem', originalSnapshot.embalagem);
   setVal('precCustoAdicional', originalSnapshot.custoAdicional);
@@ -390,7 +392,7 @@ function updateModeUI() {
     formEl.classList.toggle('prec-readonly', !isEditing);
   }
 
-  const factorInputs = ['precTempoPreparo', 'precLucroLiquido', 'precRendimento', 'precEmbalagem', 'precCustoAdicional', 'precCustoAdicionalObs'];
+  const factorInputs = ['precTempoPreparo', 'precLucroLiquido', 'precPrecoAlvo', 'precRendimento', 'precEmbalagem', 'precCustoAdicional', 'precCustoAdicionalObs'];
   factorInputs.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.disabled = !isEditing;
@@ -591,11 +593,19 @@ function renderInsumoRows() {
         if (b) {
           const custoTotal = base.custoBase(b, insumos);
           const rend = Number(b.rendimento) || 0;
-          precoEl.textContent = rend > 0
-            ? `${formatCurrency(custoTotal)} / ${trimNum(rend)} ${b.rendimentoUnidade || 'un'}`
-            : formatCurrency(custoTotal);
+          if (custoTotal > 0 && rend > 0) {
+            precoEl.textContent = `${formatCurrency(custoTotal)} / ${trimNum(rend)} ${b.rendimentoUnidade || 'un'}`;
+            precoEl.style.color = '';
+          } else if (custoTotal === 0) {
+            precoEl.textContent = 'Base sem custo (R$ 0)';
+            precoEl.style.color = 'var(--color-warn)';
+          } else {
+            precoEl.textContent = formatCurrency(custoTotal);
+            precoEl.style.color = '';
+          }
         } else {
           precoEl.textContent = '—';
+          precoEl.style.color = '';
         }
       } else {
         const ins = insumos.find((i) => i.id === sel.value);
@@ -608,13 +618,27 @@ function renderInsumoRows() {
           precoEl.textContent = q > 0
             ? `${formatCurrency(Number(compra.custoTotal) || 0)} / ${trimNum(q)} ${und}`
             : formatCurrency(Number(compra.custoTotal) || 0);
+          precoEl.style.color = '';
+        } else if (sel.value) {
+          precoEl.textContent = 'Sem compra (R$ 0)';
+          precoEl.style.color = 'var(--color-warn)';
         } else {
           precoEl.textContent = '—';
+          precoEl.style.color = '';
         }
       }
 
       const custo = pricing.custoItem(item, insumos, bases);
-      costEl.textContent = tipo && sel.value ? formatCurrency(custo) : '—';
+      const isZeroComQtd = tipo && sel.value && Number(qtd.value) > 0 && custo === 0;
+      if (isZeroComQtd) {
+        costEl.textContent = 'R$ 0,00 (!)';
+        costEl.style.color = 'var(--color-warn)';
+        costEl.title = 'Item com quantidade informada mas custo zero no inventário';
+      } else {
+        costEl.textContent = tipo && sel.value ? formatCurrency(custo) : '—';
+        costEl.style.color = '';
+        costEl.title = 'Custo proporcional deste item';
+      }
       updatePreview();
     }
 
@@ -703,6 +727,11 @@ function updatePreview() {
   // 1. Preço de Venda
   add('Preço Sugerido (Cardápio)', `${formatCurrency(c.precoSugerido)} /un`, true, false, 'var(--color-primary)');
 
+  const precoAlvoEl = document.getElementById('precPrecoAlvo');
+  if (precoAlvoEl && document.activeElement !== precoAlvoEl) {
+    precoAlvoEl.value = c.precoSugerido > 0 ? c.precoSugerido.toFixed(2) : '';
+  }
+
   addDivider();
 
   // 2. Margem de Contribuição (Metodologia Sebrae)
@@ -747,6 +776,20 @@ function updatePreview() {
   }
   add('Custo Unitário Total', `${formatCurrency(c.custoUnitarioTotal)} /un`, false, false, 'var(--color-text)');
   add('Lucro Líquido no Caixa', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, false, 'var(--color-ok)');
+
+  // Alerta caso haja ingrediente com quantidade informada mas custo zero no inventário
+  const temInsumoZerado = (receita.itens || []).some((item) => {
+    if (!item.quantidade || Number(item.quantidade) <= 0) return false;
+    const custo = pricing.custoItem(item, insumos, bases);
+    return custo === 0;
+  });
+
+  const avisoEl = document.getElementById('precAviso');
+  if (temInsumoZerado) {
+    showAviso('Atenção: Um ou mais ingredientes possuem quantidade informada mas custo R$ 0,00 no estoque (sem registro de compra no Inventário).');
+  } else if (avisoEl && avisoEl.textContent.includes('custo R$ 0,00')) {
+    showAviso('');
+  }
 
   // Status: atualizada / desatualizada / sem precificação
   if (status) {
@@ -1080,6 +1123,35 @@ if (toggleOverviewBtn && overviewContent) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => updatePreview());
   });
+
+// Sincronização do Preço Alvo -> Margem Líquida Desejada
+const precoAlvoInput = document.getElementById('precPrecoAlvo');
+if (precoAlvoInput) {
+  precoAlvoInput.addEventListener('input', () => {
+    const precoAlvoVal = Number(precoAlvoInput.value);
+    if (precoAlvoVal > 0) {
+      const receita = buildReceitaFromForm();
+      const insumos = storage.getAllInsumos();
+      const bases = base.getBases();
+      const costRates = costSettings.getCostSettings();
+      const c = pricing.calcular(receita, insumos, bases, costRates);
+
+      const novaMargem = pricing.calcularMargemPorPrecoAlvo(c.custoUnitarioTotal, precoAlvoVal, c.taxasDeducoesPct);
+      if (novaMargem != null) {
+        const lucroInput = document.getElementById('precLucroLiquido');
+        if (lucroInput) {
+          lucroInput.value = novaMargem;
+        }
+        if (novaMargem < 0) {
+          showAviso(`Atenção: Preço alvo de ${formatCurrency(precoAlvoVal)} fica abaixo do custo mínimo (${formatCurrency(c.precoMinimo)}). Margem líquida negativa (${novaMargem}%).`);
+        } else {
+          showAviso('');
+        }
+        updatePreview();
+      }
+    }
+  });
+}
 
 // Busca na Matriz de Rentabilidade
 const searchInput = document.getElementById('precSearch');

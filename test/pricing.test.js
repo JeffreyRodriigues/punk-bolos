@@ -248,3 +248,23 @@ test('findDuplicate e getReceita funcionam normalmente', () => {
   assert.equal(pricing.findDuplicate(r1, [r1]), null);
   assert.equal(pricing.getReceita([r1], 'pA').produtoId, 'pA');
 });
+
+test('calcularMargemPorPrecoAlvo: calcula margem exata e casos limites', () => {
+  // Custo = 7.41, Preço = 22.80, Deduções = 7.5%
+  // 1 - 7.41 / 22.80 = 0.675 -> 67.5% - 7.5% = 60.0%
+  const margem = pricing.calcularMargemPorPrecoAlvo(7.41, 22.80, 7.5);
+  assert.equal(margem, 60.0);
+
+  // Preço que empata no custo mínimo (sem lucro): Custo 7.41 / (1 - 0.075) = 8.0108 -> Preço 8.0108
+  const margemZero = pricing.calcularMargemPorPrecoAlvo(7.41, 8.01081, 7.5);
+  assert.equal(margemZero, 0);
+
+  // Preço abaixo do custo gera margem negativa
+  const margemNegativa = pricing.calcularMargemPorPrecoAlvo(10, 5, 0);
+  assert.equal(margemNegativa, -100);
+
+  // Valores inválidos retornam null
+  assert.equal(pricing.calcularMargemPorPrecoAlvo(0, 20), null);
+  assert.equal(pricing.calcularMargemPorPrecoAlvo(10, 0), null);
+  assert.equal(pricing.calcularMargemPorPrecoAlvo(-5, 20), null);
+});
