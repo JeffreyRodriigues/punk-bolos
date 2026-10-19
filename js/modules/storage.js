@@ -336,14 +336,21 @@ function normalizePrecificacao(receita) {
     id: receita.id,
     produtoId: String(receita.produtoId || '').trim(),
     itens: Array.isArray(receita.itens)
-      ? receita.itens.map((i) => ({
-          insumoId: String(i.insumoId || '').trim(),
-          baseId: String(i.baseId || '').trim(),
-          quantidade: Number(i.quantidade) || 0,
-        }))
+      ? receita.itens
+          .filter((i) => !i || !i._meta)
+          .map((i) => ({
+            insumoId: String(i.insumoId || '').trim(),
+            baseId: String(i.baseId || '').trim(),
+            quantidade: Number(i.quantidade) || 0,
+          }))
       : [],
-    margem: Number(receita.margem) || 0,
-    multiplicador: Number(receita.multiplicador) || 0,
+    margem: Number(receita.lucroLiquidoDesejado != null ? receita.lucroLiquidoDesejado : (receita.lucro_liquido_desejado != null ? receita.lucro_liquido_desejado : (receita.margem || 25))),
+    multiplicador: Number(receita.tempoPreparoMinutos != null ? receita.tempoPreparoMinutos : (receita.tempo_preparo_minutos != null ? receita.tempo_preparo_minutos : (receita.multiplicador || 30))),
+    tempoPreparoMinutos: Number(receita.tempoPreparoMinutos != null ? receita.tempoPreparoMinutos : (receita.tempo_preparo_minutos != null ? receita.tempo_preparo_minutos : (receita.multiplicador || 30))),
+    lucroLiquidoDesejado: Number(receita.lucroLiquidoDesejado != null ? receita.lucroLiquidoDesejado : (receita.lucro_liquido_desejado != null ? receita.lucro_liquido_desejado : (receita.margem || 25))),
+    precoAlvo: (receita.precoAlvo != null && receita.precoAlvo !== '' && Number(receita.precoAlvo) > 0)
+      ? Number(receita.precoAlvo)
+      : ((receita.preco_alvo != null && receita.preco_alvo !== '' && Number(receita.preco_alvo) > 0) ? Number(receita.preco_alvo) : null),
     rendimento: Number(receita.rendimento) || 0,
     embalagem: Number(receita.embalagem) || 0,
     custoAdicional: Number(receita.custoAdicional) || 0,
@@ -534,12 +541,24 @@ function fromInsumoRow(row) {
 
 /** Precificação (app) → linha do banco (itens embutidos em JSONB). */
 function toPrecificacaoRow(receita) {
+  const lucro = Number(receita.lucroLiquidoDesejado != null ? receita.lucroLiquidoDesejado : receita.margem) || 25;
+  const tempo = Number(receita.tempoPreparoMinutos != null ? receita.tempoPreparoMinutos : receita.multiplicador) || 30;
+  const precoAlvoVal = receita.precoAlvo != null && receita.precoAlvo !== '' ? Number(receita.precoAlvo) : null;
+
+  const rawItens = Array.isArray(receita.itens) ? receita.itens.filter((i) => !i || !i._meta) : [];
+  const metaObj = {
+    _meta: true,
+    tempoPreparoMinutos: tempo,
+    lucroLiquidoDesejado: lucro,
+    precoAlvo: precoAlvoVal != null && Number.isFinite(precoAlvoVal) && precoAlvoVal > 0 ? precoAlvoVal : null,
+  };
+
   return {
     id: receita.id,
     produto_id: receita.produtoId || '',
-    itens: Array.isArray(receita.itens) ? receita.itens : [],
-    margem: Number(receita.margem) || 0,
-    multiplicador: Number(receita.multiplicador) || 0,
+    itens: [...rawItens, metaObj],
+    margem: lucro,
+    multiplicador: tempo,
     rendimento: Number(receita.rendimento) || 0,
     embalagem: Number(receita.embalagem) || 0,
     custo_adicional: Number(receita.custoAdicional) || 0,
@@ -552,12 +571,31 @@ function toPrecificacaoRow(receita) {
 
 /** Linha do banco → precificação (app). */
 function fromPrecificacaoRow(row) {
+  const allItens = Array.isArray(row.itens) ? row.itens : [];
+  const meta = allItens.find((i) => i && i._meta) || {};
+  const itens = allItens.filter((i) => !i || !i._meta);
+
+  const lucro = meta.lucroLiquidoDesejado != null
+    ? Number(meta.lucroLiquidoDesejado)
+    : (row.lucro_liquido_desejado != null ? Number(row.lucro_liquido_desejado) : (Number(row.margem) || 25));
+
+  const tempo = meta.tempoPreparoMinutos != null
+    ? Number(meta.tempoPreparoMinutos)
+    : (row.tempo_preparo_minutos != null ? Number(row.tempo_preparo_minutos) : (Number(row.multiplicador) || 30));
+
+  const precoAlvo = meta.precoAlvo != null
+    ? Number(meta.precoAlvo)
+    : (row.preco_alvo != null ? Number(row.preco_alvo) : null);
+
   return {
     id: row.id,
     produtoId: row.produto_id || '',
-    itens: Array.isArray(row.itens) ? row.itens : [],
-    margem: Number(row.margem) || 0,
-    multiplicador: Number(row.multiplicador) || 0,
+    itens,
+    margem: lucro,
+    multiplicador: tempo,
+    tempoPreparoMinutos: tempo,
+    lucroLiquidoDesejado: lucro,
+    precoAlvo: precoAlvo != null && Number.isFinite(precoAlvo) && precoAlvo > 0 ? precoAlvo : null,
     rendimento: Number(row.rendimento) || 0,
     embalagem: Number(row.embalagem) || 0,
     custoAdicional: Number(row.custo_adicional) || 0,

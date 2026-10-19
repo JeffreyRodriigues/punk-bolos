@@ -433,6 +433,7 @@ function loadProduto(produtoId) {
 
   const tempoPreparo = document.getElementById('precTempoPreparo');
   const lucroLiquido = document.getElementById('precLucroLiquido');
+  const precoAlvo = document.getElementById('precPrecoAlvo');
   const rend = document.getElementById('precRendimento');
   const emb = document.getElementById('precEmbalagem');
   const custoAdic = document.getElementById('precCustoAdicional');
@@ -443,16 +444,19 @@ function loadProduto(produtoId) {
 
   if (tempoPreparo) tempoPreparo.value = baseData.tempoPreparoMinutos != null ? baseData.tempoPreparoMinutos : pricing.PRICING_DEFAULTS.tempoPreparoMinutos;
   if (lucroLiquido) lucroLiquido.value = baseData.lucroLiquidoDesejado != null ? baseData.lucroLiquidoDesejado : (globalRates.lucroLiquidoPadraoPct || 25);
+  if (precoAlvo) precoAlvo.value = baseData.precoAlvo != null && baseData.precoAlvo !== '' ? baseData.precoAlvo : '';
   if (rend) rend.value = baseData.rendimento != null ? baseData.rendimento : pricing.PRICING_DEFAULTS.rendimento;
   if (emb) emb.value = baseData.embalagem != null ? baseData.embalagem : pricing.PRICING_DEFAULTS.embalagem;
   if (custoAdic) custoAdic.value = baseData.custoAdicional != null ? baseData.custoAdicional : pricing.PRICING_DEFAULTS.custoAdicional;
   if (obs) obs.value = baseData.custoAdicionalObs || '';
 
-  insumoRows = (baseData.itens || []).map((i) => ({
-    refId: i.baseId || i.insumoId || '',
-    tipo: i.baseId ? 'base' : 'insumo',
-    quantidade: i.quantidade,
-  }));
+  insumoRows = (baseData.itens || [])
+    .filter((i) => !i || !i._meta)
+    .map((i) => ({
+      refId: i.baseId || i.insumoId || '',
+      tipo: i.baseId ? 'base' : 'insumo',
+      quantidade: i.quantidade,
+    }));
   if (insumoRows.length === 0) {
     insumoRows.push({ refId: '', tipo: '', quantidade: '' });
   }
@@ -729,7 +733,9 @@ function updatePreview() {
 
   const precoAlvoEl = document.getElementById('precPrecoAlvo');
   if (precoAlvoEl && document.activeElement !== precoAlvoEl) {
-    precoAlvoEl.value = c.precoSugerido > 0 ? c.precoSugerido.toFixed(2) : '';
+    if (!precoAlvoEl.value) {
+      precoAlvoEl.value = c.precoSugerido > 0 ? c.precoSugerido.toFixed(2) : '';
+    }
   }
 
   addDivider();
@@ -818,6 +824,9 @@ function buildReceitaFromForm() {
     return Number.isFinite(v) ? v : fallback;
   };
 
+  const precoAlvoEl = document.getElementById('precPrecoAlvo');
+  const precoAlvoVal = precoAlvoEl && precoAlvoEl.value !== '' ? Number(precoAlvoEl.value) : null;
+
   return pricing.createReceita({
     id: editingReceita ? editingReceita.id : generateId(),
     produtoId: currentProdutoId,
@@ -830,6 +839,7 @@ function buildReceitaFromForm() {
       })),
     tempoPreparoMinutos: num('precTempoPreparo', pricing.PRICING_DEFAULTS.tempoPreparoMinutos),
     lucroLiquidoDesejado: num('precLucroLiquido', pricing.PRICING_DEFAULTS.lucroLiquidoDesejado),
+    precoAlvo: precoAlvoVal != null && Number.isFinite(precoAlvoVal) && precoAlvoVal > 0 ? precoAlvoVal : null,
     rendimento: num('precRendimento', pricing.PRICING_DEFAULTS.rendimento),
     embalagem: num('precEmbalagem', pricing.PRICING_DEFAULTS.embalagem),
     custoAdicional: num('precCustoAdicional', pricing.PRICING_DEFAULTS.custoAdicional),
@@ -1121,7 +1131,13 @@ if (toggleOverviewBtn && overviewContent) {
 ['precTempoPreparo', 'precLucroLiquido', 'precRendimento', 'precEmbalagem', 'precCustoAdicional', 'precCustoAdicionalObs']
   .forEach((id) => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => updatePreview());
+    if (el) el.addEventListener('input', () => {
+      if (id === 'precLucroLiquido' && document.activeElement === el) {
+        const precoAlvoEl = document.getElementById('precPrecoAlvo');
+        if (precoAlvoEl) precoAlvoEl.value = '';
+      }
+      updatePreview();
+    });
   });
 
 // Sincronização do Preço Alvo -> Margem Líquida Desejada
@@ -1149,6 +1165,9 @@ if (precoAlvoInput) {
         }
         updatePreview();
       }
+    } else if (precoAlvoInput.value === '') {
+      showAviso('');
+      updatePreview();
     }
   });
 }

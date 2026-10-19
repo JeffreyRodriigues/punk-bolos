@@ -341,7 +341,12 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Navegação paginada com botões Anterior/Próxima e indicador de páginas e total de produtos.
   - Reset automático para página 1 ao alterar categoria ou buscar, e scroll suave ao navegar entre páginas.
 - **Funções Puras e Testes (`product.js`, `test/product.test.js`):**
-  - Implementadas funções puras `filterProducts` e `paginateItems` com cobertura de testes unitários automatizados.
+### 50. Correção na Persistência da Ficha Técnica — Preço Alvo e Margem Líquida
+- **Persistência de Preço Alvo e Margem Líquida (`storage.js`, `pricing.js`, `pricingView.js`):**
+  - Correção na serialização (`toPrecificacaoRow`, `fromPrecificacaoRow`, `normalizePrecificacao`) para persistir `precoAlvo`, `tempoPreparoMinutos` e `lucroLiquidoDesejado` tanto no LocalStorage quanto no Supabase (via metadados embutidos em `itens` JSONB e mapeamento direto em `margem` e `multiplicador`).
+  - Preenchimento automático do campo `precPrecoAlvo` na recarga de produto (`loadProduto`), mantendo o preço alvo fixado pelo usuário sem ser sobrescrito pelo recálculo padrão.
+  - Sincronização inteligente no formulário: alterar `precPrecoAlvo` recalcula a margem líquida preservando o preço alvo; alterar diretamente a margem líquida limpa o preço alvo fixado para recalcular o novo preço sugerido.
+  - Adicionados testes unitários em `test/pricing.test.js` cobrindo normalização e preservação de `precoAlvo`.
 
 ---
 

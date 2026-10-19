@@ -64,6 +64,7 @@ export function createReceita(data = {}) {
     custoAdicionalObs: String(data.custoAdicionalObs || ''),
     tempoPreparoMinutos: data.tempoPreparoMinutos != null ? Number(data.tempoPreparoMinutos) : PRICING_DEFAULTS.tempoPreparoMinutos,
     lucroLiquidoDesejado: data.lucroLiquidoDesejado != null ? Number(data.lucroLiquidoDesejado) : PRICING_DEFAULTS.lucroLiquidoDesejado,
+    precoAlvo: data.precoAlvo != null && data.precoAlvo !== '' && Number(data.precoAlvo) > 0 ? Number(data.precoAlvo) : null,
     metodoPrecificacao: data.metodoPrecificacao || PRICING_DEFAULTS.metodoPrecificacao,
     dataCalculo: data.dataCalculo || new Date().toISOString().slice(0, 10),
     custoIngredientes: data.custoIngredientes != null ? Number(data.custoIngredientes) : 0,

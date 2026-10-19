@@ -268,3 +268,27 @@ test('calcularMargemPorPrecoAlvo: calcula margem exata e casos limites', () => {
   assert.equal(pricing.calcularMargemPorPrecoAlvo(10, 0), null);
   assert.equal(pricing.calcularMargemPorPrecoAlvo(-5, 20), null);
 });
+
+test('createReceita e recalcular: aceita, normaliza e preserva precoAlvo', () => {
+  const r = pricing.createReceita({
+    produtoId: 'p1',
+    precoAlvo: 25.5,
+    lucroLiquidoDesejado: 32.5,
+    tempoPreparoMinutos: 45,
+  });
+  assert.equal(r.precoAlvo, 25.5);
+  assert.equal(r.lucroLiquidoDesejado, 32.5);
+  assert.equal(r.tempoPreparoMinutos, 45);
+
+  const recal = pricing.recalcular(r, []);
+  assert.equal(recal.precoAlvo, 25.5);
+  assert.equal(recal.lucroLiquidoDesejado, 32.5);
+  assert.equal(recal.tempoPreparoMinutos, 45);
+
+  // Valor inválido vira null
+  const rNull = pricing.createReceita({ produtoId: 'p2', precoAlvo: '' });
+  assert.equal(rNull.precoAlvo, null);
+  const rZero = pricing.createReceita({ produtoId: 'p3', precoAlvo: 0 });
+  assert.equal(rZero.precoAlvo, null);
+});
+
