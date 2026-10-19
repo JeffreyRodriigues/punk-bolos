@@ -120,6 +120,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1874,31 +1876,20 @@ body.modal-open {
   color: var(--color-text-muted);
 }
 
-.product-filter-bar {
+.product-toolbar {
+  margin-bottom: 16px;
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
+  justify-content: space-between;
+}
+
+.product-filters {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 14px;
-}
-
-.filter-label {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.filter-select {
-  background-color: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-
-.filter-select:focus {
-  border-color: var(--color-primary);
+  align-items: center;
 }
 
 .product-grid {
@@ -2965,6 +2956,11 @@ html.dark .inativo-badge {
   background-color: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
+}
+
+.customer-filter-pill.active .count-badge {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 
 /* Tabela de Clientes */
@@ -4875,7 +4871,8 @@ html.dark .badge-purple {
   }
 
   /* Barra de ferramentas de pedidos no mobile */
-  .orders-toolbar {
+  .orders-toolbar,
+  .product-toolbar {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
@@ -5173,6 +5170,8 @@ html.dark .badge-purple {
 
 </style>
 <!-- CSS_INLINE:END -->
+
+
 
 
 
@@ -5741,11 +5740,12 @@ html.dark .badge-purple {
 
     <p class="view-subtitle">Cadastre os produtos com preço para agilizar a criação de pedidos — o valor é preenchido automaticamente.</p>
 
-    <div class="product-filter-bar">
-      <label class="filter-label" for="productTypeFilter">Filtrar por tipo:</label>
-      <select id="productTypeFilter" class="filter-select" aria-label="Filtrar por tipo de produto">
-        <option value="">Todos os tipos</option>
-      </select>
+    <!-- Barra de busca e filtros rápidos por categoria -->
+    <div class="customer-toolbar product-toolbar" style="margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+      <div class="search-bar" style="flex: 1 1 280px; margin-bottom: 0;">
+        <input id="productSearch" type="search" placeholder="Buscar por sabor ou título do produto..." autocomplete="off">
+      </div>
+      <div id="productCategoryFilters" class="customer-filters product-filters" role="group" aria-label="Filtros por categoria"></div>
     </div>
 
     <div id="productList" class="product-grid" aria-live="polite">
@@ -5756,6 +5756,13 @@ html.dark .badge-purple {
       <span class="empty-icon" aria-hidden="true">🧁</span>
       <p>Nenhum produto cadastrado ainda.</p>
     </div>
+
+    <!-- Navegação de Páginas de Produtos -->
+    <nav id="productPagination" class="order-pagination" aria-label="Navegação de páginas de produtos" hidden>
+      <button id="btnProductPrevPage" type="button" class="btn-pagination" aria-label="Página anterior">Anterior</button>
+      <span id="productPaginationInfo" class="pagination-info">Página 1 de 1</span>
+      <button id="btnProductNextPage" type="button" class="btn-pagination" aria-label="Próxima página">Próxima</button>
+    </nav>
   </main>
 
   <!-- ============================================================
@@ -7110,6 +7117,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=53"></script>
+  <script type="module" src="js/app.js?v=54"></script>
 </body>
 </html>

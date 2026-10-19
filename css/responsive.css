@@ -201,7 +201,8 @@
   }
 
   /* Barra de ferramentas de pedidos no mobile */
-  .orders-toolbar {
+  .orders-toolbar,
+  .product-toolbar {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;

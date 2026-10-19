@@ -331,6 +331,18 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Ranking de Sabores de Docinhos (`dashboard.js`, `index.html`, `css/styles.css`):**
   - 4ª coluna de ranking adicionada no grid inferior, completando a paridade de sabores de Docinhos junto a Fatias, Punkitos e Bolos.
 
+### 49. Catálogo de Produtos — Filtros Rápidos por Categoria, Busca Instantânea e Paginação
+- **Pílulas de Categoria & Contadores em Tempo Real (`productList.js`, `index.html`, `css/styles.css`):**
+  - Substituição do antigo select por pílulas visuais categorizadas com ícones e badges de contagem (`Todos`, `Fatias`, `Punkitos`, `Bolos`, `Naked`, `Docinhos`, `Decoração`, `Adicionais`).
+  - Atualização dinâmica de contadores e ocultação inteligente de categorias sem produtos cadastrados.
+- **Busca Instantânea por Sabor ou Título (`product.js`, `productList.js`, `index.html`):**
+  - Campo de busca em tempo real com filtro por sabor, tamanho e detalhes do produto, combinável com as categorias.
+- **Paginação de 12 Itens por Página (`product.js`, `productList.js`, `index.html`, `css/styles.css`):**
+  - Navegação paginada com botões Anterior/Próxima e indicador de páginas e total de produtos.
+  - Reset automático para página 1 ao alterar categoria ou buscar, e scroll suave ao navegar entre páginas.
+- **Funções Puras e Testes (`product.js`, `test/product.test.js`):**
+  - Implementadas funções puras `filterProducts` e `paginateItems` com cobertura de testes unitários automatizados.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

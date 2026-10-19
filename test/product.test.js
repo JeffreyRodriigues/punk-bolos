@@ -246,3 +246,49 @@ test('createProduct e validateProduct com tipo Docinho', () => {
   const val = product.validateProduct(p);
   assert.equal(val.valid, true);
 });
+
+test('filterProducts e paginateItems: filtra por tipo/busca e pagina corretamente com 12 itens', () => {
+  const prods = [
+    { id: '1', titulo: 'Fatia Cenoura', tipoProduto: 'Fatia', detalhes: 'Com brigadeiro' },
+    { id: '2', titulo: 'Fatia Choc', tipoProduto: 'Fatia', detalhes: '' },
+    { id: '3', titulo: 'Brigadeiro', tipoProduto: 'Docinho', detalhes: 'Cacau 100%' },
+    { id: '4', titulo: 'Beijinho', tipoProduto: 'Docinho', detalhes: 'Coco' },
+    { id: '5', titulo: 'Bolo Vulcão', tipoProduto: 'Bolo Inteiro', tamanho: 'M', detalhes: '' },
+  ];
+
+  // Filtro por tipo
+  const docinhos = product.filterProducts(prods, 'Docinho', '');
+  assert.equal(docinhos.length, 2);
+  assert.equal(docinhos[0].titulo, 'Brigadeiro');
+
+  // Filtro por busca textual (case-insensitive)
+  const buscaCacau = product.filterProducts(prods, '', 'cacau');
+  assert.equal(buscaCacau.length, 1);
+  assert.equal(buscaCacau[0].titulo, 'Brigadeiro');
+
+  // Filtro combinado (tipo + busca)
+  const combinado = product.filterProducts(prods, 'Fatia', 'cenoura');
+  assert.equal(combinado.length, 1);
+  assert.equal(combinado[0].titulo, 'Fatia Cenoura');
+
+  // Paginação: 25 itens com pageSize 12 -> 3 páginas
+  const muitosItens = Array.from({ length: 25 }, (_, i) => ({ id: `p${i + 1}` }));
+  const p1 = product.paginateItems(muitosItens, 1, 12);
+  assert.equal(p1.totalItems, 25);
+  assert.equal(p1.totalPages, 3);
+  assert.equal(p1.currentPage, 1);
+  assert.equal(p1.pageItems.length, 12);
+  assert.equal(p1.pageItems[0].id, 'p1');
+  assert.equal(p1.pageItems[11].id, 'p12');
+
+  const p3 = product.paginateItems(muitosItens, 3, 12);
+  assert.equal(p3.currentPage, 3);
+  assert.equal(p3.pageItems.length, 1);
+  assert.equal(p3.pageItems[0].id, 'p25');
+
+  // Fora dos limites: página 99 vira página 3, página 0 vira página 1
+  const pOver = product.paginateItems(muitosItens, 99, 12);
+  assert.equal(pOver.currentPage, 3);
+  const pZero = product.paginateItems(muitosItens, 0, 12);
+  assert.equal(pZero.currentPage, 1);
+});

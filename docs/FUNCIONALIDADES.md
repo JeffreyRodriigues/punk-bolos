@@ -21,6 +21,8 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 
 ### 1.2 Produtos
 - **Catálogo Completo:** Cadastro de bolos inteiros, bolos naked, fatias, punkitos, docinhos, adicionais e confeitos.
+- **Pílulas de Categoria & Busca Instantânea:** Navegação rápida por categorias com badges de contagem em tempo real (`Todos`, `Fatias`, `Punkitos`, `Bolos`, `Docinhos`, etc.) e campo de busca textual por sabor/título.
+- **Paginação Eficiente:** Visualização em grade de 12 produtos por página, com navegação responsiva (Anterior/Próxima e total de páginas/itens).
 - **Tamanhos e Detalhes:** Tamanhos exclusivos para bolos inteiros e bolos naked (Mini, PP, P, M, G, GG, Bento Cake, Coração).
 - **Valores e Descrições:** Valores de venda sugeridos e integração com controle de estoque.
 

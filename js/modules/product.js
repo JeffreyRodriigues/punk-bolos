@@ -282,3 +282,53 @@ export function ensureProduct(item = {}) {
 
   return newProduct;
 }
+
+/**
+ * Filtra produtos por categoria e texto de busca.
+ * @param {Array<Object>} products - Lista de produtos.
+ * @param {string} [category] - Categoria/tipo (vazio para todos).
+ * @param {string} [query] - Texto de busca por título, tamanho ou detalhes.
+ * @returns {Array<Object>} Produtos filtrados.
+ */
+export function filterProducts(products = [], category = '', query = '') {
+  const cat = String(category || '').trim();
+  const q = String(query || '').trim().toLowerCase();
+
+  return (products || []).filter((p) => {
+    if (cat && String(p.tipoProduto || '').trim() !== cat) {
+      return false;
+    }
+    if (q) {
+      const title = String(p.titulo || '').toLowerCase();
+      const details = String(p.detalhes || '').toLowerCase();
+      const size = String(p.tamanho || '').toLowerCase();
+      if (!title.includes(q) && !details.includes(q) && !size.includes(q)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+/**
+ * Pagina uma lista de itens.
+ * @param {Array<any>} items - Lista de itens.
+ * @param {number} [page=1] - Página 1-indexada.
+ * @param {number} [pageSize=12] - Quantidade por página.
+ * @returns {{ pageItems: Array<any>, totalPages: number, currentPage: number, totalItems: number }}
+ */
+export function paginateItems(items = [], page = 1, pageSize = 12) {
+  const totalItems = (items || []).length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+  const start = (currentPage - 1) * pageSize;
+  const pageItems = (items || []).slice(start, start + pageSize);
+
+  return {
+    pageItems,
+    totalPages,
+    currentPage,
+    totalItems,
+  };
+}
+
