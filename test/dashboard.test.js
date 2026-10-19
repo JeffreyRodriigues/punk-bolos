@@ -51,7 +51,7 @@ test('ticketMedio: 0 sem pedidos ativos', () => {
 });
 test('lucroBruto: custo 0 quando sem receitas cadastradas', () => {
   const r = s.lucroBruto([O.ativo, O.cancelado]);
-  assert.deepEqual(r, { receita: 100, custo: 0, lucro: 100, margem: 100 });
+  assert.deepEqual(r, { receita: 100, custo: 0, lucro: 100, margem: 100, cmvPct: 0 });
 });
 
 test('lucroBruto: calcula CMV real e margem % a partir das receitas cadastradas', () => {
@@ -404,3 +404,123 @@ test('analyzePeriod: classifica corretamente mês encerrado, mês atual e perío
     label: 'Período Encerrado',
   });
 });
+
+test('revenueByPaymentMethod e cmvPct: calcula faturamento por pagamento e percentual de CMV', () => {
+  const orders = [
+    { status: 'Concluído', valorTotal: 100, pagamento: 'PIX' },
+    { status: 'Concluído', valorTotal: 50, pagamento: 'Crédito' },
+    { status: 'Concluído', valorTotal: 30, pagamento: 'Débito' },
+    { status: 'Concluído', valorTotal: 20, pagamento: 'Dinheiro' },
+    { status: 'Concluído', valorTotal: 0, pagamento: 'Cortesia' },
+    { status: 'Cancelado', valorTotal: 999, pagamento: 'PIX' },
+  ];
+
+  const byPayment = s.revenueByPaymentMethod(orders);
+  assert.equal(byPayment['PIX'], 100);
+  assert.equal(byPayment['Crédito'], 50);
+  assert.equal(byPayment['Débito'], 30);
+  assert.equal(byPayment['Dinheiro'], 20);
+
+  // CMV pct em lucroBruto
+  const products = [{ id: 'p1', tipoProduto: 'Fatia', valor: 10 }];
+  const precs = [{ produtoId: 'p1', custoRealUnitario: 3.50 }];
+  const o = [{ status: 'Concluído', valorTotal: 100, itens: [{ produtoId: 'p1', quantidade: 10, valorUnitario: 10 }] }];
+  const lb = s.lucroBruto(o, precs, products);
+  assert.equal(lb.receita, 100);
+  assert.equal(lb.custo, 35);
+  assert.equal(lb.lucro, 65);
+  assert.equal(lb.margem, 65);
+  assert.equal(lb.cmvPct, 35);
+});
+
+test('summaryByDeliveryMethod e normalizeDeliveryMethod: calcula pedidos e receita por canal de entrega', () => {
+  const orders = [
+    { status: 'Concluído', valorTotal: 100, entrega: 'Retirada' },
+    { status: 'Concluído', valorTotal: 60, entrega: 'Entrega (Rua das Flores, 123)' },
+    { status: 'Pendente', valorTotal: 40, entrega: 'Entrega Própria' },
+    { status: 'Embalado', valorTotal: 30, entrega: 'Uber Cliente' },
+    { status: 'Concluído', valorTotal: 0, entrega: 'Retirada', pagamento: 'Cortesia' },
+    { status: 'Cancelado', valorTotal: 999, entrega: 'Entrega Própria' },
+  ];
+
+  const summary = s.summaryByDeliveryMethod(orders);
+  assert.equal(summary['Retirada'].count, 2); // 1 normal + 1 cortesia
+  assert.equal(summary['Retirada'].revenue, 100);
+  assert.equal(summary['Entrega Própria'].count, 2); // 1 Concluído + 1 Pendente
+  assert.equal(summary['Entrega Própria'].revenue, 100); // 60 + 40
+  assert.equal(summary['Uber Cliente'].count, 1);
+  assert.equal(summary['Uber Cliente'].revenue, 30);
+
+  // Normalização isolada
+  assert.equal(s.normalizeDeliveryMethod('Retirada'), 'Retirada');
+  assert.equal(s.normalizeDeliveryMethod('entrega rápida'), 'Entrega Própria');
+  assert.equal(s.normalizeDeliveryMethod('uber flash'), 'Uber Cliente');
+  assert.equal(s.normalizeDeliveryMethod(''), 'Retirada');
+  assert.equal(s.normalizeDeliveryMethod(null), 'Retirada');
+});
+
+test('todayOrdersSummary: calcula encomendas do dia, pendentes, prontas e receita ignorando cancelados', () => {
+  const today = '2026-10-18';
+  const orders = [
+    { id: '1', data: '2026-10-18', status: 'Pendente', valorTotal: 50 },
+    { id: '2', data: '2026-10-18', status: 'Em Produção', valorTotal: 70 },
+    { id: '3', data: '2026-10-18', status: 'Embalado', valorTotal: 40 },
+    { id: '4', data: '2026-10-18', status: 'Concluído', valorTotal: 60 },
+    { id: '5', data: '2026-10-18', status: 'Concluído', valorTotal: 0, pagamento: 'Cortesia' },
+    { id: '6', data: '2026-10-18', status: 'Cancelado', valorTotal: 999 },
+    { id: '7', data: '2026-10-19', status: 'Pendente', valorTotal: 100 }, // outro dia
+  ];
+
+  const res = s.todayOrdersSummary(orders, today);
+  assert.equal(res.total, 5); // 5 ativos no dia
+  assert.equal(res.pendentes, 2); // Pendente + Em Produção
+  assert.equal(res.prontas, 3); // Embalado + Concluído (inclui cortesia)
+  assert.equal(res.receita, 220); // 50 + 70 + 40 + 60
+  assert.equal(res.orders.length, 5);
+});
+
+test('lowStockInsumosSummary: identifica insumos zerados e abaixo do estoque mínimo ordenando por gravidade', () => {
+  const insumos = [
+    { id: 'i1', nome: 'Farinha', estoqueAtual: 0, estoqueMinimo: 5, unidade: 'kg' }, // Zerado
+    { id: 'i2', nome: 'Açúcar', estoqueAtual: 2, estoqueMinimo: 10, unidade: 'kg' }, // Baixo
+    { id: 'i3', nome: 'Ovos', estoqueAtual: 30, estoqueMinimo: 12, unidade: 'un' }, // OK
+    { id: 'i4', nome: 'Cacau 100%', estoqueAtual: -1, estoqueMinimo: 2, unidade: 'kg' }, // Zerado / negativo
+    { id: 'i5', nome: 'Sal', estoqueAtual: 1, estoqueMinimo: null, unidade: 'kg' }, // Sem mínimo definido
+  ];
+
+  const res = s.lowStockInsumosSummary(insumos);
+  assert.equal(res.totalCriticos, 3); // Farinha, Cacau, Açúcar
+  assert.equal(res.zerados, 2); // Farinha e Cacau
+  assert.equal(res.baixos, 1); // Açúcar
+  assert.equal(res.items[0].status, 'Zerado');
+  assert.equal(res.items[1].status, 'Zerado');
+  assert.equal(res.items[2].status, 'Baixo');
+  assert.equal(res.items[2].nome, 'Açúcar');
+});
+
+test('prontaEntregaSummary: contabiliza saldo disponível apenas para produtos que controlam estoque', () => {
+  const products = [
+    { id: 'p1', titulo: 'Fatia Cenoura', tipoProduto: 'Fatia', controlaEstoque: true },
+    { id: 'p2', titulo: 'Fatia Choc', tipoProduto: 'Fatia', controlaEstoque: true },
+    { id: 'p3', titulo: 'Bolo Casamento', tipoProduto: 'Bolo Inteiro', controlaEstoque: false },
+    { id: 'p4', titulo: 'Punkito', tipoProduto: 'Punkitos', controlaEstoque: true },
+  ];
+
+  const mockDisponivel = (p) => {
+    if (p.id === 'p1') return 5;
+    if (p.id === 'p2') return 0; // zerado
+    if (p.id === 'p3') return 10; // ignorado (controlaEstoque false)
+    if (p.id === 'p4') return 8;
+    return 0;
+  };
+
+  const res = s.prontaEntregaSummary(products, mockDisponivel);
+  assert.equal(res.totalUnidades, 13); // 5 + 8
+  assert.equal(res.totalProdutosComEstoque, 2); // p1 e p4
+  assert.equal(res.items.length, 2);
+  assert.equal(res.items[0].titulo, 'Fatia Cenoura');
+  assert.equal(res.items[0].disponivel, 5);
+  assert.equal(res.items[1].titulo, 'Punkito');
+  assert.equal(res.items[1].disponivel, 8);
+});
+

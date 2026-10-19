@@ -194,6 +194,12 @@
     gap: 10px;
   }
 
+  /* Painel Operacional no tablet/mobile: cards empilhados */
+  .dash-today-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
   /* Barra de ferramentas de pedidos no mobile */
   .orders-toolbar {
     flex-direction: column;

@@ -114,6 +114,11 @@
 
 
 
+
+
+
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1625,6 +1630,123 @@ body.modal-open {
 .toast.success { background-color: var(--color-ok); color: #fff; }
 .toast.error   { background-color: var(--color-danger); color: #fff; }
 
+/* ---------- Painel Operacional: Visão do Dia ---------- */
+.dash-today-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.dash-today-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dash-today-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-today-badge {
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.dash-today-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.dash-today-date {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.dash-today-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.dash-today-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.dash-today-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.dash-today-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+}
+
+.dash-today-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dash-today-label {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.dash-today-val {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.dash-today-sub {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---------- Dashboard v1.1: gráficos e rankings ---------- */
 .dashboard-note {
   margin: 12px 2px 0;
@@ -2494,7 +2616,7 @@ html.dark .type-summary-card:hover {
 
 .type-rankings-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
 
@@ -2520,6 +2642,7 @@ html.dark .type-summary-card:hover {
 .type-rank-col.fatia-col    h3 { color: #e91e63; }
 .type-rank-col.punkitos-col h3 { color: #7e57c2; }
 .type-rank-col.bolo-col     h3 { color: #f59e0b; }
+.type-rank-col.docinho-col  h3 { color: #26a69a; }
 
 /* ============================================================
    RESPONSIVO — type summaries e rankings em mobile
@@ -2537,7 +2660,7 @@ html.dark .type-summary-card:hover {
     grid-template-columns: repeat(2, 1fr);
   }
   .type-rankings-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -4744,6 +4867,12 @@ html.dark .badge-purple {
     gap: 10px;
   }
 
+  /* Painel Operacional no tablet/mobile: cards empilhados */
+  .dash-today-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
   /* Barra de ferramentas de pedidos no mobile */
   .orders-toolbar {
     flex-direction: column;
@@ -5143,6 +5272,11 @@ html.dark .badge-purple {
 
 
 
+
+
+
+
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5336,6 +5470,45 @@ html.dark .badge-purple {
     <!-- Abas de filtro por tipo de produto (Ideia 1) -->
     <div id="dash-type-tabs" class="dash-type-tabs" role="tablist" aria-label="Filtrar por tipo de produto"></div>
 
+    <!-- Painel Operacional: Visão do Dia (Ação Imediata da Cozinha) -->
+    <section id="dash-today-panel" class="dash-today-panel" aria-label="Visão Operacional do Dia">
+      <div class="dash-today-header">
+        <div class="dash-today-title-wrap">
+          <span class="dash-today-badge">Hoje</span>
+          <h2 class="dash-today-title">Visão do Dia — Operação da Cozinha</h2>
+        </div>
+        <span id="dash-today-date" class="dash-today-date">--/--/----</span>
+      </div>
+      <div class="dash-today-grid">
+        <div class="dash-today-card" id="dash-today-orders" title="Clique para abrir a aba Pedidos">
+          <div class="dash-today-icon">📅</div>
+          <div class="dash-today-info">
+            <span class="dash-today-label">Encomendas para Hoje</span>
+            <span class="dash-today-val" id="dash-today-orders-val">0</span>
+            <span class="dash-today-sub" id="dash-today-orders-sub">0 pendentes · 0 prontas</span>
+          </div>
+        </div>
+
+        <div class="dash-today-card" id="dash-today-stock" title="Clique para abrir a aba Estoque">
+          <div class="dash-today-icon">🍰</div>
+          <div class="dash-today-info">
+            <span class="dash-today-label">Pronta Entrega Disponível</span>
+            <span class="dash-today-val" id="dash-today-stock-val">0 un</span>
+            <span class="dash-today-sub" id="dash-today-stock-sub">itens prontos para venda</span>
+          </div>
+        </div>
+
+        <div class="dash-today-card" id="dash-today-alerts" title="Clique para abrir a aba Inventário">
+          <div class="dash-today-icon">⚠️</div>
+          <div class="dash-today-info">
+            <span class="dash-today-label">Alertas de Insumos</span>
+            <span class="dash-today-val" id="dash-today-alerts-val">0</span>
+            <span class="dash-today-sub" id="dash-today-alerts-sub">tudo abastecido</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Card de Acompanhamento do Ponto de Equilíbrio Operacional -->
     <section id="dashBreakevenCard" class="estoque-panel dash-breakeven-card" style="margin-bottom: 16px; padding: 14px 16px;">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
@@ -5443,8 +5616,18 @@ html.dark .badge-purple {
       </div>
 
       <div class="chart-card">
+        <h2>Meios de Pagamento</h2>
+        <div class="chart-wrap chart-wrap-sm"><canvas id="chart-pagamentos"></canvas></div>
+      </div>
+
+      <div class="chart-card">
         <h2>Ranking de Sabores</h2>
         <div id="ranking-sabores" class="ranking"></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Canais de Entrega</h2>
+        <div class="chart-wrap chart-wrap-sm"><canvas id="chart-entrega"></canvas></div>
       </div>
     </section>
 
@@ -5463,6 +5646,10 @@ html.dark .badge-purple {
         <div class="type-rank-col bolo-col">
           <h3><span>🎂</span> Bolos</h3>
           <div id="ranking-bolos" class="ranking"></div>
+        </div>
+        <div class="type-rank-col docinho-col">
+          <h3><span>🍬</span> Docinhos</h3>
+          <div id="ranking-docinhos" class="ranking"></div>
         </div>
       </div>
     </section>
@@ -6921,6 +7108,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=52"></script>
+  <script type="module" src="js/app.js?v=53"></script>
 </body>
 </html>

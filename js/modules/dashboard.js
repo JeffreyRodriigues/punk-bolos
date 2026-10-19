@@ -18,6 +18,7 @@ import * as order from './order.js';
 import * as product from './product.js';
 import * as pricing from './pricing.js';
 import * as base from './base.js';
+import * as estoque from './estoque.js';
 import * as costSettings from './costSettings.js';
 import * as dateFilter from './dateFilter.js';
 import * as service from './dashboardService.js';
@@ -163,9 +164,11 @@ function renderStats(orders) {
   setStat('stat-punkitos', byProduct['Punkitos'] || 0);
   setStat('stat-quantidade', service.totalQuantitySold(orders));
   setStat('stat-lucro', formatCurrency(lucroInfo.lucro));
+  const margemTxt = Number.isFinite(lucroInfo.margem) ? lucroInfo.margem.toFixed(1) : '0.0';
+  const cmvPctTxt = lucroInfo.cmvPct != null && Number.isFinite(lucroInfo.cmvPct) ? `${lucroInfo.cmvPct.toFixed(1)}%` : '';
   setStatSub(
     'stat-lucro',
-    lucroInfo.custo > 0 ? `Margem: ${lucroInfo.margem}% · CMV: ${formatCurrency(lucroInfo.custo)}` : ''
+    lucroInfo.custo > 0 ? `Margem: ${margemTxt}% · CMV: ${cmvPctTxt} (${formatCurrency(lucroInfo.custo)})` : ''
   );
   setStat('stat-ticket', formatCurrency(service.ticketMedio(orders)));
   setStat('stat-cortesia', service.countCortesia(orders));
@@ -329,6 +332,135 @@ function renderStatusChart(orders, theme) {
   });
 }
 
+/** Cores para os meios de pagamento. */
+const PAYMENT_COLORS = {
+  'PIX': '#10b981',      // Esmeralda / Verde
+  'Crédito': '#8b5cf6',  // Roxo
+  'Débito': '#3b82f6',   // Azul
+  'Dinheiro': '#f59e0b', // Âmbar / Laranja
+};
+
+/**
+ * Gráfico de faturamento por meio de pagamento (Donut / Rosca).
+ */
+function renderPaymentChart(orders, theme) {
+  const byPayment = service.revenueByPaymentMethod(orders);
+  const labels = Object.keys(byPayment).filter((k) => byPayment[k] > 0);
+  const values = labels.map((k) => byPayment[k]);
+
+  if (values.length === 0) {
+    createChart('pagamentos', 'chart-pagamentos', {
+      type: 'doughnut',
+      data: {
+        labels: ['Sem dados'],
+        datasets: [{ data: [1], backgroundColor: [theme.dark ? '#32364a' : '#e3e6ee'] }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      },
+    });
+    return;
+  }
+
+  createChart('pagamentos', 'chart-pagamentos', {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [
+        {
+          data: values,
+          backgroundColor: labels.map((k) => PAYMENT_COLORS[k] || PALETTE[0]),
+          borderColor: theme.surface,
+          borderWidth: 2,
+          hoverOffset: 6,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${formatCurrency(ctx.parsed)}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+/** Cores para os canais de entrega. */
+const DELIVERY_COLORS = {
+  'Retirada': '#0ea5e9',        // Azul Celeste
+  'Entrega Própria': '#10b981', // Verde Esmeralda
+  'Uber Cliente': '#f59e0b',    // Âmbar / Laranja
+};
+
+/**
+ * Gráfico de pedidos e faturamento por canal de entrega (Donut / Rosca).
+ */
+function renderDeliveryChart(orders, theme) {
+  const summary = service.summaryByDeliveryMethod(orders);
+  const labels = Object.keys(summary).filter((k) => summary[k].count > 0);
+  const values = labels.map((k) => summary[k].count);
+  const totalCount = values.reduce((a, b) => a + b, 0);
+
+  if (totalCount === 0) {
+    createChart('entrega', 'chart-entrega', {
+      type: 'doughnut',
+      data: {
+        labels: ['Sem dados'],
+        datasets: [{ data: [1], backgroundColor: [theme.dark ? '#32364a' : '#e3e6ee'] }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      },
+    });
+    return;
+  }
+
+  createChart('entrega', 'chart-entrega', {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [
+        {
+          data: values,
+          backgroundColor: labels.map((k) => DELIVERY_COLORS[k] || PALETTE[0]),
+          borderColor: theme.surface,
+          borderWidth: 2,
+          hoverOffset: 6,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const method = ctx.label;
+              const info = summary[method] || { count: 0, revenue: 0 };
+              const pct = totalCount > 0 ? ((info.count / totalCount) * 100).toFixed(1) : '0.0';
+              return ` ${info.count} pedidos (${pct}%) · ${formatCurrency(info.revenue)}`;
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 /* ---------- Rankings ---------- */
 
 /**
@@ -482,7 +614,7 @@ function fillTypeRanking(containerId, data) {
 }
 
 /**
- * Renderiza os 3 rankings de sabores, um por tipo.
+ * Renderiza os rankings de sabores, um por tipo.
  * @param {Array<Object>} orders - Pedidos do período.
  */
 function renderTypeRankings(orders) {
@@ -490,9 +622,99 @@ function renderTypeRankings(orders) {
   fillTypeRanking('ranking-fatias',    byType['Fatia']);
   fillTypeRanking('ranking-punkitos',  byType['Punkitos']);
   fillTypeRanking('ranking-bolos',     byType['Bolo Inteiro']);
+  fillTypeRanking('ranking-docinhos',  byType['Docinho']);
 }
 
 /* ---------- Render principal ---------- */
+
+/**
+ * Vincula cliques rápidos dos cards da Visão do Dia às abas correspondentes.
+ */
+function initTodayPanelClicks() {
+  const cardOrders = document.getElementById('dash-today-orders');
+  if (cardOrders && !cardOrders.dataset.bound) {
+    cardOrders.dataset.bound = 'true';
+    cardOrders.addEventListener('click', () => {
+      document.querySelector('.nav-tab[data-tab="pedidos"]')?.click();
+    });
+  }
+
+  const cardStock = document.getElementById('dash-today-stock');
+  if (cardStock && !cardStock.dataset.bound) {
+    cardStock.dataset.bound = 'true';
+    cardStock.addEventListener('click', () => {
+      document.querySelector('.nav-tab[data-tab="estoque"]')?.click();
+    });
+  }
+
+  const cardAlerts = document.getElementById('dash-today-alerts');
+  if (cardAlerts && !cardAlerts.dataset.bound) {
+    cardAlerts.dataset.bound = 'true';
+    cardAlerts.addEventListener('click', () => {
+      document.querySelector('.nav-tab[data-tab="inventario"]')?.click();
+    });
+  }
+}
+
+/**
+ * Renderiza o painel operacional "Visão do Dia" (Ação Imediata da Cozinha).
+ */
+function renderTodayPanel() {
+  const panel = document.getElementById('dash-today-panel');
+  if (!panel) return;
+
+  initTodayPanelClicks();
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dateEl = document.getElementById('dash-today-date');
+  if (dateEl) {
+    dateEl.textContent = formatDate(todayStr);
+  }
+
+  // 1. Encomendas de hoje
+  const allOrders = order.getOrders();
+  const todaySummary = service.todayOrdersSummary(allOrders, todayStr);
+  const ordersValEl = document.getElementById('dash-today-orders-val');
+  const ordersSubEl = document.getElementById('dash-today-orders-sub');
+  if (ordersValEl) ordersValEl.textContent = todaySummary.total;
+  if (ordersSubEl) {
+    ordersSubEl.textContent = `${todaySummary.pendentes} pendentes · ${todaySummary.prontas} prontas`;
+  }
+
+  // 2. Pronta Entrega disponível
+  const allProducts = storage.getAllProducts();
+  const prontaSummary = service.prontaEntregaSummary(allProducts, (p) => estoque.disponivel(p));
+  const stockValEl = document.getElementById('dash-today-stock-val');
+  const stockSubEl = document.getElementById('dash-today-stock-sub');
+  if (stockValEl) stockValEl.textContent = `${prontaSummary.totalUnidades} un`;
+  if (stockSubEl) {
+    stockSubEl.textContent = prontaSummary.totalProdutosComEstoque > 0
+      ? `${prontaSummary.totalProdutosComEstoque} produtos com estoque`
+      : 'Nenhum item pronto';
+  }
+
+  // 3. Alertas de Insumos (críticos / zerados)
+  const allInsumos = storage.getAllInsumos();
+  const lowStockSummary = service.lowStockInsumosSummary(allInsumos);
+  const alertsValEl = document.getElementById('dash-today-alerts-val');
+  const alertsSubEl = document.getElementById('dash-today-alerts-sub');
+  if (alertsValEl) {
+    alertsValEl.textContent = lowStockSummary.totalCriticos;
+    alertsValEl.style.color = lowStockSummary.totalCriticos > 0 ? 'var(--color-danger)' : 'var(--color-ok)';
+  }
+  if (alertsSubEl) {
+    if (lowStockSummary.totalCriticos === 0) {
+      alertsSubEl.textContent = 'Estoque 100% abastecido';
+      alertsSubEl.style.color = 'var(--color-text-muted)';
+    } else {
+      const parts = [];
+      if (lowStockSummary.zerados > 0) parts.push(`${lowStockSummary.zerados} zerados`);
+      if (lowStockSummary.baixos > 0) parts.push(`${lowStockSummary.baixos} baixos`);
+      alertsSubEl.textContent = parts.join(' · ');
+      alertsSubEl.style.color = 'var(--color-danger)';
+    }
+  }
+}
 
 /**
  * Renderiza o card de termômetro de Ponto de Equilíbrio Operacional do Mês.
@@ -594,6 +816,7 @@ export function render() {
   }
 
   renderTypeTabs();
+  renderTodayPanel();
   renderBreakEvenCard(periodFiltered, range);
   renderStats(orders);
 
@@ -601,6 +824,8 @@ export function render() {
   applyChartDefaults(theme);
   renderDailyRevenue(orders, theme);
   renderStatusChart(orders, theme);
+  renderPaymentChart(orders, theme);
+  renderDeliveryChart(orders, theme);
   renderRankings(orders);
 
   // Seções por tipo usam sempre os dados completos do período (sem filtro de aba)

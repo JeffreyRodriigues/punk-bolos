@@ -12,10 +12,11 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 ## 1. Módulos e Abas do Painel Administrativo
 
 ### 1.1 Dashboard
-- **Cards de Métricas:** Faturamento total, quantidade de pedidos, ticket médio, lucro bruto e contadores por status.
+- **Painel Operacional "Visão do Dia":** Widget no topo com foco na rotina diária da cozinha: Encomendas para Hoje (pendentes vs. prontas), Pronta Entrega disponível no estoque para venda imediata, e Alertas de Reposição de Insumos zerados ou em nível crítico com links de ação rápida.
+- **Cards de Métricas:** Faturamento total, quantidade de pedidos, ticket médio, lucro bruto com subtítulo dinâmico de Margem Média (%) e CMV Médio (%), além de contadores de status do fluxo de produção.
 - **Ponto de Equilíbrio Inteligente:** Barra de progresso com status de meta mensal e diária, identificação automática de mês encerrado (*Meta Atingida com excedente* ou *Não Atingido*) e acompanhamento em tempo real para meses em aberto.
-- **Gráficos e Rankings:** Top 5 sabores mais vendidos, faturamento diário e distribuição por categoria.
-- **Paridade de Categorias (Abas e Resumo):** Filtros rápidos e cards de desempenho para 4 frentes: Fatias, Punkitos, Bolos (incluindo Bolo Naked) e Docinhos.
+- **Gráficos e Logística:** Faturamento diário, distribuição por status, divisão de receita por meios de pagamento (PIX, Crédito, Débito, Dinheiro) e comparativo de canais de entrega (Retirada no Balcão, Entrega Própria e Uber Cliente).
+- **Paridade de Categorias e Rankings de Sabores:** Filtros rápidos por categoria e rankings de sabores dedicados para 4 frentes: Fatias, Punkitos, Bolos (incluindo Bolo Naked) e Docinhos.
 - **Filtro por Período:** Hoje, 7 dias, Este Mês e Faixa Customizada (De/Até).
 
 ### 1.2 Produtos

@@ -170,12 +170,192 @@ export function lucroBruto(orders, precificacoes = [], products = []) {
   const custo = round2(custoTotal);
   const lucro = round2(receita - custo);
   const margem = receita > 0 ? round2((lucro / receita) * 100) : 0;
+  const cmvPct = receita > 0 ? round2((custo / receita) * 100) : 0;
 
   return {
     receita: round2(receita),
     custo,
     lucro,
     margem,
+    cmvPct,
+  };
+}
+
+/**
+ * Faturamento agrupado por forma de pagamento (apenas pedidos ativos e não cortesias).
+ * @param {Array<Object>} orders - Pedidos.
+ * @returns {Object} Mapa método -> valor total faturado.
+ */
+export function revenueByPaymentMethod(orders) {
+  const result = { 'PIX': 0, 'Crédito': 0, 'Débito': 0, 'Dinheiro': 0 };
+  activeOrders(orders).forEach((o) => {
+    if (o.pagamento === 'Cortesia') return;
+    const pag = o.pagamento || 'PIX';
+    if (result[pag] != null) {
+      result[pag] += Number(o.valorTotal) || 0;
+    } else {
+      result[pag] = (result[pag] || 0) + (Number(o.valorTotal) || 0);
+    }
+  });
+  return roundMap(result);
+}
+
+/** Métodos de entrega suportados no dashboard. */
+export const DELIVERY_METHODS = ['Retirada', 'Entrega Própria', 'Uber Cliente'];
+
+/**
+ * Normaliza o método de entrega de um pedido.
+ * @param {string} entrega - Tipo ou texto de entrega informado.
+ * @returns {string} Método de entrega normalizado.
+ */
+export function normalizeDeliveryMethod(entrega) {
+  const e = String(entrega || '').trim();
+  if (DELIVERY_METHODS.includes(e)) return e;
+  if (e.toLowerCase().startsWith('entrega')) return 'Entrega Própria';
+  if (e.toLowerCase().startsWith('uber')) return 'Uber Cliente';
+  return 'Retirada';
+}
+
+/**
+ * Agrupa quantidade de pedidos e faturamento por canal de entrega (Retirada, Entrega Própria, Uber Cliente).
+ * Ignora pedidos cancelados. Cortesias contam como pedidos realizados, mas com receita 0.
+ * @param {Array<Object>} orders - Pedidos.
+ * @returns {Object} Mapa método -> { count: number, revenue: number }.
+ */
+export function summaryByDeliveryMethod(orders) {
+  const result = {
+    'Retirada': { count: 0, revenue: 0 },
+    'Entrega Própria': { count: 0, revenue: 0 },
+    'Uber Cliente': { count: 0, revenue: 0 },
+  };
+
+  activeOrders(orders).forEach((o) => {
+    const method = normalizeDeliveryMethod(o.entrega);
+    if (!result[method]) {
+      result[method] = { count: 0, revenue: 0 };
+    }
+    result[method].count += 1;
+    if (o.pagamento !== 'Cortesia') {
+      result[method].revenue += Number(o.valorTotal) || 0;
+    }
+  });
+
+  Object.keys(result).forEach((key) => {
+    result[key].revenue = Math.round(result[key].revenue * 100) / 100;
+  });
+
+  return result;
+}
+
+/**
+ * Resume as encomendas do dia atual para a visão operacional da cozinha.
+ * Considera apenas pedidos não cancelados cuja data seja a data informada.
+ * @param {Array<Object>} orders - Lista de pedidos.
+ * @param {string} [todayStr] - Data no formato YYYY-MM-DD (injetável para testes).
+ * @returns {{ total: number, pendentes: number, prontas: number, receita: number, orders: Array<Object> }}
+ */
+export function todayOrdersSummary(orders, todayStr = '') {
+  const targetDate = todayStr || new Date().toISOString().slice(0, 10);
+  const todayOrders = (orders || []).filter((o) => !isCancelled(o) && o.data === targetDate);
+
+  let pendentes = 0;
+  let prontas = 0;
+  let receita = 0;
+
+  todayOrders.forEach((o) => {
+    if (o.status === 'Concluído' || o.status === 'Embalado') {
+      prontas += 1;
+    } else {
+      pendentes += 1;
+    }
+    if (o.pagamento !== 'Cortesia') {
+      receita += Number(o.valorTotal) || 0;
+    }
+  });
+
+  return {
+    total: todayOrders.length,
+    pendentes,
+    prontas,
+    receita: Math.round(receita * 100) / 100,
+    orders: todayOrders,
+  };
+}
+
+/**
+ * Apura os insumos em nível crítico ou zerados no inventário.
+ * @param {Array<Object>} insumos - Lista de insumos.
+ * @returns {{ totalCriticos: number, zerados: number, baixos: number, items: Array<Object> }}
+ */
+export function lowStockInsumosSummary(insumos) {
+  const items = [];
+  let zerados = 0;
+  let baixos = 0;
+
+  (insumos || []).forEach((item) => {
+    const atual = Number(item.estoqueAtual) || 0;
+    const min = item.estoqueMinimo != null && item.estoqueMinimo !== '' ? Number(item.estoqueMinimo) : null;
+    const isZero = atual <= 0;
+    const isBaixo = min != null && min > 0 && atual <= min;
+
+    if (isZero || isBaixo) {
+      if (isZero) zerados += 1;
+      else baixos += 1;
+
+      items.push({
+        id: item.id,
+        nome: item.nome,
+        estoqueAtual: atual,
+        estoqueMinimo: min,
+        unidade: item.unidade || 'un',
+        status: isZero ? 'Zerado' : 'Baixo',
+      });
+    }
+  });
+
+  items.sort((a, b) => {
+    if (a.status === 'Zerado' && b.status !== 'Zerado') return -1;
+    if (b.status === 'Zerado' && a.status !== 'Zerado') return 1;
+    return a.estoqueAtual - b.estoqueAtual;
+  });
+
+  return {
+    totalCriticos: items.length,
+    zerados,
+    baixos,
+    items,
+  };
+}
+
+/**
+ * Resume o saldo disponível de produtos prontos para entrega imediata.
+ * @param {Array<Object>} products - Produtos do catálogo.
+ * @param {Function} [disponivelFn] - Função para obter saldo disponível de um produto (injetável).
+ * @returns {{ totalUnidades: number, totalProdutosComEstoque: number, items: Array<Object> }}
+ */
+export function prontaEntregaSummary(products, disponivelFn = () => 0) {
+  let totalUnidades = 0;
+  const items = [];
+
+  (products || []).forEach((p) => {
+    if (p.controlaEstoque === true) {
+      const qtd = Math.max(0, Number(disponivelFn(p)) || 0);
+      if (qtd > 0) {
+        totalUnidades += qtd;
+        items.push({
+          id: p.id,
+          titulo: p.titulo,
+          tipoProduto: p.tipoProduto,
+          disponivel: qtd,
+        });
+      }
+    }
+  });
+
+  return {
+    totalUnidades,
+    totalProdutosComEstoque: items.length,
+    items,
   };
 }
 

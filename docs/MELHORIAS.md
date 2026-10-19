@@ -317,6 +317,20 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Versão atualizada para `v2.5.0` no cabeçalho de navegação, badge e modal de novidades.
   - Incremento e sincronização dos cache-busters para forçar atualização sem resíduos de cache (`app.js?v=52` e `cardapio.js?v=25`).
 
+### 48. Dashboard 360° — Visão do Dia, Canais de Entrega, Meios de Pagamento e Ranking de Docinhos
+- **Painel Operacional "Visão do Dia" (`dashboardService.js`, `dashboard.js`, `index.html`, `css/styles.css`):**
+  - Widget no topo do Dashboard com visão imediata para a cozinha: Encomendas de Hoje (pendentes vs. prontas), Pronta Entrega disponível no estoque e Alertas de Insumos zerados ou abaixo do estoque mínimo.
+  - Ações rápidas clicáveis que direcionam o usuário diretamente para as abas correspondentes (Pedidos, Estoque e Inventário).
+- **Logística & Canais de Entrega (`dashboardService.js`, `dashboard.js`, `index.html`):**
+  - Gráfico Donut de Canais de Entrega adicionado ao lado do Ranking de Sabores, equilibrando perfeitamente a grade em 2 colunas.
+  - Agrupamento inteligente via `summaryByDeliveryMethod` e `normalizeDeliveryMethod`: Retirada, Entrega Própria e Uber Flash/Cliente.
+  - Tooltips detalhados exibindo quantidade de pedidos, percentual de participação e receita total faturada por modalidade.
+- **Visão Financeira & Meios de Pagamento (`dashboardService.js`, `dashboard.js`, `index.html`):**
+  - Gráfico Donut de Meios de Pagamento (PIX, Crédito, Débito e Dinheiro) com cores semânticas e tooltip de faturamento.
+  - Subtítulo no card de Lucro Bruto com Margem Média (%) e CMV Médio (%) (Custo da Mercadoria Vendida).
+- **Ranking de Sabores de Docinhos (`dashboard.js`, `index.html`, `css/styles.css`):**
+  - 4ª coluna de ranking adicionada no grid inferior, completando a paridade de sabores de Docinhos junto a Fatias, Punkitos e Bolos.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).
