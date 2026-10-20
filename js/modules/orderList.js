@@ -21,9 +21,12 @@ import { showToast } from './toast.js';
 import { formatCurrency, formatDate } from '../utils/money.js';
 import { formatarWhatsappLink, gerarMensagemPedido } from './customerService.js';
 
-/* ---------- Constantes & Estado de Paginação ---------- */
+/* ---------- Constantes & Estado de Paginação & Visualização ---------- */
 const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
+let currentStatusFilter = '';
+const expandedOrderIds = new Set();
+let allExpanded = false;
 
 /* ---------- Elementos do DOM ---------- */
 const listEl = document.getElementById('orderList');
@@ -33,6 +36,8 @@ const searchInput = document.getElementById('orderSearch');
 const filterCliente = document.getElementById('filter-cliente');
 const filterProduto = document.getElementById('filter-produto');
 const filterStatus = document.getElementById('filter-status');
+const orderStatusFilters = document.getElementById('orderStatusFilters');
+const btnToggleAll = document.getElementById('btnOrderToggleAll');
 
 const btnViewGrid = document.getElementById('btnOrderViewGrid');
 const btnViewList = document.getElementById('btnOrderViewList');
@@ -97,7 +102,7 @@ function getFilteredOrders() {
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
   const cliente = filterCliente ? filterCliente.value : '';
   const produto = filterProduto ? filterProduto.value : '';
-  const status = filterStatus ? filterStatus.value : '';
+  const status = currentStatusFilter || (filterStatus ? filterStatus.value : '');
 
   return dateFilter
     .applyFilter(order.getOrders())
@@ -158,12 +163,91 @@ function updatePendingBadge() {
 }
 
 /**
+ * Formata um resumo compacto dos itens do pedido.
+ * Ex: "3 itens: 1× Fatia Cenoura, 2× Punkitos Tradicional (+1 outro)"
+ * @param {Array<Object>} itens
+ * @returns {string} Resumo legível
+ */
+function formatItemsSummary(itens = []) {
+  if (!Array.isArray(itens) || itens.length === 0) return 'Nenhum item';
+  const totalQtd = itens.reduce((sum, item) => sum + (Number(item.quantidade) || 0), 0);
+  const firstItems = itens.slice(0, 2).map((item) => {
+    const size = item.tamanho ? ` (${item.tamanho})` : '';
+    const name = `${item.tipoProduto ? item.tipoProduto + ' ' : ''}${item.sabor || item.titulo || ''}`.trim();
+    return `${item.quantidade}× ${name}${size}`;
+  });
+  const remaining = itens.length - 2;
+  const remainingStr = remaining > 0 ? ` (+${remaining} ${remaining === 1 ? 'outro' : 'outros'})` : '';
+  const labelQtd = `${totalQtd} ${totalQtd === 1 ? 'item' : 'itens'}`;
+  return `${labelQtd}: ${firstItems.join(', ')}${remainingStr}`;
+}
+
+/**
+ * Atualiza os contadores nas pílulas de filtro por status com base no dateFilter ativo.
+ */
+function updateStatusPills() {
+  const orders = dateFilter.applyFilter(order.getOrders());
+  const counts = {
+    '': orders.length,
+    'Pendente': 0,
+    'Em Produção': 0,
+    'Embalado': 0,
+    'Concluído': 0,
+    'Cancelado': 0
+  };
+  orders.forEach((o) => {
+    const st = o.status || 'Pendente';
+    if (counts[st] !== undefined) {
+      counts[st]++;
+    }
+  });
+
+  const setBadge = (id, count) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = count;
+  };
+
+  setBadge('orderPillTodos', counts['']);
+  setBadge('orderPillPendente', counts['Pendente']);
+  setBadge('orderPillEmProducao', counts['Em Produção']);
+  setBadge('orderPillEmbalado', counts['Embalado']);
+  setBadge('orderPillConcluido', counts['Concluído']);
+  setBadge('orderPillCancelado', counts['Cancelado']);
+
+  const pills = document.querySelectorAll('.order-filter-pill');
+  pills.forEach((pill) => {
+    const f = pill.getAttribute('data-filter') || '';
+    pill.classList.toggle('active', f === currentStatusFilter);
+  });
+}
+
+/**
+ * Atualiza o botão global Expandir Todos / Recolher Todos.
+ */
+function updateToggleAllBtn() {
+  if (!btnToggleAll) return;
+  const filtered = getFilteredOrders();
+  if (filtered.length === 0) {
+    btnToggleAll.textContent = 'Expandir Todos';
+    btnToggleAll.classList.remove('active');
+    btnToggleAll.disabled = true;
+    return;
+  }
+  btnToggleAll.disabled = false;
+  const allCurrentExpanded = filtered.every((o) => expandedOrderIds.has(o.numero || o.id));
+  allExpanded = allCurrentExpanded;
+  btnToggleAll.textContent = allCurrentExpanded ? 'Recolher Todos' : 'Expandir Todos';
+  btnToggleAll.classList.toggle('active', allCurrentExpanded);
+}
+
+/**
  * Renderiza os cards de pedidos com paginação e atualiza os contadores.
  */
 export function render() {
   updateClienteFilter();
   setViewMode(currentViewMode);
   updatePendingBadge();
+  updateStatusPills();
 
   const filtered = getFilteredOrders();
   const totalItems = filtered.length;
@@ -188,6 +272,8 @@ export function render() {
     listEl.innerHTML = '';
     pageOrders.forEach((o) => listEl.appendChild(createCard(o)));
   }
+
+  updateToggleAllBtn();
 
   if (emptyState) {
     emptyState.hidden = totalItems > 0;
@@ -217,15 +303,20 @@ export function render() {
 }
 
 /**
- * Cria o card de um pedido com visualização detalhada.
+ * Cria o card de um pedido com visualização compacta inteligente e detalhes expansíveis.
  * @param {Object} o - Pedido.
  * @returns {HTMLElement} Elemento do card.
  */
 function createCard(o) {
   const card = document.createElement('article');
   card.className = 'order-card';
+  const orderKey = o.numero || o.id;
+  const isExpanded = expandedOrderIds.has(orderKey);
+  if (isExpanded) {
+    card.classList.add('order-card--expanded');
+  }
 
-  /* Cabeçalho: número, data e badges */
+  /* Cabeçalho: número, data, badges e valor total */
   const header = document.createElement('div');
   header.className = 'order-card-header';
 
@@ -266,28 +357,28 @@ function createCard(o) {
     headerBadges.appendChild(cortesiaBadge);
   }
 
-  // Botão Imprimir destacado e separado no cabeçalho do card
-  const btnPrintCard = document.createElement('button');
-  btnPrintCard.type = 'button';
-  btnPrintCard.className = 'btn-card-print';
-  btnPrintCard.textContent = 'Imprimir';
-  btnPrintCard.title = `Imprimir comanda do pedido #${o.numero}`;
-  btnPrintCard.addEventListener('click', (e) => {
-    e.stopPropagation();
-    printOrders([o]);
-  });
-  headerBadges.appendChild(btnPrintCard);
+  const headerTotal = document.createElement('span');
+  headerTotal.className = 'order-header-total';
+  headerTotal.textContent = formatCurrency(o.valorTotal);
+  headerBadges.appendChild(headerTotal);
 
   header.append(headerLeft, headerBadges);
 
-  /* Cliente e WhatsApp */
-  const customerRow = document.createElement('div');
-  customerRow.className = 'order-customer-row';
+  /* Resumo Compacto do Card */
+  const summaryWrap = document.createElement('div');
+  summaryWrap.className = 'order-card-summary';
+
+  // Linha 1 do resumo: Cliente + WhatsApp + Entrega/Retirada
+  const summaryRow1 = document.createElement('div');
+  summaryRow1.className = 'order-summary-row';
+
+  const clientGroup = document.createElement('div');
+  clientGroup.className = 'order-summary-client';
 
   const customerName = document.createElement('span');
   customerName.className = 'order-customer-name';
   customerName.textContent = o.cliente || 'Cliente não identificado';
-  customerRow.appendChild(customerName);
+  clientGroup.appendChild(customerName);
 
   if (o.contato) {
     const msg = gerarMensagemPedido(o);
@@ -300,11 +391,99 @@ function createCard(o) {
       waBtn.className = 'btn-order-wa';
       waBtn.title = `Conversar com ${o.cliente || 'Cliente'} no WhatsApp`;
       waBtn.textContent = 'WhatsApp';
-      customerRow.appendChild(waBtn);
+      clientGroup.appendChild(waBtn);
     }
   }
 
-  /* Entrega / Retirada (sem duplicação de rótulo) */
+  const deliveryGroup = document.createElement('div');
+  deliveryGroup.className = 'order-summary-delivery';
+  if (o.entrega) {
+    const isRetirada = o.entrega === 'Retirada';
+    const delBadge = document.createElement('span');
+    delBadge.className = 'order-delivery-badge';
+    delBadge.textContent = isRetirada ? 'Retirada' : (o.entrega.startsWith('Entrega') ? 'Entrega' : o.entrega);
+    deliveryGroup.appendChild(delBadge);
+  }
+
+  summaryRow1.append(clientGroup, deliveryGroup);
+
+  // Linha 2 do resumo: Resumo de itens + Tag de observação
+  const summaryItems = document.createElement('div');
+  summaryItems.className = 'order-summary-items';
+
+  const itemsText = document.createElement('span');
+  itemsText.className = 'order-summary-items-text';
+  itemsText.textContent = formatItemsSummary(itens);
+  itemsText.title = itens.map((it) => `${it.quantidade}× ${it.tipoProduto || ''} ${it.sabor || ''}`).join(', ');
+
+  summaryItems.appendChild(itemsText);
+
+  if (o.observacoes && String(o.observacoes).trim()) {
+    const obsTag = document.createElement('span');
+    obsTag.className = 'order-obs-tag';
+    obsTag.textContent = '📝 Obs';
+    obsTag.title = o.observacoes.trim();
+    summaryItems.appendChild(obsTag);
+  }
+
+  // Linha 3 do resumo: Ações compactas (Concluir rápido + Imprimir à esquerda, Expandir à direita)
+  const compactActions = document.createElement('div');
+  compactActions.className = 'order-compact-actions';
+
+  const compactActionsLeft = document.createElement('div');
+  compactActionsLeft.className = 'order-compact-actions-left';
+
+  if (o.status !== 'Concluído' && o.status !== 'Cancelado') {
+    compactActionsLeft.appendChild(
+      createTextActionBtn('Concluir', () => onAction.complete(o), 'action-ok')
+    );
+  }
+
+  const btnPrintCard = document.createElement('button');
+  btnPrintCard.type = 'button';
+  btnPrintCard.className = 'btn-card-print';
+  btnPrintCard.textContent = 'Imprimir';
+  btnPrintCard.title = `Imprimir comanda do pedido #${o.numero}`;
+  btnPrintCard.addEventListener('click', (e) => {
+    e.stopPropagation();
+    printOrders([o]);
+  });
+  compactActionsLeft.appendChild(btnPrintCard);
+
+  const btnToggleDetails = document.createElement('button');
+  btnToggleDetails.type = 'button';
+  btnToggleDetails.className = 'btn-order-toggle-details';
+  btnToggleDetails.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+  btnToggleDetails.innerHTML = isExpanded ? 'Ocultar detalhes &#9652;' : 'Ver detalhes &#9662;';
+  btnToggleDetails.title = isExpanded ? 'Ocultar detalhes deste pedido' : 'Ver todos os detalhes deste pedido';
+
+  btnToggleDetails.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willExpand = !card.classList.contains('order-card--expanded');
+    if (willExpand) {
+      card.classList.add('order-card--expanded');
+      btnToggleDetails.setAttribute('aria-expanded', 'true');
+      btnToggleDetails.innerHTML = 'Ocultar detalhes &#9652;';
+      btnToggleDetails.title = 'Ocultar detalhes deste pedido';
+      expandedOrderIds.add(orderKey);
+    } else {
+      card.classList.remove('order-card--expanded');
+      btnToggleDetails.setAttribute('aria-expanded', 'false');
+      btnToggleDetails.innerHTML = 'Ver detalhes &#9662;';
+      btnToggleDetails.title = 'Ver todos os detalhes deste pedido';
+      expandedOrderIds.delete(orderKey);
+    }
+    updateToggleAllBtn();
+  });
+
+  compactActions.append(compactActionsLeft, btnToggleDetails);
+  summaryWrap.append(summaryRow1, summaryItems, compactActions);
+
+  /* Painel de Detalhes Expandido (order-card-details) */
+  const detailsPanel = document.createElement('div');
+  detailsPanel.className = 'order-card-details';
+
+  // Entrega detalhada (com endereço completo quando aplicável)
   let deliveryEl = null;
   if (o.entrega) {
     deliveryEl = document.createElement('div');
@@ -325,7 +504,7 @@ function createCard(o) {
     }
   }
 
-  /* Itens do Pedido (discriminados) */
+  // Itens discriminados
   const itemsContainer = document.createElement('div');
   itemsContainer.className = 'order-items-container';
 
@@ -361,7 +540,7 @@ function createCard(o) {
     itemsContainer.appendChild(itemRow);
   });
 
-  /* Observações & Personalizações */
+  // Observações / Personalização
   let obsEl = null;
   if (o.observacoes && String(o.observacoes).trim()) {
     obsEl = document.createElement('div');
@@ -377,7 +556,7 @@ function createCard(o) {
     obsEl.append(obsTitle, obsText);
   }
 
-  /* Rodapé: Total + Ações */
+  // Rodapé expandido com ações secundárias de gestão
   const footer = document.createElement('div');
   footer.className = 'order-card-footer';
 
@@ -394,16 +573,8 @@ function createCard(o) {
 
   totalWrap.append(totalLabel, value);
 
-  /* Ações com botões em texto */
   const actions = document.createElement('div');
   actions.className = 'order-card-actions';
-
-  // Botão Concluir (quando não estiver Concluído ou Cancelado)
-  if (o.status !== 'Concluído' && o.status !== 'Cancelado') {
-    actions.appendChild(
-      createTextActionBtn('Concluir', () => onAction.complete(o), 'action-ok')
-    );
-  }
 
   actions.appendChild(createTextActionBtn('Editar', () => onAction.edit(o)));
   actions.appendChild(createTextActionBtn('Duplicar', () => duplicate(o)));
@@ -420,17 +591,17 @@ function createCard(o) {
 
   footer.append(totalWrap, actions);
 
-  // Montagem final do card
-  card.append(header, customerRow);
   if (deliveryEl) {
-    card.appendChild(deliveryEl);
+    detailsPanel.appendChild(deliveryEl);
   }
-  card.appendChild(itemsContainer);
+  detailsPanel.appendChild(itemsContainer);
   if (obsEl) {
-    card.appendChild(obsEl);
+    detailsPanel.appendChild(obsEl);
   }
-  card.appendChild(footer);
+  detailsPanel.appendChild(footer);
 
+  // Montagem final do card
+  card.append(header, summaryWrap, detailsPanel);
   return card;
 }
 
@@ -703,7 +874,36 @@ if (filterProduto) {
 }
 
 if (filterStatus) {
-  filterStatus.addEventListener('change', resetAndRender);
+  filterStatus.addEventListener('change', () => {
+    currentStatusFilter = filterStatus.value || '';
+    resetAndRender();
+  });
+}
+
+if (orderStatusFilters) {
+  orderStatusFilters.addEventListener('click', (e) => {
+    const pill = e.target.closest('.order-filter-pill');
+    if (!pill) return;
+    currentStatusFilter = pill.getAttribute('data-filter') || '';
+    if (filterStatus) {
+      filterStatus.value = currentStatusFilter;
+    }
+    resetAndRender();
+  });
+}
+
+if (btnToggleAll) {
+  btnToggleAll.addEventListener('click', () => {
+    const filtered = getFilteredOrders();
+    if (filtered.length === 0) return;
+    allExpanded = !allExpanded;
+    if (allExpanded) {
+      filtered.forEach((o) => expandedOrderIds.add(o.numero || o.id));
+    } else {
+      expandedOrderIds.clear();
+    }
+    render();
+  });
 }
 
 if (btnViewGrid) {

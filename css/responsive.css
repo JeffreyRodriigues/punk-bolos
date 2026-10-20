@@ -389,6 +389,33 @@
     min-height: 38px;
   }
 
+  .order-compact-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .order-compact-actions-left {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .order-compact-actions-left .btn-card-action,
+  .order-compact-actions-left .btn-card-print {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    min-height: 36px;
+  }
+
+  .btn-order-toggle-details {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    min-height: 36px;
+  }
+
   .order-card-footer {
     flex-direction: column;
     align-items: stretch;

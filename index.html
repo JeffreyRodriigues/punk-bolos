@@ -123,6 +123,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1079,6 +1080,162 @@ body.sidebar-collapsed .app-nav {
 .btn-card-action.action-danger:hover {
   background: var(--color-danger-soft);
   border-color: var(--color-danger);
+}
+
+/* Total no cabeçalho do card */
+.order-header-total {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--color-primary);
+  margin-left: auto;
+}
+
+/* Resumo inteligente do card */
+.order-card-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.order-summary-client {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.order-summary-delivery {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.order-summary-items {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 0.86rem;
+  color: var(--color-text);
+  line-height: 1.35;
+}
+
+.order-summary-items-text {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-obs-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--color-warn-soft);
+  color: var(--color-warn);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  cursor: help;
+}
+
+/* Barra de ações compacta do card */
+.order-compact-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+
+.order-compact-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.order-compact-actions .btn-card-action {
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  min-height: 28px;
+}
+
+.btn-order-toggle-details {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  min-height: 28px;
+}
+
+.btn-order-toggle-details:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.order-card--expanded .btn-order-toggle-details {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Painel de detalhes expandido */
+.order-card-details {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border);
+  animation: orderSlideDown 0.18s ease;
+}
+
+.order-card--expanded .order-card-details {
+  display: flex;
+}
+
+@keyframes orderSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pílulas de filtro de status */
+.order-status-filters {
+  margin-bottom: 12px;
 }
 
 /* ---------- Paginação de Pedidos ---------- */
@@ -5060,6 +5217,33 @@ html.dark .badge-purple {
     min-height: 38px;
   }
 
+  .order-compact-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .order-compact-actions-left {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .order-compact-actions-left .btn-card-action,
+  .order-compact-actions-left .btn-card-print {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    min-height: 36px;
+  }
+
+  .btn-order-toggle-details {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    min-height: 36px;
+  }
+
   .order-card-footer {
     flex-direction: column;
     align-items: stretch;
@@ -5171,6 +5355,7 @@ html.dark .badge-purple {
 
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
 
@@ -5673,6 +5858,7 @@ html.dark .badge-purple {
       <div class="order-view-toggle" role="group" aria-label="Modo de visualização dos pedidos">
         <button id="btnOrderViewGrid" type="button" class="view-toggle-btn active" title="Visualização em Grade">Grade</button>
         <button id="btnOrderViewList" type="button" class="view-toggle-btn" title="Visualização em Lista Detalhada">Lista Detalhada</button>
+        <button id="btnOrderToggleAll" type="button" class="view-toggle-btn" title="Expandir ou recolher todos os pedidos da tela">Expandir Todos</button>
       </div>
 
       <div class="csv-actions" aria-label="Importar e exportar planilha">
@@ -5690,7 +5876,17 @@ html.dark .badge-purple {
       <input id="orderSearch" type="search" placeholder="Pesquisar pedido por cliente ou número..." autocomplete="off">
     </div>
 
-    <!-- Filtros -->
+    <!-- Pílulas de filtro por status -->
+    <div id="orderStatusFilters" class="customer-filters order-status-filters" role="group" aria-label="Filtro rápido por status">
+      <button type="button" class="customer-filter-pill order-filter-pill active" data-filter="">Todos <span id="orderPillTodos" class="count-badge">0</span></button>
+      <button type="button" class="customer-filter-pill order-filter-pill" data-filter="Pendente">Pendentes <span id="orderPillPendente" class="count-badge">0</span></button>
+      <button type="button" class="customer-filter-pill order-filter-pill" data-filter="Em Produção">Em Produção <span id="orderPillEmProducao" class="count-badge">0</span></button>
+      <button type="button" class="customer-filter-pill order-filter-pill" data-filter="Embalado">Embalados <span id="orderPillEmbalado" class="count-badge">0</span></button>
+      <button type="button" class="customer-filter-pill order-filter-pill" data-filter="Concluído">Concluídos <span id="orderPillConcluido" class="count-badge">0</span></button>
+      <button type="button" class="customer-filter-pill order-filter-pill" data-filter="Cancelado">Cancelados <span id="orderPillCancelado" class="count-badge">0</span></button>
+    </div>
+
+    <!-- Filtros adicionais -->
     <div class="filters" aria-label="Filtros">
       <select id="filter-cliente" class="filter" aria-label="Filtrar por cliente">
         <option value="">Cliente: Todos</option>
@@ -5703,7 +5899,7 @@ html.dark .badge-purple {
         <option value="Bolo Inteiro">Bolo Inteiro</option>
         <option value="Bolo Naked">Bolo Naked</option>
       </select>
-      <select id="filter-status" class="filter" aria-label="Filtrar por status">
+      <select id="filter-status" class="filter" aria-label="Filtrar por status" hidden>
         <option value="">Status: Todos</option>
         <option value="Pendente">Pendente</option>
         <option value="Em Produção">Em Produção</option>
@@ -7119,6 +7315,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=55"></script>
+  <script type="module" src="js/app.js?v=56"></script>
 </body>
 </html>

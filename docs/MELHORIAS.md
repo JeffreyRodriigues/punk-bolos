@@ -348,6 +348,24 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
   - Sincronização inteligente no formulário: alterar `precPrecoAlvo` recalcula a margem líquida preservando o preço alvo; alterar diretamente a margem líquida limpa o preço alvo fixado para recalcular o novo preço sugerido.
   - Adicionados testes unitários em `test/pricing.test.js` cobrindo normalização e preservação de `precoAlvo`.
 
+### 51. Tela de Pedidos — Cards Compactos Inteligentes, Detalhes Expansíveis e Pílulas de Status
+- **Cards Compactos com Resumo Inteligente (`orderList.js`, `css/styles.css`):**
+  - Cabeçalho limpo com número, data, badges semânticos de status/pagamento/cortesia e valor total (`order-header-total`) em destaque à direita.
+  - Resumo de alto impacto em 3 linhas:
+    - Linha 1: Cliente com link direto para WhatsApp e badge de Retirada/Entrega.
+    - Linha 2: Resumo formatado de itens via `formatItemsSummary(itens)` (ex.: *"3 itens: 1× Bolo Cenoura (P), 2× Punkitos Tradicional (+1 outro)"*) com tooltip completo e tag visual `📝 Obs` se o pedido tiver observações.
+    - Linha 3: Barra compacta com ação primária de produção ("Concluir" rápido para pedidos não finalizados), botão individual de "Imprimir comanda" e botão "Ver detalhes ▾ / Ocultar detalhes ▴".
+- **Painel de Detalhes Expansíveis (`orderList.js`, `css/styles.css`, `css/responsive.css`):**
+  - Painel animado (`order-card-details`) exibido ao clicar em expandir, contendo lista discriminada item a item com quantidades e subtotais, caixa de endereço completo com modalidade de entrega, observações completas e rodapé com ações de gestão (Editar, Duplicar, Cancelar e Excluir).
+  - Botão global "Expandir Todos / Recolher Todos" (`btnOrderToggleAll`) na barra de ferramentas de pedidos, com persistência do estado e atualização automática da contagem/rótulo.
+- **Pílulas Interativas de Filtro por Status (`orderList.js`, `index.html`, `css/styles.css`):**
+  - Barra de pílulas visuais (`order-status-filters`) com contadores em tempo real para cada status: `Todos`, `Pendentes`, `Em Produção`, `Embalados`, `Concluídos` e `Cancelados`.
+  - Contadores integrados ao filtro temporal de período (`dateFilter`), recalculados dinamicamente na renderização e mantendo paridade com o select legado oculto.
+- **Otimização Responsiva para Mobile (`css/responsive.css`):**
+  - Em telas de celulares (≤ 480px), as ações compactas se adaptam com botões em largura total e alvos de toque ergonomicamente confortáveis (min-height: 36px).
+- **Compilação CSS & Cache-Buster:**
+  - CSS inline sincronizado via `node tools/build-css.js` e cache-buster atualizado para `app.js?v=56`.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

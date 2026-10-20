@@ -32,6 +32,10 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Histórico de Produções:** Registro auditável de lotes produzidos com data e observações.
 
 ### 1.4 Pedidos
+- **Visão Compacta & Detalhes Expansíveis:** Cards redesenhados com resumo inteligente de alto impacto (cliente, WhatsApp, entrega/retirada, resumo discriminado de itens `formatItemsSummary`, tag de observação e valor total em destaque no cabeçalho).
+- **Expansão Individual e Global:** Botão "Ver detalhes ▾ / Ocultar detalhes ▴" em cada card para exibir lista discriminada de itens com subtotais, endereço completo de entrega, observações completas e ações de gestão (Editar, Duplicar, Cancelar, Excluir), além do alternador global "Expandir Todos / Recolher Todos".
+- **Filtros Rápidos por Status (Pills):** Pílulas interativas com contadores em tempo real (`Todos`, `Pendentes`, `Em Produção`, `Embalados`, `Concluídos`, `Cancelados`) integradas ao filtro de período da data.
+- **Ações Rápidas de Produção:** Botão de conclusão rápida ("Concluir") e botão direto de "Imprimir comanda" acessíveis diretamente no card compacto.
 - **Gestão Completa de Pedidos:** Ações de criar, editar, duplicar (com reset de status), concluir, cancelar e excluir.
 - **Numeração Automática:** Começa em 1001 e nunca repete.
 - **Formas de Pagamento:** PIX, Dinheiro, Crédito, Débito e Cortesia (R$ 0,00).
