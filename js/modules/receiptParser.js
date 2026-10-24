@@ -317,6 +317,46 @@ Exemplo de formato esperado:
  * @param {string} apiKey - Chave da API do Gemini (Google AI Studio)
  * @returns {Promise<Object>} Dados extraídos da nota
  */
+export const CANDIDATE_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash',
+];
+
+/**
+ * Consulta a API do Google para listar modelos ativos que suportam generateContent.
+ * @param {string} apiKey
+ * @returns {Promise<Array<string>>}
+ */
+export async function listAvailableGeminiModels(apiKey) {
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey.trim())}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data.models)) return [];
+    const supported = data.models
+      .filter((m) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+      .map((m) => m.name.replace(/^models\//, ''));
+
+    // Prioriza modelos 'flash'
+    const flashModels = supported.filter((m) => m.includes('flash'));
+    const otherModels = supported.filter((m) => !m.includes('flash'));
+    return [...flashModels, ...otherModels];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Envia uma imagem codificada em base64 para a Gemini Vision API (Google AI Studio)
+ * e retorna os dados estruturados da nota fiscal com fallback automático entre modelos.
+ * 
+ * @param {string} imageBase64 - Imagem em base64 (com ou sem data:image/... prefixo)
+ * @param {string} apiKey - Chave da API do Gemini (Google AI Studio)
+ * @returns {Promise<Object>} Dados extraídos da nota
+ */
 export async function parseReceiptImageWithGemini(imageBase64, apiKey) {
   if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
     throw new Error('Chave de API do Gemini não configurada. Por favor, informe sua chave gratuita do Google AI Studio.');
@@ -335,8 +375,6 @@ export async function parseReceiptImageWithGemini(imageBase64, apiKey) {
     const mimeMatch = parts[0].match(/data:(.*?)$/);
     if (mimeMatch) mimeType = mimeMatch[1];
   }
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
 
   const payload = {
     contents: [
@@ -360,56 +398,84 @@ export async function parseReceiptImageWithGemini(imageBase64, apiKey) {
     },
   };
 
-  let response;
-  try {
-    response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-  } catch (err) {
-    throw new Error(`Erro de conexão ao comunicar com a API do Gemini: ${err.message}`);
-  }
+  const modelsToTry = [...CANDIDATE_MODELS];
+  let lastError = null;
+  let successData = null;
 
-  if (!response.ok) {
-    let errDetail = '';
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const model = modelsToTry[i];
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+
     try {
-      const errJson = await response.json();
-      errDetail = errJson.error ? errJson.error.message : JSON.stringify(errJson);
-    } catch {
-      errDetail = `HTTP ${response.status} ${response.statusText}`;
-    }
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (response.status === 400 && errDetail.toLowerCase().includes('api_key')) {
-      throw new Error('Chave de API do Gemini inválida. Verifique a chave inserida.');
-    }
-    if (response.status === 429) {
-      throw new Error('Limite de requisições por minuto atingido no Gemini. Aguarde alguns instantes e tente novamente.');
-    }
+      if (!response.ok) {
+        let errDetail = '';
+        try {
+          const errJson = await response.json();
+          errDetail = errJson.error ? errJson.error.message : JSON.stringify(errJson);
+        } catch {
+          errDetail = `HTTP ${response.status} ${response.statusText}`;
+        }
 
-    throw new Error(`Falha na API do Gemini: ${errDetail}`);
+        // Se for erro de modelo não encontrado (404), tenta o próximo modelo
+        if (response.status === 404 || errDetail.toLowerCase().includes('not found') || errDetail.toLowerCase().includes('not supported')) {
+          lastError = new Error(`Modelo ${model} não disponível: ${errDetail}`);
+          // Se for o último modelo da lista inicial e ainda não buscou dinamicamente, busca dinamicamente
+          if (i === modelsToTry.length - 1) {
+            const discovered = await listAvailableGeminiModels(apiKey);
+            const newModels = discovered.filter((m) => !modelsToTry.includes(m));
+            if (newModels.length > 0) {
+              modelsToTry.push(...newModels);
+            }
+          }
+          continue;
+        }
+
+        if (response.status === 400 && errDetail.toLowerCase().includes('api_key')) {
+          throw new Error('Chave de API do Gemini inválida. Verifique a chave inserida.');
+        }
+        if (response.status === 429) {
+          throw new Error('Limite de requisições por minuto atingido no Gemini. Aguarde alguns instantes e tente novamente.');
+        }
+
+        throw new Error(`Falha na API do Gemini (${model}): ${errDetail}`);
+      }
+
+      const result = await response.json();
+      const candidate = result.candidates && result.candidates[0];
+      if (!candidate || !candidate.content || !candidate.content.parts || !candidate.content.parts[0]) {
+        throw new Error('O Gemini não retornou resposta para a imagem enviada.');
+      }
+
+      let text = candidate.content.parts[0].text || '';
+      text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+      try {
+        successData = JSON.parse(text);
+        break; // Sucesso! Sai do loop de modelos
+      } catch (err) {
+        throw new Error(`Não foi possível interpretar a resposta da IA como JSON: ${err.message}`);
+      }
+    } catch (err) {
+      if (err.message && err.message.includes('não disponível')) {
+        continue;
+      }
+      throw err;
+    }
   }
 
-  const result = await response.json();
-  const candidate = result.candidates && result.candidates[0];
-  if (!candidate || !candidate.content || !candidate.content.parts || !candidate.content.parts[0]) {
-    throw new Error('O Gemini não retornou resposta para a imagem enviada.');
+  if (!successData) {
+    throw lastError || new Error('Nenhum modelo compatível do Gemini pôde processar a imagem.');
   }
 
-  let text = candidate.content.parts[0].text || '';
-  // Limpa possíveis delimitadores de markdown json
-  text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch (err) {
-    throw new Error(`Não foi possível interpretar a resposta da IA como JSON: ${err.message}`);
-  }
-
-  return normalizeParsedReceipt(parsed);
+  return normalizeParsedReceipt(successData);
 }
 
 /**
