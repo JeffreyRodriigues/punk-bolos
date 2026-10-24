@@ -318,15 +318,16 @@ Exemplo de formato esperado:
  * @returns {Promise<Object>} Dados extraídos da nota
  */
 export const CANDIDATE_MODELS = [
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
   'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-2.5-pro',
+  'gemini-2.0-flash-lite',
   'gemini-1.5-flash-latest',
   'gemini-1.5-flash',
 ];
 
 /**
- * Consulta a API do Google para listar modelos ativos que suportam generateContent.
+ * Consulta a API do Google para listar modelos ativos que suportam generateContent com imagem.
  * @param {string} apiKey
  * @returns {Promise<Array<string>>}
  */
@@ -337,7 +338,17 @@ export async function listAvailableGeminiModels(apiKey) {
     const data = await res.json();
     if (!Array.isArray(data.models)) return [];
     const supported = data.models
-      .filter((m) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+      .filter((m) => {
+        if (!Array.isArray(m.supportedGenerationMethods) || !m.supportedGenerationMethods.includes('generateContent')) {
+          return false;
+        }
+        const name = (m.name || '').toLowerCase();
+        // Exclui modelos estritamente voltados a áudio/voz ou vetores
+        if (name.includes('tts') || name.includes('audio') || name.includes('embed')) {
+          return false;
+        }
+        return true;
+      })
       .map((m) => m.name.replace(/^models\//, ''));
 
     // Prioriza modelos 'flash'
@@ -424,9 +435,16 @@ export async function parseReceiptImageWithGemini(imageBase64, apiKey) {
           errDetail = `HTTP ${response.status} ${response.statusText}`;
         }
 
-        // Se for erro de modelo não encontrado (404), tenta o próximo modelo
-        if (response.status === 404 || errDetail.toLowerCase().includes('not found') || errDetail.toLowerCase().includes('not supported')) {
-          lastError = new Error(`Modelo ${model} não disponível: ${errDetail}`);
+        // Se for erro de modelo não encontrado (404), não suportado ou modalidade de imagem desabilitada, tenta o próximo modelo
+        const isModelMismatch =
+          response.status === 404 ||
+          errDetail.toLowerCase().includes('not found') ||
+          errDetail.toLowerCase().includes('not supported') ||
+          errDetail.toLowerCase().includes('modality is not enabled') ||
+          errDetail.toLowerCase().includes('modality');
+
+        if (isModelMismatch) {
+          lastError = new Error(`Modelo ${model} não suporta imagem ou não está disponível: ${errDetail}`);
           // Se for o último modelo da lista inicial e ainda não buscou dinamicamente, busca dinamicamente
           if (i === modelsToTry.length - 1) {
             const discovered = await listAvailableGeminiModels(apiKey);
