@@ -697,9 +697,21 @@ async function processarNota() {
 
       isProcessingNota = true;
       if (btnProcessar) btnProcessar.disabled = true;
-      showStatus('<span class="import-nota-loading">Lendo cupom fiscal com IA do Gemini... Aguarde alguns segundos</span>');
+      showStatus('<span class="import-nota-loading">1/2: Otimizando imagem para envio rápido...</span>');
 
-      parsedData = await receiptParser.parseReceiptImageWithGemini(selectedFotoBase64, apiKey);
+      // Comprime e redimensiona a foto para ~300KB (em vez de 15MB)
+      const compressed = await receiptParser.compressImageBase64(selectedFotoBase64, 1600, 0.82);
+
+      const sizeMsg = compressed.originalSizeKb > 0
+        ? ` (${compressed.compressedSizeKb} KB, reduzido de ${compressed.originalSizeKb} KB)`
+        : '';
+      showStatus(`<span class="import-nota-loading">2/2: Enviando cupom${sizeMsg} para a IA...</span>`);
+
+      parsedData = await receiptParser.parseReceiptImageWithGemini(
+        compressed.base64,
+        apiKey,
+        (msg) => showStatus(`<span class="import-nota-loading">${msg}</span>`)
+      );
     } else {
       if (!selectedXmlContent) {
         showStatus('Por favor, selecione um arquivo .XML de nota fiscal antes de continuar.', true);

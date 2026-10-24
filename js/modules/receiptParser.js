@@ -368,7 +368,69 @@ export async function listAvailableGeminiModels(apiKey) {
  * @param {string} apiKey - Chave da API do Gemini (Google AI Studio)
  * @returns {Promise<Object>} Dados extraídos da nota
  */
-export async function parseReceiptImageWithGemini(imageBase64, apiKey) {
+/**
+ * Redimensiona e comprime uma imagem em base64 no navegador via Canvas.
+ * Reduz fotos pesadas de celulares (10-20MB) para ~300KB mantendo texto nítido para OCR.
+ * 
+ * @param {string} dataUrl - Imagem em base64
+ * @param {number} maxDimension - Largura ou altura máxima (default: 1600px)
+ * @param {number} quality - Qualidade JPEG entre 0.1 e 1.0 (default: 0.82)
+ * @returns {Promise<{ base64: string, originalSizeKb: number, compressedSizeKb: number }>}
+ */
+export function compressImageBase64(dataUrl, maxDimension = 1600, quality = 0.82) {
+  return new Promise((resolve) => {
+    // Se não estiver no ambiente de navegador (ex: Node unit tests), retorna a imagem como está
+    if (typeof Image === 'undefined' || typeof document === 'undefined') {
+      resolve({ base64: dataUrl, originalSizeKb: 0, compressedSizeKb: 0 });
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      const originalSizeKb = Math.round((dataUrl.length * 3) / 4 / 1024);
+
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      const compressedSizeKb = Math.round((compressedDataUrl.length * 3) / 4 / 1024);
+
+      console.log(`[Gemini Vision] Imagem otimizada: ${originalSizeKb} KB ➔ ${compressedSizeKb} KB (${width}x${height}px)`);
+      resolve({ base64: compressedDataUrl, originalSizeKb, compressedSizeKb });
+    };
+
+    img.onerror = () => {
+      resolve({ base64: dataUrl, originalSizeKb: 0, compressedSizeKb: 0 });
+    };
+
+    img.src = dataUrl;
+  });
+}
+
+/**
+ * Envia uma imagem codificada em base64 para a Gemini Vision API (Google AI Studio)
+ * e retorna os dados estruturados da nota fiscal com fallback automático entre modelos.
+ * 
+ * @param {string} imageBase64 - Imagem em base64 (com ou sem data:image/... prefixo)
+ * @param {string} apiKey - Chave da API do Gemini (Google AI Studio)
+ * @param {Function} [onStatus] - Callback opcional para relatar modelo em execução
+ * @returns {Promise<Object>} Dados extraídos da nota
+ */
+export async function parseReceiptImageWithGemini(imageBase64, apiKey, onStatus = null) {
   if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
     throw new Error('Chave de API do Gemini não configurada. Por favor, informe sua chave gratuita do Google AI Studio.');
   }
@@ -417,6 +479,13 @@ export async function parseReceiptImageWithGemini(imageBase64, apiKey) {
     const model = modelsToTry[i];
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
 
+    if (typeof onStatus === 'function') {
+      onStatus(`Consultando IA (${model})...`);
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
+
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -424,7 +493,9 @@ export async function parseReceiptImageWithGemini(imageBase64, apiKey) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         let errDetail = '';
@@ -482,6 +553,11 @@ export async function parseReceiptImageWithGemini(imageBase64, apiKey) {
         throw new Error(`Não foi possível interpretar a resposta da IA como JSON: ${err.message}`);
       }
     } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        lastError = new Error(`Tempo limite de 35s esgotado ao aguardar resposta do modelo ${model}.`);
+        continue;
+      }
       if (err.message && err.message.includes('não disponível')) {
         continue;
       }
