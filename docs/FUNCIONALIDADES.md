@@ -71,6 +71,7 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Atualização Automática no Inventário & Precificação:** Ao salvar a compra, o estoque físico de cada insumo é somado imediatamente e o custo unitário vigente é atualizado para cálculo do custo de receitas no módulo de precificação.
 - **Espelho da Compra & Exclusão Segura:** Modal detalhado com todos os itens da compra e modal de exclusão com reversão automática das quantidades no estoque e do histórico de compras.
 - **Métricas & Gestão:** Cards com total gasto no mês, contagem de compras e itens adquiridos, busca textual instantânea por código CMP, fornecedor ou insumo, filtro por meio de pagamento e paginação (10 itens por página).
+- **Leitura Inteligente de Notas (Foto IA & XML):** Botão "📷 Ler Nota com IA" com suporte duplo: foto tirada com a câmera do celular ou upload de imagem lida via Google Gemini Vision API (Google AI Studio gratuito) e leitura instantânea de arquivo .XML de NF-e/NFC-e. Reconhece automaticamente o fornecedor, data, forma de pagamento, valores e cruza os ingredientes com o Inventário por casamento difuso de texto (fuzzy matching).
 
 ---
 

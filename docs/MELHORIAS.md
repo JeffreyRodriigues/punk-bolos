@@ -387,6 +387,20 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Compilação CSS & Cache-Buster:**
   - CSS compilado para <style> inline via node tools/build-css.js e cache-buster atualizado para app.js?v=57.
 
+### 53. Leitura Inteligente de Notas Fiscais e Cupons com IA (Gemini Vision) e XML
+- **Módulo Puro de Extração e Matching (receiptParser.js, test/receiptParser.test.js):**
+  - Integração direta com a API do Google Gemini (gemini-1.5-flash via Google AI Studio gratuito).
+  - Parser local universal para arquivos .XML de NF-e e NFC-e.
+  - Algoritmo de casamento inteligente (matchInsumo) com normalização de acentos, tratamento de abreviações comerciais comuns (AC REF, MANT PAUL, CR CHEESE, FERM PO, etc.) e pontuação de similaridade para vínculo automático com insumos do Inventário.
+  - Testes unitários puros cobrindo 100% das rotinas de normalização, XML parsing e matching de insumos (257 testes passando).
+- **Interface e Experiência do Usuário (purchasesView.js, index.html, css/styles.css):**
+  - Botão "📷 Ler Nota com IA" na barra de ações da tela de Compras.
+  - Modal #importNotaModal com alternância entre Foto do Cupom (upload ou câmera direta no celular) e Arquivo XML.
+  - Campo de configuração e persistência da Chave de API do Gemini no navegador do usuário (storage.saveGeminiApiKey).
+  - Pré-preenchimento instantâneo do modal #compraModal com todos os campos da nota, itens identificados e indicação visual para conferência antes de salvar.
+- **Compilação CSS & Cache-Buster:**
+  - CSS inline sincronizado via node tools/build-css.js e cache-buster atualizado para app.js?v=58.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

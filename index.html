@@ -125,6 +125,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -4837,6 +4838,39 @@ html.dark .badge-purple {
   border: 1px solid var(--color-border);
 }
 
+.nota-dropzone:hover {
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-surface) !important;
+}
+
+.nota-dropzone.dragover {
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-surface) !important;
+}
+
+.import-nota-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.import-nota-loading::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
 
 
 
@@ -5373,6 +5407,7 @@ html.dark .badge-purple {
 
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
 
@@ -6081,7 +6116,10 @@ html.dark .badge-purple {
         <h1>Compras</h1>
         <span id="purchasesCount" class="count-badge">0</span>
       </div>
-      <button id="btnNovaCompra" class="btn btn-primary page-action" type="button">＋ Nova Compra</button>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button id="btnImportarNota" class="btn btn-secondary page-action" type="button">📷 Ler Nota com IA</button>
+        <button id="btnNovaCompra" class="btn btn-primary page-action" type="button">＋ Nova Compra</button>
+      </div>
     </div>
 
     <p class="view-subtitle">
@@ -6803,6 +6841,94 @@ html.dark .badge-purple {
       <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
         <button type="button" id="btnCancelDeleteCompra" class="btn btn-ghost" data-close-delete-modal>Cancelar</button>
         <button type="button" id="btnConfirmDeleteCompra" class="btn btn-danger">Sim, Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Ler Nota Fiscal / Cupom (Foto IA ou XML)
+       Controlado por js/modules/purchasesView.js
+       ============================================================ -->
+  <div id="importNotaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="importNotaModalTitle">
+    <div class="modal-backdrop" data-close-import-modal></div>
+    <div class="modal-card modal-card-wide" style="max-width: 640px;">
+      <div class="modal-header">
+        <h2 id="importNotaModalTitle">Importar Nota / Cupom com IA</h2>
+        <button type="button" class="modal-close" data-close-import-modal aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px;">
+        <!-- Seletor de Modo: Foto (IA) ou XML -->
+        <div class="import-mode-tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px;">
+          <button type="button" id="tabModeFoto" class="btn btn-sm btn-primary" style="flex: 1;">📷 Foto do Cupom (IA)</button>
+          <button type="button" id="tabModeXml" class="btn btn-sm btn-ghost" style="flex: 1;">📄 Arquivo XML (NF-e)</button>
+        </div>
+
+        <!-- Painel Modo 1: Foto do Cupom -->
+        <div id="panelModeFoto">
+          <p style="font-size: 0.88rem; color: var(--color-text-muted); margin-bottom: 12px;">
+            Tire uma foto nítida do cupom fiscal do mercado/atacadista ou selecione uma imagem do seu dispositivo.
+          </p>
+
+          <input type="file" id="inputNotaFoto" accept="image/*" capture="environment" style="display: none;">
+          
+          <div id="dropzoneFoto" class="nota-dropzone" style="border: 2px dashed var(--color-border); border-radius: var(--radius-md); padding: 24px 16px; text-align: center; cursor: pointer; background: var(--color-surface-alt); transition: border-color 0.2s, background 0.2s;">
+            <div id="dropzoneFotoPlaceholder">
+              <span style="font-size: 2rem; display: block; margin-bottom: 6px;">📸</span>
+              <strong style="color: var(--color-primary); font-size: 0.95rem;">Clique para tirar foto ou escolher imagem</strong>
+              <span style="display: block; font-size: 0.8rem; color: var(--color-text-muted); margin-top: 4px;">Formatos aceitos: JPG, PNG, WEBP</span>
+            </div>
+            <div id="dropzoneFotoPreview" hidden style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+              <img id="imgNotaPreview" src="" alt="Prévia da Nota" style="max-height: 220px; max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--color-border); box-shadow: var(--shadow-card);">
+              <span id="txtNomeFoto" style="font-size: 0.82rem; color: var(--color-text-muted);"></span>
+              <button type="button" id="btnTrocarFoto" class="btn btn-ghost btn-sm" style="font-size: 0.8rem;">Trocar foto</button>
+            </div>
+          </div>
+
+          <!-- Configuração da Chave Gemini -->
+          <div style="margin-top: 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 12px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="inputGeminiApiKey" style="font-size: 0.85rem; font-weight: 700; color: var(--color-text);">Chave de API do Gemini (Google AI Studio)</label>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style="font-size: 0.8rem; color: var(--color-primary); text-decoration: underline;">Obter chave grátis ↗</a>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <input type="password" id="inputGeminiApiKey" placeholder="Cole sua chave AIzaSy..." autocomplete="off" style="flex: 1; font-size: 0.88rem; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); background: var(--color-surface-alt);">
+              <button type="button" id="btnSalvarGeminiKey" class="btn btn-secondary btn-sm" style="white-space: nowrap;">Salvar Chave</button>
+            </div>
+            <small style="color: var(--color-text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">
+              💡 Grátis até 1.500 notas/dia. A chave fica gravada somente no seu navegador.
+            </small>
+          </div>
+        </div>
+
+        <!-- Painel Modo 2: Arquivo XML -->
+        <div id="panelModeXml" hidden>
+          <p style="font-size: 0.88rem; color: var(--color-text-muted); margin-bottom: 12px;">
+            Selecione o arquivo .XML da NF-e ou NFC-e fornecido pelo atacadista ou enviado por e-mail.
+          </p>
+
+          <input type="file" id="inputNotaXml" accept=".xml" style="display: none;">
+          
+          <div id="dropzoneXml" class="nota-dropzone" style="border: 2px dashed var(--color-border); border-radius: var(--radius-md); padding: 28px 16px; text-align: center; cursor: pointer; background: var(--color-surface-alt); transition: border-color 0.2s, background 0.2s;">
+            <div id="dropzoneXmlPlaceholder">
+              <span style="font-size: 2rem; display: block; margin-bottom: 6px;">📄</span>
+              <strong style="color: var(--color-primary); font-size: 0.95rem;">Clique para selecionar o arquivo .XML</strong>
+              <span style="display: block; font-size: 0.8rem; color: var(--color-text-muted); margin-top: 4px;">Leitura instantânea em 0ms (sem necessidade de IA)</span>
+            </div>
+            <div id="dropzoneXmlSelected" hidden>
+              <strong id="txtNomeXml" style="color: var(--color-text); font-size: 0.9rem;"></strong>
+              <button type="button" id="btnTrocarXml" class="btn btn-ghost btn-sm" style="display: block; margin: 8px auto 0; font-size: 0.8rem;">Trocar arquivo</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status / Indicador de Carregamento -->
+        <div id="importNotaStatus" hidden style="margin-top: 14px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.88rem; text-align: center;"></div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
+        <button type="button" class="btn btn-ghost" data-close-import-modal>Cancelar</button>
+        <button type="button" id="btnProcessarNota" class="btn btn-primary">Processar e Abrir Compra</button>
       </div>
     </div>
   </div>
@@ -7549,6 +7675,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=57"></script>
+  <script type="module" src="js/app.js?v=58"></script>
 </body>
 </html>

@@ -14,6 +14,7 @@
 
 import * as storage from './storage.js';
 import * as purchases from './purchases.js';
+import * as receiptParser from './receiptParser.js';
 import { formatCurrency, formatDate } from '../utils/money.js';
 import { showToast } from './toast.js';
 
@@ -25,6 +26,14 @@ let currentPaymentFilter = '';
 let newPurchaseDraftItems = [];
 let deletingPurchase = null;
 let onChangeListener = null;
+
+// Estado do modal de importação de nota (IA / XML)
+let currentImportMode = 'foto'; // 'foto' | 'xml'
+let selectedFotoBase64 = null;
+let selectedFotoName = '';
+let selectedXmlContent = null;
+let selectedXmlName = '';
+let isProcessingNota = false;
 
 export function setChangeListener(fn) {
   onChangeListener = fn;
@@ -246,6 +255,15 @@ function renderDraftItems() {
     // 1. Seletor de Insumo
     const selWrap = document.createElement('div');
     selWrap.style.cssText = 'flex: 2 1 200px; min-width: 180px;';
+
+    if (item.descricaoImportada) {
+      const hint = document.createElement('div');
+      hint.style.cssText = 'font-size: 0.76rem; color: var(--color-primary); font-weight: 700; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+      hint.title = item.descricaoImportada;
+      hint.textContent = `📋 Cupom: "${item.descricaoImportada}"`;
+      selWrap.appendChild(hint);
+    }
+
     const select = document.createElement('select');
     select.className = 'filter';
     select.style.cssText = 'width: 100%; font-size: 0.9rem; padding: 6px 8px;';
@@ -518,12 +536,338 @@ function confirmarExclusaoCompra() {
 }
 
 /* ============================================================
+   MODAL — IMPORTAÇÃO DE NOTA FISCAL (FOTO IA / XML)
+   ============================================================ */
+
+export function openImportNotaModal() {
+  const modal = document.getElementById('importNotaModal');
+  if (!modal) return;
+
+  // Reseta estado
+  selectedFotoBase64 = null;
+  selectedFotoName = '';
+  selectedXmlContent = null;
+  selectedXmlName = '';
+  isProcessingNota = false;
+
+  // Carrega chave salva
+  const apiKeyInput = document.getElementById('inputGeminiApiKey');
+  if (apiKeyInput) {
+    apiKeyInput.value = storage.getGeminiApiKey();
+  }
+
+  // Reseta prévias
+  const placeholderFoto = document.getElementById('dropzoneFotoPlaceholder');
+  const previewFoto = document.getElementById('dropzoneFotoPreview');
+  const imgPreview = document.getElementById('imgNotaPreview');
+  if (placeholderFoto) placeholderFoto.hidden = false;
+  if (previewFoto) previewFoto.hidden = true;
+  if (imgPreview) imgPreview.src = '';
+
+  const placeholderXml = document.getElementById('dropzoneXmlPlaceholder');
+  const selectedXml = document.getElementById('dropzoneXmlSelected');
+  if (placeholderXml) placeholderXml.hidden = false;
+  if (selectedXml) selectedXml.hidden = true;
+
+  const statusEl = document.getElementById('importNotaStatus');
+  if (statusEl) {
+    statusEl.hidden = true;
+    statusEl.innerHTML = '';
+  }
+
+  const btnProcessar = document.getElementById('btnProcessarNota');
+  if (btnProcessar) btnProcessar.disabled = false;
+
+  setImportMode('foto');
+
+  modal.classList.add('open');
+  document.body.classList.add('modal-open');
+}
+
+export function closeImportNotaModal() {
+  const modal = document.getElementById('importNotaModal');
+  if (modal) modal.classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
+
+function setImportMode(mode) {
+  currentImportMode = mode;
+  const panelFoto = document.getElementById('panelModeFoto');
+  const panelXml = document.getElementById('panelModeXml');
+  const tabFoto = document.getElementById('tabModeFoto');
+  const tabXml = document.getElementById('tabModeXml');
+
+  if (mode === 'foto') {
+    if (panelFoto) panelFoto.hidden = false;
+    if (panelXml) panelXml.hidden = true;
+    if (tabFoto) {
+      tabFoto.className = 'btn btn-sm btn-primary';
+    }
+    if (tabXml) {
+      tabXml.className = 'btn btn-sm btn-ghost';
+    }
+  } else {
+    if (panelFoto) panelFoto.hidden = true;
+    if (panelXml) panelXml.hidden = false;
+    if (tabFoto) {
+      tabFoto.className = 'btn btn-sm btn-ghost';
+    }
+    if (tabXml) {
+      tabXml.className = 'btn btn-sm btn-primary';
+    }
+  }
+}
+
+function handleFotoSelected(file) {
+  if (!file) return;
+  selectedFotoName = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    selectedFotoBase64 = e.target.result;
+    const placeholder = document.getElementById('dropzoneFotoPlaceholder');
+    const preview = document.getElementById('dropzoneFotoPreview');
+    const imgPreview = document.getElementById('imgNotaPreview');
+    const txtNome = document.getElementById('txtNomeFoto');
+
+    if (placeholder) placeholder.hidden = true;
+    if (preview) preview.hidden = false;
+    if (imgPreview) imgPreview.src = selectedFotoBase64;
+    if (txtNome) txtNome.textContent = file.name;
+
+    const statusEl = document.getElementById('importNotaStatus');
+    if (statusEl) statusEl.hidden = true;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleXmlSelected(file) {
+  if (!file) return;
+  selectedXmlName = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    selectedXmlContent = e.target.result;
+    const placeholder = document.getElementById('dropzoneXmlPlaceholder');
+    const selected = document.getElementById('dropzoneXmlSelected');
+    const txtNome = document.getElementById('txtNomeXml');
+
+    if (placeholder) placeholder.hidden = true;
+    if (selected) selected.hidden = false;
+    if (txtNome) txtNome.textContent = file.name;
+
+    const statusEl = document.getElementById('importNotaStatus');
+    if (statusEl) statusEl.hidden = true;
+  };
+  reader.readAsText(file);
+}
+
+async function processarNota() {
+  if (isProcessingNota) return;
+  const statusEl = document.getElementById('importNotaStatus');
+  const btnProcessar = document.getElementById('btnProcessarNota');
+
+  const showStatus = (html, isError = false) => {
+    if (!statusEl) return;
+    statusEl.hidden = false;
+    statusEl.innerHTML = html;
+    statusEl.style.backgroundColor = isError ? 'var(--color-danger-bg, #ffebee)' : 'var(--color-surface-alt)';
+    statusEl.style.color = isError ? 'var(--color-danger, #d32f2f)' : 'var(--color-text)';
+    statusEl.style.border = isError ? '1px solid var(--color-danger, #d32f2f)' : '1px solid var(--color-border)';
+  };
+
+  try {
+    let parsedData = null;
+
+    if (currentImportMode === 'foto') {
+      if (!selectedFotoBase64) {
+        showStatus('Por favor, tire uma foto ou selecione uma imagem do cupom antes de continuar.', true);
+        return;
+      }
+
+      const apiKeyInput = document.getElementById('inputGeminiApiKey');
+      const apiKey = apiKeyInput ? apiKeyInput.value.trim() : storage.getGeminiApiKey();
+
+      if (!apiKey) {
+        showStatus('Informe a sua Chave de API do Gemini para fazer a leitura com IA. É gratuita no Google AI Studio.', true);
+        if (apiKeyInput) apiKeyInput.focus();
+        return;
+      }
+
+      // Salva a chave no armazenamento local para conveniência futura
+      storage.saveGeminiApiKey(apiKey);
+
+      isProcessingNota = true;
+      if (btnProcessar) btnProcessar.disabled = true;
+      showStatus('<span class="import-nota-loading">Lendo cupom fiscal com IA do Gemini... Aguarde alguns segundos</span>');
+
+      parsedData = await receiptParser.parseReceiptImageWithGemini(selectedFotoBase64, apiKey);
+    } else {
+      if (!selectedXmlContent) {
+        showStatus('Por favor, selecione um arquivo .XML de nota fiscal antes de continuar.', true);
+        return;
+      }
+
+      isProcessingNota = true;
+      if (btnProcessar) btnProcessar.disabled = true;
+      showStatus('<span class="import-nota-loading">Processando arquivo XML da nota...</span>');
+
+      parsedData = receiptParser.parseReceiptXml(selectedXmlContent);
+    }
+
+    if (!parsedData || !Array.isArray(parsedData.itens) || parsedData.itens.length === 0) {
+      throw new Error('Nenhum item de compra foi identificado nesta nota.');
+    }
+
+    // Sucesso! Fecha modal de importação e preenche o modal de compra
+    closeImportNotaModal();
+    preencherNovaCompraComDadosImportados(parsedData);
+    showToast(`Nota lida com sucesso! ${parsedData.itens.length} itens identificados.`);
+
+  } catch (err) {
+    showStatus(`Falha na leitura: ${err.message}`, true);
+  } finally {
+    isProcessingNota = false;
+    if (btnProcessar) btnProcessar.disabled = false;
+  }
+}
+
+/**
+ * Preenche o modal de Nova Compra (#compraModal) com os dados extraídos da nota.
+ */
+function preencherNovaCompraComDadosImportados(dados) {
+  openNewPurchaseModal();
+
+  const dataEl = document.getElementById('compraFieldData');
+  const fornEl = document.getElementById('compraFieldFornecedor');
+  const formaEl = document.getElementById('compraFieldFormaPagamento');
+  const obsEl = document.getElementById('compraFieldObs');
+
+  if (dataEl && dados.data) dataEl.value = dados.data;
+  if (fornEl && dados.fornecedor) fornEl.value = dados.fornecedor;
+  if (formaEl && dados.formaPagamento) formaEl.value = dados.formaPagamento;
+  if (obsEl) obsEl.value = `Importado de nota fiscal (${dados.fornecedor || 'Mercado'})`;
+
+  const insumos = storage.getAllInsumos();
+  newPurchaseDraftItems = dados.itens.map((it) => {
+    const matched = receiptParser.matchInsumo(it.descricao, insumos);
+    return {
+      insumoId: matched ? matched.id : '',
+      quantidade: it.quantidade,
+      custoTotal: it.custoTotal,
+      descricaoImportada: it.descricao,
+    };
+  });
+
+  renderDraftItems();
+}
+
+/* ============================================================
    INICIALIZAÇÃO DOS LISTENERS
    ============================================================ */
 export function initPurchasesEvents() {
   const btnNovaCompra = document.getElementById('btnNovaCompra');
   if (btnNovaCompra) {
     btnNovaCompra.addEventListener('click', () => openNewPurchaseModal());
+  }
+
+  // Botão "📷 Ler Nota com IA"
+  const btnImportarNota = document.getElementById('btnImportarNota');
+  if (btnImportarNota) {
+    btnImportarNota.addEventListener('click', () => openImportNotaModal());
+  }
+
+  // Modais de importação fecham
+  document.querySelectorAll('[data-close-import-modal]').forEach((el) => {
+    el.addEventListener('click', () => closeImportNotaModal());
+  });
+
+  // Alternar abas Foto / XML
+  const tabFoto = document.getElementById('tabModeFoto');
+  if (tabFoto) {
+    tabFoto.addEventListener('click', () => setImportMode('foto'));
+  }
+  const tabXml = document.getElementById('tabModeXml');
+  if (tabXml) {
+    tabXml.addEventListener('click', () => setImportMode('xml'));
+  }
+
+  // Upload Foto
+  const inputFoto = document.getElementById('inputNotaFoto');
+  const dropzoneFoto = document.getElementById('dropzoneFoto');
+  if (dropzoneFoto && inputFoto) {
+    dropzoneFoto.addEventListener('click', () => inputFoto.click());
+    dropzoneFoto.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzoneFoto.classList.add('dragover');
+    });
+    dropzoneFoto.addEventListener('dragleave', () => dropzoneFoto.classList.remove('dragover'));
+    dropzoneFoto.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzoneFoto.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFotoSelected(e.dataTransfer.files[0]);
+      }
+    });
+    inputFoto.addEventListener('change', () => {
+      if (inputFoto.files && inputFoto.files[0]) {
+        handleFotoSelected(inputFoto.files[0]);
+      }
+    });
+  }
+
+  const btnTrocarFoto = document.getElementById('btnTrocarFoto');
+  if (btnTrocarFoto && inputFoto) {
+    btnTrocarFoto.addEventListener('click', (e) => {
+      e.stopPropagation();
+      inputFoto.click();
+    });
+  }
+
+  // Salvar Chave Gemini
+  const btnSalvarKey = document.getElementById('btnSalvarGeminiKey');
+  const inputKey = document.getElementById('inputGeminiApiKey');
+  if (btnSalvarKey && inputKey) {
+    btnSalvarKey.addEventListener('click', () => {
+      storage.saveGeminiApiKey(inputKey.value);
+      showToast('Chave de API do Gemini salva com sucesso!');
+    });
+  }
+
+  // Upload XML
+  const inputXml = document.getElementById('inputNotaXml');
+  const dropzoneXml = document.getElementById('dropzoneXml');
+  if (dropzoneXml && inputXml) {
+    dropzoneXml.addEventListener('click', () => inputXml.click());
+    dropzoneXml.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzoneXml.classList.add('dragover');
+    });
+    dropzoneXml.addEventListener('dragleave', () => dropzoneXml.classList.remove('dragover'));
+    dropzoneXml.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzoneXml.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleXmlSelected(e.dataTransfer.files[0]);
+      }
+    });
+    inputXml.addEventListener('change', () => {
+      if (inputXml.files && inputXml.files[0]) {
+        handleXmlSelected(inputXml.files[0]);
+      }
+    });
+  }
+
+  const btnTrocarXml = document.getElementById('btnTrocarXml');
+  if (btnTrocarXml && inputXml) {
+    btnTrocarXml.addEventListener('click', (e) => {
+      e.stopPropagation();
+      inputXml.click();
+    });
+  }
+
+  // Botão Processar
+  const btnProcessar = document.getElementById('btnProcessarNota');
+  if (btnProcessar) {
+    btnProcessar.addEventListener('click', () => processarNota());
   }
 
   const btnAddCompraItem = document.getElementById('btnAddCompraItem');

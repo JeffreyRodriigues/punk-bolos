@@ -28,6 +28,7 @@ const BASES_KEY = 'punkbolos.bases';
 const COMPRAS_KEY = 'punkbolos.compras';
 const CUSTOMERS_KEY = 'punkbolos.clientes';
 const CONFIG_KEY = 'punkbolos.config';
+const GEMINI_KEY_STORAGE = 'punkbolos.gemini_key';
 
 /** Caches em memória (null = ainda não carregado). */
 let ordersCache = null;
@@ -1228,6 +1229,26 @@ export function deletePurchase(id) {
   const current = getAllPurchases();
   const next = current.filter((p) => p && p.id !== id);
   savePurchases(next);
+}
+
+/**
+ * Obtém a chave de API do Gemini salva localmente no navegador.
+ * @returns {string}
+ */
+export function getGeminiApiKey() {
+  return localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+}
+
+/**
+ * Salva ou remove a chave de API do Gemini no navegador.
+ * @param {string} key - Chave da API.
+ */
+export function saveGeminiApiKey(key) {
+  if (key && typeof key === 'string' && key.trim().length > 0) {
+    localStorage.setItem(GEMINI_KEY_STORAGE, key.trim());
+  } else {
+    localStorage.removeItem(GEMINI_KEY_STORAGE);
+  }
 }
 
 /** Envia ao banco os insumos criados/alterados/removidos. */

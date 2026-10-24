@@ -4619,5 +4619,38 @@ html.dark .badge-purple {
   border: 1px solid var(--color-border);
 }
 
+.nota-dropzone:hover {
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-surface) !important;
+}
+
+.nota-dropzone.dragover {
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-surface) !important;
+}
+
+.import-nota-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.import-nota-loading::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
 
 
