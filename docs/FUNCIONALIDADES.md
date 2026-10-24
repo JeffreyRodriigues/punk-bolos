@@ -65,6 +65,13 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Montagem de Receitas:** Associação de insumos e bases com quantidades exatas.
 - **Importador Rápido do Excel:** Modal para colar 4 colunas (`Ingrediente`, `Custo Embalagem`, `Gramas Embalagem`, `Gramas Utilizadas`) com reconhecimento inteligente de insumos e **Bases cadastradas (`PBA`)**, cálculo de custo em tempo real e criação facilitada.
 
+### 1.8 Compras (Entrada de Notas / Feira em Lote)
+- **Registro em Lote de Entradas:** Formulário dinâmico para registrar múltiplos insumos de uma mesma nota ou compra na feira/atacadista com data, fornecedor (com sugestões via datalist: Assaí, Atacadão, Sam's Club, etc.), forma de pagamento e observações.
+- **Cálculo Automático de Custo Unitário e Total:** Exibição em tempo real do custo por unidade (R$ / g, R$ / kg, R$ / un) e do valor total acumulado da compra.
+- **Atualização Automática no Inventário & Precificação:** Ao salvar a compra, o estoque físico de cada insumo é somado imediatamente e o custo unitário vigente é atualizado para cálculo do custo de receitas no módulo de precificação.
+- **Espelho da Compra & Exclusão Segura:** Modal detalhado com todos os itens da compra e modal de exclusão com reversão automática das quantidades no estoque e do histórico de compras.
+- **Métricas & Gestão:** Cards com total gasto no mês, contagem de compras e itens adquiridos, busca textual instantânea por código CMP, fornecedor ou insumo, filtro por meio de pagamento e paginação (10 itens por página).
+
 ---
 
 ## 2. Cardápio Digital Público (`cardapio.html`)

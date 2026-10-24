@@ -124,6 +124,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -4820,6 +4821,23 @@ html.dark .badge-purple {
   color: var(--color-primary);
 }
 
+/* ============================================================
+   VIEW COMPRAS — ENTRADA DE NOTAS E HISTÓRICO
+   ============================================================ */
+
+.compra-item-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  background-color: var(--color-surface-alt);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+
 
 
 </style>
@@ -5465,6 +5483,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5605,6 +5624,7 @@ html.dark .badge-purple {
         <button class="nav-tab" type="button" data-view-target="produtos">Produtos</button>
         <button class="nav-tab" type="button" data-view-target="estoque">Produção</button>
         <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="clientes">Clientes</button>
+        <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="compras">Compras</button>
         <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="inventario">Inventário</button>
         <button class="nav-tab nav-tab--mobile-hidden" type="button" data-view-target="precificacao">Precificação</button>
         <button class="nav-tab" type="button" data-view-target="orders">Pedidos <span class="nav-tab-badge" id="pendingOrdersBadge" hidden>0</span></button>
@@ -6049,6 +6069,88 @@ html.dark .badge-purple {
         <button type="button" id="btnEstoqueNextPage" class="btn btn-ghost" aria-label="Próxima página">Próxima →</button>
       </div>
     </section>
+  </main>
+
+  <!-- ============================================================
+       VIEW — Compras (registro de entradas em lote e histórico)
+       Controlada por js/modules/purchasesView.js
+       ============================================================ -->
+  <main id="view-compras" class="view" aria-label="Gestão de Compras">
+    <div class="page-title page-title-with-actions">
+      <div>
+        <h1>Compras</h1>
+        <span id="purchasesCount" class="count-badge">0</span>
+      </div>
+      <button id="btnNovaCompra" class="btn btn-primary page-action" type="button">＋ Nova Compra</button>
+    </div>
+
+    <p class="view-subtitle">
+      Registre as compras de insumos e embalagens em lote (entrada de nota/feira). O sistema atualiza o estoque físico e os custos vigentes de todos os ingredientes de uma só vez.
+    </p>
+
+    <!-- Cards de Métricas de Compras -->
+    <div class="customer-stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+      <div class="stat-card">
+        <span class="stat-label">Total Gasto no Mês</span>
+        <span id="purchasesStatTotalMes" class="stat-value" style="color: var(--color-primary);">R$ 0,00</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Compras Registradas</span>
+        <span id="purchasesStatCount" class="stat-value">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Itens Adquiridos</span>
+        <span id="purchasesStatTotalItens" class="stat-value">0</span>
+      </div>
+    </div>
+
+    <!-- Barra de Ferramentas / Filtros -->
+    <div class="customer-toolbar" style="margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+      <div class="search-bar" style="flex: 1 1 280px; margin-bottom: 0;">
+        <input id="purchaseSearch" type="search" placeholder="Buscar por código (CMP0001), fornecedor ou ingrediente..." autocomplete="off">
+      </div>
+      <div class="filters" style="margin: 0; display: flex; gap: 8px;">
+        <select id="purchasePaymentFilter" class="filter" aria-label="Filtrar por forma de pagamento">
+          <option value="">Pagamento: Todos</option>
+          <option value="PIX">PIX</option>
+          <option value="Cartão de Crédito">Cartão de Crédito</option>
+          <option value="Cartão de Débito">Cartão de Débito</option>
+          <option value="Dinheiro">Dinheiro</option>
+          <option value="Boleto">Boleto</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabela de Compras -->
+    <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+      <table class="estoque-table customer-table" aria-label="Lista de Compras">
+        <thead>
+          <tr>
+            <th style="width: 100px;">Código</th>
+            <th style="width: 110px;">Data</th>
+            <th>Fornecedor / Local</th>
+            <th style="width: 140px;">Pagamento</th>
+            <th>Itens Adquiridos</th>
+            <th style="text-align: right; width: 130px;">Total (R$)</th>
+            <th style="text-align: center; width: 180px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="purchasesTableBody">
+          <!-- Linhas de compras renderizadas por purchasesView.js -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="purchasesEmptyState" class="empty-state" hidden>
+      <p class="empty-state-text">Nenhuma compra registrada ainda. Clique em "＋ Nova Compra" para lançar sua primeira nota ou feira.</p>
+    </div>
+
+    <!-- Paginação -->
+    <nav id="purchasesPagination" class="order-pagination" aria-label="Navegação de páginas de compras" hidden>
+      <button id="btnPurchasePrevPage" type="button" class="btn-pagination" aria-label="Página anterior">Anterior</button>
+      <span id="purchasesPaginationInfo" class="pagination-info">Página 1 de 1</span>
+      <button id="btnPurchaseNextPage" type="button" class="btn-pagination" aria-label="Próxima página">Próxima</button>
+    </nav>
   </main>
 
   <!-- ============================================================
@@ -6569,6 +6671,138 @@ html.dark .badge-purple {
       <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
         <button type="button" id="btnCancelProductDelete" class="btn btn-ghost" data-close-delete-modal>Cancelar</button>
         <button type="button" id="btnConfirmProductDelete" class="btn btn-danger">Sim, Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — Nova Compra (Entrada de Nota / Lote)
+       Controlado por js/modules/purchasesView.js
+       ============================================================ -->
+  <div id="compraModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="compraModalTitle">
+    <div class="modal-backdrop" data-close-compra-modal></div>
+    <div class="modal-card modal-card-wide" style="max-width: 860px;">
+      <div class="modal-header">
+        <h2 id="compraModalTitle">Nova Compra (Entrada de Nota)</h2>
+        <button type="button" class="modal-close" data-close-compra-modal aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="compraForm" novalidate onsubmit="return false;">
+        <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+          <div class="form-grid" style="grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+            <div class="form-field">
+              <label for="compraFieldData">Data da Compra *</label>
+              <input type="date" id="compraFieldData" required>
+            </div>
+            <div class="form-field">
+              <label for="compraFieldFornecedor">Local / Fornecedor</label>
+              <input type="text" id="compraFieldFornecedor" placeholder="Ex.: Assaí, Atacadão, Embalagens..." list="fornecedoresDatalist" autocomplete="off">
+              <datalist id="fornecedoresDatalist">
+                <option value="Assaí Atacadista"></option>
+                <option value="Atacadão"></option>
+                <option value="Sam's Club"></option>
+                <option value="Embalagens"></option>
+                <option value="Mercado Livre"></option>
+                <option value="Feira / Hortifrúti"></option>
+              </datalist>
+            </div>
+            <div class="form-field">
+              <label for="compraFieldFormaPagamento">Forma de Pagamento *</label>
+              <select id="compraFieldFormaPagamento">
+                <option value="PIX">PIX</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Boleto">Boleto</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+            <div class="form-field form-field-full">
+              <label for="compraFieldObs">Observações da Compra (opcional)</label>
+              <input type="text" id="compraFieldObs" placeholder="Ex.: Promoção leite moça, desconto à vista, etc." autocomplete="off">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div>
+              <h2 class="insumo-section-title" style="margin: 0; font-size: 1.05rem;">Itens da Nota / Compra</h2>
+              <p class="view-subtitle" style="margin: 0; font-size: 0.84rem;">Selecione o insumo, digite a quantidade da embalagem e o valor total pago.</p>
+            </div>
+            <button type="button" id="btnAddCompraItem" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px;">＋ Adicionar Insumo</button>
+          </div>
+
+          <div id="compraItensContainer" style="display: flex; flex-direction: column; gap: 4px; margin-top: 10px;">
+            <!-- Linhas dinâmicas criadas por purchasesView.js -->
+          </div>
+
+          <div style="margin-top: 16px; padding: 12px 14px; background: var(--color-surface-alt); border-radius: var(--radius-sm); border: 1px dashed var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <span style="font-size: 0.86rem; color: var(--color-text-muted);">
+              💡 Ao salvar, o estoque de cada ingrediente será somado automaticamente no Inventário.
+            </span>
+            <strong id="compraTotalCalculado" style="font-size: 1.1rem; color: var(--color-primary);">Total da Compra: R$ 0,00</strong>
+          </div>
+
+          <p id="compraFormAviso" class="estoque-aviso" hidden style="margin-top: 10px;"></p>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px;">
+          <button type="button" id="btnCancelCompra" class="btn btn-ghost" data-close-compra-modal>Cancelar</button>
+          <button type="button" id="btnSaveCompra" class="btn btn-primary">Salvar Compra</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL — Detalhes da Compra -->
+  <div id="compraDetalhesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="compraDetalhesTitulo">
+    <div class="modal-backdrop" data-close-compra-detalhes></div>
+    <div class="modal-card modal-card-wide" style="max-width: 680px;">
+      <div class="modal-header">
+        <h2 id="compraDetalhesTitulo">Detalhes da Compra</h2>
+        <button type="button" class="modal-close" data-close-compra-detalhes aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="compraDetalhesMeta" style="display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--color-surface-alt); border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 0.9rem;">
+        </div>
+        <div class="table-responsive">
+          <table class="estoque-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th style="text-align: right;">Quantidade</th>
+                <th style="text-align: right;">Preço Pago</th>
+                <th style="text-align: right;">Custo Unitário</th>
+              </tr>
+            </thead>
+            <tbody id="compraDetalhesItensTbody">
+            </tbody>
+          </table>
+        </div>
+        <div style="text-align: right; margin-top: 14px; font-size: 1.15rem; font-weight: 800; color: var(--color-primary);" id="compraDetalhesTotal">
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+        <button type="button" id="btnFecharCompraDetalhes" class="btn btn-primary" data-close-compra-detalhes>Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL — Excluir Compra -->
+  <div id="compraDeleteModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="compraDeleteModalTitle">
+    <div class="modal-backdrop" data-close-delete-modal></div>
+    <div class="modal-card modal-card-sm" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 id="compraDeleteModalTitle">Excluir Compra</h2>
+        <button type="button" class="modal-close" id="btnCancelDeleteCompraClose" data-close-delete-modal aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px;">
+        <p id="compraDeleteModalDesc" style="color: var(--color-text); font-size: 0.95rem; line-height: 1.5; margin-bottom: 0;">
+          Tem certeza de que deseja excluir esta compra?
+        </p>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
+        <button type="button" id="btnCancelDeleteCompra" class="btn btn-ghost" data-close-delete-modal>Cancelar</button>
+        <button type="button" id="btnConfirmDeleteCompra" class="btn btn-danger">Sim, Excluir</button>
       </div>
     </div>
   </div>
@@ -7315,6 +7549,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=56"></script>
+  <script type="module" src="js/app.js?v=57"></script>
 </body>
 </html>

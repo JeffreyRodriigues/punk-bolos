@@ -366,6 +366,27 @@ Registro das correções, evoluções e melhorias aplicadas ao sistema ao longo 
 - **Compilação CSS & Cache-Buster:**
   - CSS inline sincronizado via `node tools/build-css.js` e cache-buster atualizado para `app.js?v=56`.
 
+### 52. Módulo de Compras (Entrada de Nota / Feira em Lote) integrado ao Inventário e Precificação
+- **Módulo Puro de Negócio (purchases.js, test/purchases.test.js):**
+  - Geração de código sequencial automático (CMP0001, CMP0002...).
+  - Cálculo dinâmico do custo unitário por insumo com base no valor pago e quantidade/embalagem adquirida.
+  - Aplicação atômica no estoque físico (insumo.estoqueAtual) e registro no histórico de compras do insumo (insumo.compras), atualizando o custo unitário vigente para precificação de receitas.
+  - Reversão segura em caso de exclusão de compra, restaurando o saldo do estoque e removendo os registros do histórico.
+  - Testes unitários puros cobrindo 100% dos cenários de cálculo, validação, persistência e reversão.
+- **Camada de Persistência (storage.js):**
+  - Chave punkbolos.compras com suporte a LocalStorage e sincronização com a nuvem (Supabase).
+  - Funções getAllPurchases(), savePurchases() e deletePurchase().
+- **Interface e Experiência do Usuário (purchasesView.js, index.html, css/styles.css):**
+  - Nova aba Compras na navegação desktop (nav-tab--mobile-hidden), mantendo a política de telas móveis.
+  - Cards de métricas financeiras de compras: Total Gasto no Mês, Compras Registradas e Itens Adquiridos.
+  - Tabela completa com código, data, fornecedor, pagamento, resumo de itens, valor total e ações.
+  - Busca textual instantânea (código, fornecedor, ingrediente), filtro por forma de pagamento e paginação (10 itens/pág).
+  - Modal dinâmico #compraModal para entrada de nota com múltiplos insumos, preview em tempo real de custo unitário e total calculado.
+  - Modal de espelho da compra #compraDetalhesModal e modal de exclusão com confirmação #compraDeleteModal.
+  - Notificação de mudança em tempo real (purchasesView.setChangeListener) para sincronização imediata das views de Inventário e Precificação.
+- **Compilação CSS & Cache-Buster:**
+  - CSS compilado para <style> inline via node tools/build-css.js e cache-buster atualizado para app.js?v=57.
+
 ---
 
 > **Nota:** o histórico antigo destes documentos fica preservado no git (versões anteriores da branch `main`).

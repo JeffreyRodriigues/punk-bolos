@@ -4603,4 +4603,21 @@ html.dark .badge-purple {
   color: var(--color-primary);
 }
 
+/* ============================================================
+   VIEW COMPRAS — ENTRADA DE NOTAS E HISTÓRICO
+   ============================================================ */
+
+.compra-item-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  background-color: var(--color-surface-alt);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+
 

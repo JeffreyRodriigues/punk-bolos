@@ -25,6 +25,7 @@ const PRODUCOES_KEY = 'punkbolos.producao';
 const INSUMOS_KEY = 'punkbolos.insumos';
 const PRECIFICACOES_KEY = 'punkbolos.precificacoes';
 const BASES_KEY = 'punkbolos.bases';
+const COMPRAS_KEY = 'punkbolos.compras';
 const CUSTOMERS_KEY = 'punkbolos.clientes';
 const CONFIG_KEY = 'punkbolos.config';
 
@@ -35,6 +36,7 @@ let productionsCache = null;
 let insumosCache = null;
 let precificacoesCache = null;
 let basesCache = null;
+let purchasesCache = null;
 let customersCache = null;
 
 /**
@@ -387,6 +389,17 @@ function readLocalBases() {
     const raw = localStorage.getItem(BASES_KEY);
     const list = raw ? JSON.parse(raw) : [];
     return Array.isArray(list) ? list.map(normalizeBase) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Lê as compras do LocalStorage. */
+function readLocalPurchases() {
+  try {
+    const raw = localStorage.getItem(COMPRAS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
   } catch {
     return [];
   }
@@ -1187,6 +1200,36 @@ export function saveBases(bases) {
   localStorage.setItem(BASES_KEY, JSON.stringify(bases));
 }
 
+/**
+ * Lê todas as compras do cache/local.
+ * @returns {Array<Object>} Lista de compras.
+ */
+export function getAllPurchases() {
+  if (purchasesCache === null) {
+    purchasesCache = readLocalPurchases();
+  }
+  return purchasesCache;
+}
+
+/**
+ * Salva a lista de compras no LocalStorage.
+ * @param {Array<Object>} purchases - Nova lista de compras.
+ */
+export function savePurchases(purchases) {
+  purchasesCache = Array.isArray(purchases) ? purchases : [];
+  localStorage.setItem(COMPRAS_KEY, JSON.stringify(purchasesCache));
+}
+
+/**
+ * Remove uma compra pelo id.
+ * @param {string} id - Id da compra.
+ */
+export function deletePurchase(id) {
+  const current = getAllPurchases();
+  const next = current.filter((p) => p && p.id !== id);
+  savePurchases(next);
+}
+
 /** Envia ao banco os insumos criados/alterados/removidos. */
 function diffInsumos(previous, next) {
   const byId = new Map(previous.map((insumo) => [insumo.id, insumo]));
@@ -1310,6 +1353,7 @@ export function clearAll() {
   insumosCache = null;
   precificacoesCache = null;
   basesCache = null;
+  purchasesCache = null;
   customersCache = null;
   ordersSynced = [];
   productsSynced = [];
@@ -1324,6 +1368,7 @@ export function clearAll() {
   localStorage.removeItem(INSUMOS_KEY);
   localStorage.removeItem(PRECIFICACOES_KEY);
   localStorage.removeItem(BASES_KEY);
+  localStorage.removeItem(COMPRAS_KEY);
   localStorage.removeItem(CUSTOMERS_KEY);
   localStorage.removeItem(CONFIG_KEY);
   localStorage.removeItem('punkbolos.session');
@@ -1340,6 +1385,7 @@ export function reset() {
   insumosCache = null;
   precificacoesCache = null;
   basesCache = null;
+  purchasesCache = null;
   customersCache = null;
   ordersSynced = [];
   productsSynced = [];

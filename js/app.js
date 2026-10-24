@@ -34,6 +34,7 @@ import * as inventoryView from './modules/inventoryView.js';
 import * as pricingView from './modules/pricingView.js';
 import * as customerForm from './modules/customerForm.js';
 import * as customerView from './modules/customerView.js';
+import * as purchasesView from './modules/purchasesView.js';
 import * as systemInfo from './modules/systemInfo.js';
 import { initExcelModal } from './modules/excelModal.js';
 import { showToast } from './modules/toast.js';
@@ -75,6 +76,8 @@ function navigate(target) {
     if (!isMobile()) inventoryView.render();
   } else if (target === 'precificacao') {
     if (!isMobile()) pricingView.render();
+  } else if (target === 'compras') {
+    if (!isMobile()) purchasesView.render();
   } else {
     orderList.render();
   }
@@ -297,6 +300,16 @@ function init() {
     dashboard.render();
   });
 
+  // Compras: inicializa modais, eventos e listener de mudanças
+  purchasesView.initPurchasesEvents();
+  purchasesView.setChangeListener(() => {
+    if (!isMobile()) {
+      purchasesView.render();
+      inventoryView.render();
+      pricingView.render();
+    }
+  });
+
   // Clientes: inicializa modais e ações
   customerForm.init();
   customerView.init();
@@ -366,6 +379,7 @@ function init() {
   if (!isMobile()) {
     inventoryView.render();
     pricingView.render();
+    purchasesView.render();
   }
 
   // 2. Em segundo plano, busca os dados atualizados da nuvem (Supabase) e sincroniza a UI
@@ -380,6 +394,7 @@ function init() {
     if (!isMobile()) {
       inventoryView.render();
       pricingView.render();
+      purchasesView.render();
     }
   }).catch(() => {
     // Erros de conexão são notificados pelo errorHandler do storage
