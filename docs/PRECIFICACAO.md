@@ -13,9 +13,15 @@ Três abas principais trabalhando de forma integrada:
 
 | Aba | Função |
 |---|---|
-| **Inventário** | Cadastro de insumos e bases com **códigos de identificação únicos** (`PIN0001`, `PBA0001`), controle de **estoque físico** (`estoqueAtual`, `estoqueMinimo`), histórico de compras e semáforo de status (🟢 Normal, 🟡 Baixo, 🔴 Zerado). |
-| **Precificação** | Montagem da receita por produto (insumos + bases). O sistema calcula o **custo por unidade** com margem e multiplicador, oferece **importador direto do Excel** (colar 4 colunas) e exibe o preço sugerido. |
-| **Financeiro & Metas** | Gestão de despesas fixas, pró-labore e mão de obra, metas de faturamento (mensal, semanal, diária), ponto de equilíbrio operacional e DRE sintético projetado (metodologia da planilha de precificação). |
+| **Dashboard** | Resumo operacional do dia (encomendas, pronta entrega, alertas de insumos) e vendas do período com gráficos e rankings. |
+| **Pedidos** | Entrada e gestão de pedidos e encomendas (com badge de pendências no menu). |
+| **Produção** | Planejamento diário de lotes e fornadas de doces e bolos. |
+| **Clientes** | Base de clientes, fidelidade, preferências e aniversariantes. |
+| **Produtos** | Catálogo de produtos, categorias e controle de estoque de fatias e bolos. |
+| **Compras** | Registro de compras e notas fiscais (com leitor OCR/XML) para reabastecimento. |
+| **Inventário** | Cadastro de insumos e bases com códigos únicos (`PIN0001`, `PBA0001`), controle de estoque mínimo e atalho direto para compras. Bases funcionam como sub-receitas a 0% de margem. |
+| **Precificação** | Montagem da receita por produto (insumos + bases) com categorias da planilha (Básico 10%, Comissionado 5%, etc.) e Markup Divisor. |
+| **Financeiro & Metas** | Gestão de despesas fixas, pró-labore e mão de obra, metas de faturamento, termômetro do ponto de equilíbrio operacional no mês e DRE sintético projetado com modo de edição seguro (Editar / Cancelar / Salvar). |
 
 ---
 

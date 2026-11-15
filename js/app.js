@@ -376,6 +376,12 @@ function init() {
   // Inicializa tela de Gestão Financeira e Metas
   financialView.init();
 
+  // Atalho do Inventário: Registrar Compras
+  const btnInvRegistrarCompra = document.getElementById('btnInvRegistrarCompra');
+  if (btnInvRegistrarCompra) {
+    btnInvRegistrarCompra.addEventListener('click', () => navigate('compras'));
+  }
+
   // 1. Render inicial INSTANTÂNEO (0ms) a partir do cache local
   dashboard.render();
   orderList.render();

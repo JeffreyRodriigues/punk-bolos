@@ -8,6 +8,11 @@
    ============================================================ */
 
 import * as costSettings from './costSettings.js';
+import * as storage from './storage.js';
+import * as product from './product.js';
+import * as base from './base.js';
+import * as pricing from './pricing.js';
+import * as dashboardService from './dashboardService.js';
 import { showToast } from './toast.js';
 
 /**
@@ -202,6 +207,124 @@ export function updateCalculations() {
       `;
     }
   }
+
+  // 7. Atualiza termômetro de acompanhamento real de vendas no mês
+  updateBreakEvenThermometer();
+}
+
+/**
+ * Renderiza o termômetro de progresso do Ponto de Equilíbrio no mês vigente.
+ */
+export function updateBreakEvenThermometer() {
+  const badgeEl = document.getElementById('dashBreakevenBadge');
+  const fillEl = document.getElementById('dashBreakevenFill');
+  const margemEl = document.getElementById('dashBreakevenMargem');
+  const metaEl = document.getElementById('dashBreakevenMeta');
+  const statusEl = document.getElementById('dashBreakevenStatus');
+  if (!badgeEl || !fillEl || !margemEl || !metaEl || !statusEl) return;
+
+  const allOrders = storage.getAllOrders();
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const from = `${year}-${month}-01`;
+  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+  const to = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+
+  const monthOrders = dashboardService.filterByRange(allOrders, { from, to });
+  const products = product.getProducts();
+  const receitas = storage.getAllPrecificacoes();
+  const insumos = storage.getAllInsumos();
+  const bases = base.getBases();
+  const rates = costSettings.getCostSettings();
+
+  const progress = dashboardService.breakEvenProgress(
+    monthOrders,
+    products,
+    receitas,
+    pricing.calcular,
+    insumos,
+    bases,
+    rates
+  );
+
+  margemEl.textContent = formatCurrency(progress.margemTotal);
+  metaEl.textContent = formatCurrency(progress.metaMensal);
+  fillEl.style.width = `${Math.min(100, Math.max(0, progress.percentual))}%`;
+
+  if (progress.metaMensal <= 0) {
+    badgeEl.textContent = 'Sem Metas';
+    badgeEl.className = 'badge';
+    badgeEl.style.background = 'var(--color-surface-alt)';
+    badgeEl.style.color = 'var(--color-text-muted)';
+    statusEl.textContent = 'Defina custos fixos para calcular.';
+    statusEl.style.color = 'var(--color-text-muted)';
+    return;
+  }
+
+  badgeEl.textContent = `${progress.percentual.toFixed(1)}% Atingido`;
+  if (progress.atingido) {
+    badgeEl.className = 'badge badge-success';
+    badgeEl.style.background = 'var(--color-ok-soft)';
+    badgeEl.style.color = 'var(--color-ok)';
+    fillEl.style.background = 'var(--color-ok)';
+    const excedenteTxt = progress.excedente > 0 ? ` (+ ${formatCurrency(progress.excedente)} de lucro)` : '';
+    statusEl.innerHTML = `<span style="color: var(--color-ok); font-weight: 700;">Contas do mês pagas!</span>${excedenteTxt}`;
+    statusEl.style.color = 'var(--color-text)';
+  } else {
+    badgeEl.className = 'badge badge-warning';
+    badgeEl.style.background = 'var(--color-warn-soft)';
+    badgeEl.style.color = 'var(--color-warn)';
+    fillEl.style.background = 'var(--color-primary)';
+    statusEl.innerHTML = `Faltam <strong>${formatCurrency(progress.restante)}</strong> para o ponto de equilíbrio.`;
+    statusEl.style.color = 'var(--color-text-muted)';
+  }
+}
+
+let isEditing = false;
+let snapshotValues = null;
+
+/**
+ * Salva snapshot dos valores para possível cancelamento.
+ */
+function saveSnapshot() {
+  snapshotValues = getFormValues();
+}
+
+/**
+ * Restaura snapshot dos valores salvos.
+ */
+function restoreSnapshot() {
+  if (snapshotValues) {
+    populateInputs(snapshotValues);
+    updateCalculations();
+  } else {
+    populateInputs(costSettings.getCostSettings());
+    updateCalculations();
+  }
+}
+
+/**
+ * Alterna a interface da tela Financeiro entre modo Leitura e modo Edição.
+ * @param {boolean} editing
+ */
+export function setEditingMode(editing) {
+  isEditing = editing;
+
+  const btnEdit = document.getElementById('btnEditFinancialSettings');
+  const editingActions = document.getElementById('finEditingActions');
+
+  if (btnEdit) btnEdit.style.display = editing ? 'none' : 'inline-flex';
+  if (editingActions) editingActions.style.display = editing ? 'inline-flex' : 'none';
+
+  // Habilita ou desabilita todos os inputs e selects da tela de Financeiro
+  const view = document.getElementById('view-financeiro');
+  if (view) {
+    const fields = view.querySelectorAll('input, select');
+    fields.forEach((f) => {
+      f.disabled = !editing;
+    });
+  }
 }
 
 /**
@@ -214,6 +337,9 @@ export function saveSettings() {
 
   // Sincroniza o modal legado caso esteja no DOM
   syncLegacyModal(saved);
+
+  // Retorna para o modo visualização (leitura)
+  setEditingMode(false);
 
   showToast('Parâmetros financeiros salvos com sucesso!', 'success');
 }
@@ -248,11 +374,12 @@ function syncLegacyModal(s) {
 }
 
 /**
- * Renderiza a tela de Financeiro.
+ * Renderiza a tela de Financeiro (inicia sempre em modo leitura).
  */
 export function render() {
   populateInputs();
   updateCalculations();
+  setEditingMode(false);
 }
 
 /**
@@ -262,17 +389,33 @@ export function init() {
   const view = document.getElementById('view-financeiro');
   if (!view) return;
 
+  const btnEdit = document.getElementById('btnEditFinancialSettings');
+  if (btnEdit) {
+    btnEdit.addEventListener('click', () => {
+      saveSnapshot();
+      setEditingMode(true);
+    });
+  }
+
+  const btnCancel = document.getElementById('btnCancelFinancialSettings');
+  if (btnCancel) {
+    btnCancel.addEventListener('click', () => {
+      restoreSnapshot();
+      setEditingMode(false);
+    });
+  }
+
   const btnSave = document.getElementById('btnSaveFinancialSettings');
   if (btnSave) {
     btnSave.addEventListener('click', saveSettings);
   }
 
-  // Atualização em tempo real ao digitar em qualquer input da view
+  // Atualização em tempo real ao digitar em qualquer input da view (somente quando editando)
   view.addEventListener('input', () => {
-    updateCalculations();
+    if (isEditing) updateCalculations();
   });
 
   view.addEventListener('change', () => {
-    updateCalculations();
+    if (isEditing) updateCalculations();
   });
 }
