@@ -681,6 +681,42 @@ function renderInsumoRows() {
 
     atualizarLinha();
   });
+
+  updateInsumosSummary();
+}
+
+/**
+ * Atualiza a faixa de subtotal de ingredientes cadastrados na receita.
+ */
+function updateInsumosSummary() {
+  const summaryEl = document.getElementById('precInsumosSummary');
+  const countEl = document.getElementById('precInsumosCount');
+  const loteCustoEl = document.getElementById('precInsumosLoteCusto');
+  const unitCustoEl = document.getElementById('precInsumosUnitCusto');
+  if (!summaryEl || !countEl || !loteCustoEl || !unitCustoEl) return;
+
+  const validRows = insumoRows.filter((r) => r.refId && Number(r.quantidade) > 0);
+  if (validRows.length === 0) {
+    summaryEl.style.display = 'none';
+    return;
+  }
+
+  summaryEl.style.display = 'flex';
+  countEl.textContent = String(validRows.length);
+
+  const insumos = storage.getAllInsumos();
+  const bases = base.getBases();
+  let custoLote = 0;
+  validRows.forEach((row) => {
+    custoLote += pricing.custoItem(row, insumos, bases);
+  });
+
+  const receita = buildReceitaFromForm();
+  const rendimento = Math.max(1, Number(receita.rendimento) || 1);
+  const custoUnit = custoLote / rendimento;
+
+  loteCustoEl.textContent = formatCurrency(custoLote);
+  unitCustoEl.textContent = formatCurrency(custoUnit);
 }
 
 /**
@@ -711,46 +747,37 @@ function updatePreview() {
   const c = pricing.calcular(receita, insumos, bases, costRates);
 
   preview.innerHTML = '';
-  const add = (label, value, strong = false, small = false, highlightColor = '') => {
-    const p = document.createElement('div');
-    p.className = 'prec-preview-row' + (small ? ' prec-preview-row-small' : '');
-    const l = document.createElement('span');
-    l.textContent = label;
-    const v = document.createElement('strong');
-    v.textContent = value;
-    if (strong) v.className = 'prec-preview-final';
-    if (highlightColor) v.style.color = highlightColor;
-    p.append(l, v);
-    preview.appendChild(p);
-  };
-
-  const addDivider = () => {
-    const hr = document.createElement('div');
-    hr.style.borderBottom = '1px dashed var(--color-border)';
-    hr.style.margin = '4px 0';
-    preview.appendChild(hr);
-  };
-
-  const addHeader = (title) => {
-    const h = document.createElement('div');
-    h.style.fontSize = '0.74rem';
-    h.style.fontWeight = '700';
-    h.style.textTransform = 'uppercase';
-    h.style.letterSpacing = '0.04em';
-    h.style.color = 'var(--color-text-muted)';
-    h.style.margin = '6px 0 2px 0';
-    h.textContent = title;
-    preview.appendChild(h);
-  };
 
   const embalagemUnit = Number(receita.embalagem || 0) + Number(receita.custoAdicional || 0);
   const deducoesValor = c.deducoesValor != null ? c.deducoesValor : (c.precoSugerido * (c.taxasDeducoesPct / 100));
+  const rendimento = Math.max(1, Number(receita.rendimento) || 1);
 
-  // 1. Preço de Venda
-  add('Preço Sugerido (Cardápio)', `${formatCurrency(c.precoSugerido)} /un`, true, false, 'var(--color-primary)');
-  if (c.multiplicadorMarkup) {
-    add('Multiplicador Markup (Divisor)', `${c.multiplicadorMarkup.toFixed(2)}x`, false, true);
-  }
+  // 1. TOP CARDS DE DESTAQUE (KPIs VISUAIS)
+  const kpiGrid = document.createElement('div');
+  kpiGrid.className = 'prec-kpi-summary-grid';
+
+  const markupTxt = c.multiplicadorMarkup ? `${c.multiplicadorMarkup.toFixed(2)}x` : '--';
+
+  kpiGrid.innerHTML = `
+    <div class="prec-kpi-card prec-kpi-card--primary">
+      <span class="prec-kpi-label">Preço Sugerido</span>
+      <strong class="prec-kpi-val">${formatCurrency(c.precoSugerido)} <small>/un</small></strong>
+      <span class="prec-kpi-sub">Markup ${markupTxt}</span>
+    </div>
+    <div class="prec-kpi-card">
+      <span class="prec-kpi-label">Custo Unitário Total</span>
+      <strong class="prec-kpi-val">${formatCurrency(c.custoUnitarioTotal)} <small>/un</small></strong>
+      <span class="prec-kpi-sub">Lote (${rendimento} un): ${formatCurrency(c.custoLoteTotal)}</span>
+    </div>
+    <div class="prec-kpi-card prec-kpi-card--lucro">
+      <span class="prec-kpi-label">Lucro Líquido Real</span>
+      <strong class="prec-kpi-val" style="color: ${c.lucroLiquidoValor >= 0 ? 'var(--color-ok)' : 'var(--color-danger)'};">
+        ${formatCurrency(c.lucroLiquidoValor)} <small>/un</small>
+      </strong>
+      <span class="prec-kpi-sub">${c.margemLucroRealPct.toFixed(1)}% margem líquida</span>
+    </div>
+  `;
+  preview.appendChild(kpiGrid);
 
   const precoAlvoEl = document.getElementById('precPrecoAlvo');
   if (precoAlvoEl && document.activeElement !== precoAlvoEl) {
@@ -759,14 +786,36 @@ function updatePreview() {
     }
   }
 
-  addDivider();
+  // 2. BLOCO ESTRUTURADO: FORMAÇÃO DO CUSTO UNITÁRIO
+  const secCustos = document.createElement('div');
+  secCustos.className = 'prec-detail-section';
+  secCustos.innerHTML = `
+    <div class="prec-detail-section-title">Formação do Custo Unitário</div>
+    <div class="prec-preview-row prec-preview-row-small">
+      <span>Insumos da Receita (c/ 3% quebra)</span>
+      <strong>${formatCurrency(c.custoIngredientesComQuebra / rendimento)} /un</strong>
+    </div>
+    <div class="prec-preview-row prec-preview-row-small">
+      <span>Mão de Obra (${receita.tempoPreparoMinutos} min)</span>
+      <strong>${formatCurrency(c.custoMaoDeObraLote / rendimento)} /un</strong>
+    </div>
+    <div class="prec-preview-row prec-preview-row-small">
+      <span>Custos Fixos Rateados</span>
+      <strong>${formatCurrency(c.custoFixoLote / rendimento)} /un</strong>
+    </div>
+    ${embalagemUnit > 0 ? `
+    <div class="prec-preview-row prec-preview-row-small">
+      <span>Embalagem & Adicionais</span>
+      <strong>${formatCurrency(embalagemUnit)} /un</strong>
+    </div>` : ''}
+    <div class="prec-preview-row" style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--color-border);">
+      <span><strong>(=) Custo Unitário Total</strong></span>
+      <strong>${formatCurrency(c.custoUnitarioTotal)} /un</strong>
+    </div>
+  `;
+  preview.appendChild(secCustos);
 
-  // 2. Margem de Contribuição (Metodologia Sebrae)
-  addHeader('Margem de Contribuição (Sebrae)');
-  add('(-) Custos Variáveis (Insumos + Emb.)', `- ${formatCurrency(c.custoRealUnitario)} /un`, false, true);
-  add(`(-) Despesas Variáveis (Taxas ${c.taxasDeducoesPct.toFixed(1)}%)`, `- ${formatCurrency(deducoesValor)} /un`, false, true);
-
-  // Classificação Sebrae da Margem de Contribuição
+  // 3. BLOCO ESTRUTURADO: MARGEM DE CONTRIBUIÇÃO (SEBRAE)
   let mcBadge = '';
   let mcColor = 'var(--color-text)';
   if (c.margemContribuicaoPct >= 50) {
@@ -780,29 +829,48 @@ function updatePreview() {
     mcColor = 'var(--color-warn)';
   }
 
-  add('(=) Margem de Contribuição (MC)', `${formatCurrency(c.margemContribuicaoValor)} /un (${c.margemContribuicaoPct.toFixed(1)}%)`, false, false, mcColor);
-  add('Classificação Sebrae', mcBadge, false, true, mcColor);
+  const secSebrae = document.createElement('div');
+  secSebrae.className = 'prec-detail-section';
+  secSebrae.innerHTML = `
+    <div class="prec-detail-section-title">
+      <span>Margem de Contribuição (Sebrae)</span>
+      <span class="badge" style="font-size: 0.72rem; color: ${mcColor};">${mcBadge}</span>
+    </div>
+    <div class="prec-preview-row prec-preview-row-small">
+      <span>(-) Custos Variáveis (Insumos + Emb.)</span>
+      <strong>- ${formatCurrency(c.custoRealUnitario)} /un</strong>
+    </div>
+    <div class="prec-preview-row prec-preview-row-small">
+      <span>(-) Taxas & Deduções (${c.taxasDeducoesPct.toFixed(1)}%)</span>
+      <strong>- ${formatCurrency(deducoesValor)} /un</strong>
+    </div>
+    <div class="prec-preview-row" style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--color-border);">
+      <span><strong>(=) Margem de Contribuição (MC)</strong></span>
+      <strong style="color: ${mcColor};">${formatCurrency(c.margemContribuicaoValor)} /un (${c.margemContribuicaoPct.toFixed(1)}%)</strong>
+    </div>
+  `;
+  preview.appendChild(secSebrae);
 
-  addDivider();
-
-  // 3. Ponto de Equilíbrio do Produto (PEF)
+  // 4. BLOCO ESTRUTURADO: PONTO DE EQUILÍBRIO DO PRODUTO (PEF)
   if (c.pontoEquilibrioUnidadesMensal > 0) {
-    addHeader(`Ponto de Equilíbrio (Pagar ${formatCurrency(c.totalGastosFixosMensais)}/mês)`);
-    add('Meta em Unidades', `${c.pontoEquilibrioUnidadesMensal} un/mês (${c.pontoEquilibrioUnidadesDiario} un/dia)`, false, false, 'var(--color-primary)');
-    add('Meta em Faturamento', `${formatCurrency(c.pontoEquilibrioFaturamentoMensal)} /mês`, false, true, 'var(--color-text-muted)');
-    addDivider();
+    const secPef = document.createElement('div');
+    secPef.className = 'prec-detail-section';
+    secPef.innerHTML = `
+      <div class="prec-detail-section-title">Ponto de Equilíbrio do Produto</div>
+      <div class="prec-preview-row">
+        <span>Meta em Unidades</span>
+        <strong style="color: var(--color-primary);">${c.pontoEquilibrioUnidadesMensal} un/mês <small style="color: var(--color-text-muted); font-weight: normal;">(${c.pontoEquilibrioUnidadesDiario} un/dia)</small></strong>
+      </div>
+      <div class="prec-preview-row prec-preview-row-small">
+        <span>Meta em Faturamento</span>
+        <strong>${formatCurrency(c.pontoEquilibrioFaturamentoMensal)} /mês</strong>
+      </div>
+    `;
+    preview.appendChild(secPef);
   }
 
-  // 4. Detalhamento de Custo & Lucro Líquido Real
-  addHeader('Custo & Lucro Líquido Real');
-  add('Insumos (c/ 3% quebra)', formatCurrency(c.custoIngredientesComQuebra), false, true);
-  add(`Mão de Obra (${receita.tempoPreparoMinutos} min)`, formatCurrency(c.custoMaoDeObraLote), false, true);
-  add('Custos Fixos Rateados', formatCurrency(c.custoFixoLote), false, true);
-  if (embalagemUnit > 0) {
-    add('Embalagem & Adicionais', formatCurrency(embalagemUnit), false, true);
-  }
-  add('Custo Unitário Total', `${formatCurrency(c.custoUnitarioTotal)} /un`, false, false, 'var(--color-text)');
-  add('Lucro Líquido no Caixa', `${formatCurrency(c.lucroLiquidoValor)} /un (${c.margemLucroRealPct.toFixed(1)}%)`, false, false, 'var(--color-ok)');
+  // Atualiza também a faixa de subtotal na lista de insumos
+  updateInsumosSummary();
 
   // Alerta caso haja ingrediente com quantidade informada mas custo zero no inventário
   const temInsumoZerado = (receita.itens || []).some((item) => {
@@ -1113,26 +1181,42 @@ if (cancelBtn) {
 const addBtn = document.getElementById('btnAddPrecInsumo');
 if (addBtn) addBtn.addEventListener('click', () => addInsumoRow());
 
+const clearBtn = document.getElementById('btnClearPrecInsumos');
+if (clearBtn) {
+  clearBtn.addEventListener('click', () => {
+    if (!isEditing) return;
+    const temItens = insumoRows.some((r) => r.refId || (r.quantidade && Number(r.quantidade) > 0));
+    if (!temItens) {
+      insumoRows = [{ refId: '', tipo: 'insumo', quantidade: '' }];
+      renderInsumoRows();
+      updatePreview();
+      return;
+    }
+    if (confirm('Tem certeza que deseja apagar todos os ingredientes desta ficha técnica?')) {
+      insumoRows = [{ refId: '', tipo: 'insumo', quantidade: '' }];
+      renderInsumoRows();
+      updatePreview();
+      showToast('Todos os ingredientes foram removidos da ficha técnica.', 'info');
+    }
+  });
+}
+
 const pasteExcelBtn = document.getElementById('btnPastePrecExcel');
 if (pasteExcelBtn) {
   pasteExcelBtn.addEventListener('click', () => {
     openExcelImportModal((importedRows) => {
       if (!Array.isArray(importedRows) || importedRows.length === 0) return;
 
-      if (insumoRows.length === 1 && !insumoRows[0].refId && !insumoRows[0].quantidade) {
-        insumoRows = [];
-      }
-
-      importedRows.forEach((r) => {
-        insumoRows.push({
-          refId: r.refId,
-          tipo: r.tipo || 'insumo',
-          quantidade: r.quantidade,
-        });
-      });
+      // Substitui 100% dos ingredientes anteriores da ficha técnica
+      insumoRows = importedRows.map((r) => ({
+        refId: r.refId,
+        tipo: r.tipo || 'insumo',
+        quantidade: r.quantidade,
+      }));
 
       renderInsumoRows();
       updatePreview();
+      showToast(`${importedRows.length} ingrediente(s) importado(s) substituindo a lista anterior.`, 'success');
     });
   });
 }

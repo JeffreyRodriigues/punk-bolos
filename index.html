@@ -129,6 +129,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -4217,6 +4218,121 @@ html.dark .badge-purple {
   font-weight: 800 !important;
 }
 
+/* ---------- Cards de Destaque da Precificação (KPIs) ---------- */
+.prec-kpi-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+  .prec-kpi-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.prec-kpi-card {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prec-kpi-card--primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft, var(--color-surface-alt));
+}
+
+.prec-kpi-card--lucro {
+  border-color: var(--color-ok);
+  background: var(--color-ok-soft, var(--color-surface-alt));
+}
+
+.prec-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.prec-kpi-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.prec-kpi-val small {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.prec-kpi-card--primary .prec-kpi-val {
+  color: var(--color-primary);
+}
+
+.prec-kpi-card--lucro .prec-kpi-val {
+  color: var(--color-ok);
+}
+
+.prec-kpi-sub {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* ---------- Faixa de Subtotal de Insumos da Receita ---------- */
+.prec-insumos-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+}
+
+/* ---------- Blocos Estruturados de Detalhes da Precificação ---------- */
+.prec-detail-section {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.prec-detail-section-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prec-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+  padding: 3px 0;
+}
+
 /* ---------- Tabela de Receita (Ingredientes e Bases) ---------- */
 .base-componentes {
   display: flex;
@@ -5823,6 +5939,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -6589,15 +6706,23 @@ html.dark .badge-purple {
           </div>
           <p id="precificacaoStatus" class="prec-status prec-status-warn"></p>
 
-          <div class="prec-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-top: 22px; margin-bottom: 8px;">
+          <div class="prec-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-top: 22px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
             <h2 class="insumo-section-title" style="margin: 0;">Receita (Ingredientes e Bases)</h2>
-            <div id="precEditActions" class="receita-actions-bar" style="display: flex; gap: 8px;">
+            <div id="precEditActions" class="receita-actions-bar" style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button type="button" id="btnAddPrecInsumo" class="btn-add-item">＋ Adicionar Insumo</button>
               <button type="button" id="btnPastePrecExcel" class="btn-paste-excel" title="Importar colunas do Excel">Colar do Excel</button>
+              <button type="button" id="btnClearPrecInsumos" class="btn btn-ghost btn-sm" title="Apagar todos os ingredientes desta ficha técnica" style="color: var(--color-danger); border: 1px solid var(--color-border); font-size: 0.8rem; padding: 6px 10px;">Limpar Todos</button>
             </div>
           </div>
 
           <div id="precInsumos" class="prec-insumos" aria-live="polite"></div>
+
+          <!-- Faixa de Subtotal dos Insumos da Receita -->
+          <div id="precInsumosSummary" class="prec-insumos-summary" style="display: none;">
+            <span><strong id="precInsumosCount">0</strong> ingrediente(s) na receita</span>
+            <span>Custo Total Insumos (Lote): <strong id="precInsumosLoteCusto" style="color: var(--color-text);">R$ 0,00</strong></span>
+            <span>Custo Insumos/un: <strong id="precInsumosUnitCusto" style="color: var(--color-primary);">R$ 0,00</strong></span>
+          </div>
         </div>
       </div>
 
@@ -8290,6 +8415,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=64"></script>
+  <script type="module" src="js/app.js?v=65"></script>
 </body>
 </html>

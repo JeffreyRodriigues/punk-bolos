@@ -241,3 +241,6 @@ js/modules/pricingView.js    # tela Precificação (seletor de produto + linhas 
 | 7 | Dashboard lucro | Depois (fase 2), fora desta etapa. |
 | 8 | Sem recebe exacta | Mostra "sem precificação" com convite. 1 receita por produto. |
 | 9 | Custo no inventário | Preço total + quantidade (sistema divide). |
+| 10 | Colar do Excel | Substituição total (100%) dos ingredientes existentes da ficha técnica. |
+| 11 | Limpar Todos | Botão para apagar todos os itens da receita com diálogo de confirmação rápida. |
+| 12 | Visualização Clara | Top 3 KPI cards no demonstrativo (Preço, Custo Unitário, Lucro Líquido), subtotal de insumos na tabela e blocos visuais nítidos. |
