@@ -33,7 +33,10 @@ export const DEFAULT_COST_SETTINGS = {
   diasTrabalhadosMes: 22,
   horasPorDia: 8,
 
-  // 4. Deduções sobre a Venda & Segurança
+  // 4. Metas de Vendas & Faturamento Alvo (Metodologia da Planilha)
+  faturamentoAlvoMensal: 10000,
+
+  // 5. Deduções sobre a Venda & Segurança
   impostoVendaPct: 4.0,       // Simples Nacional Anexo I (ou 0 se MEI com DAS no custo fixo)
   taxaCartaoMediaPct: 3.5,    // Taxa média ponderada de maquininhas/meios de pagamento
   outrasDeducoesPct: 0,       // Comissões ou taxas adicionais
@@ -105,10 +108,32 @@ export function calculateCostRates(settings = {}) {
   const quebraInsumosPct = Number(s.quebraInsumosPct || 0);
   const lucroLiquidoPadraoPct = Number(s.lucroLiquidoPadraoPct || 25);
 
+  // 6. Metas e Indicadores Globais da Planilha
+  const faturamentoAlvoMensal = Math.max(0, Number(s.faturamentoAlvoMensal != null ? s.faturamentoAlvoMensal : 10000));
+  const custoFixoPct = faturamentoAlvoMensal > 0 ? round2((totalCustosFixos / faturamentoAlvoMensal) * 100) : 0;
+  const maoDeObraPct = faturamentoAlvoMensal > 0 ? round2((totalMaoDeObraMensal / faturamentoAlvoMensal) * 100) : 0;
+  const metaSemanal = round2(faturamentoAlvoMensal / 4);
+  const metaDiaria = dias > 0 ? round2(faturamentoAlvoMensal / dias) : 0;
+
+  // 7. Ponto de Equilíbrio Operacional Global e DRE Sintético Projetado
+  const totalGastosOperacionaisMensais = round2(totalCustosFixos + totalMaoDeObraMensal);
+  const margemContribuicaoEstimadaPct = Math.max(10, 100 - deducoesVendaPct - 35);
+  const pontoEquilibrioMensalReais = round2(totalGastosOperacionaisMensais / (margemContribuicaoEstimadaPct / 100));
+  const pontoEquilibrioSemanalReais = round2(pontoEquilibrioMensalReais / 4);
+  const pontoEquilibrioDiarioReais = dias > 0 ? round2(pontoEquilibrioMensalReais / dias) : 0;
+
+  const deducoesProjetadasValor = round2(faturamentoAlvoMensal * (deducoesVendaPct / 100));
+  const faturamentoLiquidoProjetado = round2(faturamentoAlvoMensal - deducoesProjetadasValor);
+  const cmvEstimadoValor = round2(faturamentoAlvoMensal * 0.35);
+  const lucroBrutoProjetado = round2(faturamentoLiquidoProjetado - cmvEstimadoValor);
+  const lucroLiquidoProjetado = round2(lucroBrutoProjetado - totalCustosFixos - totalMaoDeObraMensal);
+  const margemLucroProjetadaPct = faturamentoAlvoMensal > 0 ? round2((lucroLiquidoProjetado / faturamentoAlvoMensal) * 100) : 0;
+
   return {
     ...s,
     totalCustosFixos,
     totalMaoDeObraMensal,
+    totalGastosOperacionaisMensais,
     horasMensais,
     minutosMensais,
     custoHoraMaoDeObra,
@@ -120,7 +145,22 @@ export function calculateCostRates(settings = {}) {
     outrasDeducoesPct,
     deducoesVendaPct,
     quebraInsumosPct,
-    lucroLiquidoPadraoPct
+    lucroLiquidoPadraoPct,
+    faturamentoAlvoMensal,
+    custoFixoPct,
+    maoDeObraPct,
+    metaSemanal,
+    metaDiaria,
+    margemContribuicaoEstimadaPct,
+    pontoEquilibrioMensalReais,
+    pontoEquilibrioSemanalReais,
+    pontoEquilibrioDiarioReais,
+    deducoesProjetadasValor,
+    faturamentoLiquidoProjetado,
+    cmvEstimadoValor,
+    lucroBrutoProjetado,
+    lucroLiquidoProjetado,
+    margemLucroProjetadaPct
   };
 }
 

@@ -9,12 +9,13 @@ Documento funcional e técnico para o **cadastro de insumos (Inventário)** e **
 
 ## 1. Visão geral
 
-Duas abas principais trabalhando de forma integrada:
+Três abas principais trabalhando de forma integrada:
 
 | Aba | Função |
 |---|---|
 | **Inventário** | Cadastro de insumos e bases com **códigos de identificação únicos** (`PIN0001`, `PBA0001`), controle de **estoque físico** (`estoqueAtual`, `estoqueMinimo`), histórico de compras e semáforo de status (🟢 Normal, 🟡 Baixo, 🔴 Zerado). |
 | **Precificação** | Montagem da receita por produto (insumos + bases). O sistema calcula o **custo por unidade** com margem e multiplicador, oferece **importador direto do Excel** (colar 4 colunas) e exibe o preço sugerido. |
+| **Financeiro & Metas** | Gestão de despesas fixas, pró-labore e mão de obra, metas de faturamento (mensal, semanal, diária), ponto de equilíbrio operacional e DRE sintético projetado (metodologia da planilha de precificação). |
 
 ---
 

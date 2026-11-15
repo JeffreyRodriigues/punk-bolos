@@ -14,6 +14,43 @@ import * as inventory from './inventory.js';
 import * as base from './base.js';
 import * as costSettings from './costSettings.js';
 
+/**
+ * Categorias estratégicas de produtos da planilha (Passo 4).
+ * Permite selecionar a margem recomendada com um clique ou usar customizado.
+ */
+export const CATEGORIAS_LINHA = {
+  premium: {
+    id: 'premium',
+    nome: 'Linha Premium',
+    descricao: 'Bolos decorados, fatias especiais e alto valor agregado',
+    lucroPadrao: 20
+  },
+  basico: {
+    id: 'basico',
+    nome: 'Linha Básica',
+    descricao: 'Bolos caseiros, vulcão e produtos de giro rápido',
+    lucroPadrao: 10
+  },
+  comissionado: {
+    id: 'comissionado',
+    nome: 'Comissionados / Revenda',
+    descricao: 'Parcerias, revenda terceirizada e cafeterias',
+    lucroPadrao: 5
+  },
+  subreceita: {
+    id: 'subreceita',
+    nome: 'Sub-Receitas (Bases/Recheios)',
+    descricao: 'Custo puro de produção sem lucro duplicado na montagem',
+    lucroPadrao: 0
+  },
+  personalizado: {
+    id: 'personalizado',
+    nome: 'Personalizado',
+    descricao: 'Margem ou Preço Alvo livremente customizado',
+    lucroPadrao: 25
+  }
+};
+
 /** Valores padrão de uma receita. */
 export const PRICING_DEFAULTS = {
   margem: 25,
@@ -23,6 +60,7 @@ export const PRICING_DEFAULTS = {
   custoAdicional: 0,
   tempoPreparoMinutos: 30,
   lucroLiquidoDesejado: 25,
+  categoriaLinha: 'personalizado',
   metodoPrecificacao: 'markup_divisor',
 };
 
@@ -32,7 +70,8 @@ export const PRICING_DEFAULTS = {
  * @returns {number} Valor com 2 casas.
  */
 export function round2(value) {
-  return Math.round((Number(value) || 0) * 100) / 100;
+  const r = Math.round((Number(value) || 0) * 100) / 100;
+  return Object.is(r, -0) || r === 0 ? 0 : r;
 }
 
 /**
@@ -52,6 +91,14 @@ function custoAdicionalNum(value) {
  * @returns {Object} Receita normalizada.
  */
 export function createReceita(data = {}) {
+  const categoriaLinha = String(data.categoriaLinha || PRICING_DEFAULTS.categoriaLinha);
+  let lucro = data.lucroLiquidoDesejado != null ? Number(data.lucroLiquidoDesejado) : PRICING_DEFAULTS.lucroLiquidoDesejado;
+  if (categoriaLinha === 'subreceita') {
+    lucro = 0;
+  } else if (data.lucroLiquidoDesejado == null && CATEGORIAS_LINHA[categoriaLinha]) {
+    lucro = CATEGORIAS_LINHA[categoriaLinha].lucroPadrao;
+  }
+
   return {
     id: typeof data.id === 'string' && data.id ? data.id : `prc${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     produtoId: String(data.produtoId || ''),
@@ -63,7 +110,8 @@ export function createReceita(data = {}) {
     custoAdicional: data.custoAdicional != null ? Number(data.custoAdicional) : PRICING_DEFAULTS.custoAdicional,
     custoAdicionalObs: String(data.custoAdicionalObs || ''),
     tempoPreparoMinutos: data.tempoPreparoMinutos != null ? Number(data.tempoPreparoMinutos) : PRICING_DEFAULTS.tempoPreparoMinutos,
-    lucroLiquidoDesejado: data.lucroLiquidoDesejado != null ? Number(data.lucroLiquidoDesejado) : PRICING_DEFAULTS.lucroLiquidoDesejado,
+    categoriaLinha,
+    lucroLiquidoDesejado: lucro,
     precoAlvo: data.precoAlvo != null && data.precoAlvo !== '' && Number(data.precoAlvo) > 0 ? Number(data.precoAlvo) : null,
     metodoPrecificacao: data.metodoPrecificacao || PRICING_DEFAULTS.metodoPrecificacao,
     dataCalculo: data.dataCalculo || new Date().toISOString().slice(0, 10),
@@ -151,14 +199,23 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
   // Custo Integral Unitário (Direto + Indireto + Mão de Obra + Embalagem)
   const custoUnitarioTotal = round2(custoRealUnitario + custoMaoDeObraUnitario + custoFixoUnitario);
 
-  // 4. Formação de Preço via Markup Divisor (Padrão Oficial SENAC / Sebrae)
+  // 4. Formação de Preço via Markup Divisor (Padrão Oficial SENAC / Sebrae & Planilha)
   const taxasDeducoesPct = Number(rates.deducoesVendaPct || 0);
-  const lucroPct = receita.lucroLiquidoDesejado != null 
-    ? Number(receita.lucroLiquidoDesejado) 
-    : Number(rates.lucroLiquidoPadraoPct || 25);
+
+  let lucroPct = 0;
+  if (receita.categoriaLinha === 'subreceita') {
+    lucroPct = 0;
+  } else if (receita.lucroLiquidoDesejado != null && receita.lucroLiquidoDesejado !== '') {
+    lucroPct = Number(receita.lucroLiquidoDesejado);
+  } else if (receita.categoriaLinha && CATEGORIAS_LINHA[receita.categoriaLinha]) {
+    lucroPct = CATEGORIAS_LINHA[receita.categoriaLinha].lucroPadrao;
+  } else {
+    lucroPct = Number(rates.lucroLiquidoPadraoPct || 25);
+  }
 
   const totalDeducoesELucro = taxasDeducoesPct + lucroPct;
   const divisor = Math.max(0.05, (100 - totalDeducoesELucro) / 100);
+  const multiplicadorMarkup = round2(1 / divisor);
   const precoSugerido = round2(custoUnitarioTotal / divisor);
 
   // 5. Preço Mínimo de Venda (Ponto de Equilíbrio / Margem Zero de Lucro)
@@ -188,19 +245,27 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
   const precoLegado = round2(porUnidade + embalagem + custoAdic);
 
   return {
-    // Valores principais SENAC / Sebrae
+    // Valores principais SENAC / Sebrae & Planilha
     custoIngredientes: ci,
     custoIngredientesComQuebra,
     custoIngredientesUnitario,
+    tempoPreparoMinutos: tempoMin,
+    custoHoraMaoDeObra: Number(rates.custoHoraMaoDeObra || 0),
+    custoMinutoMaoDeObra: custoMinutoMOD,
     custoMaoDeObraLote,
     custoMaoDeObraUnitario,
+    custoHoraFixo: Number(rates.custoHoraFixo || 0),
+    custoMinutoFixo,
     custoFixoLote,
     custoFixoUnitario,
     custoRealUnitario,       // CMV Unitário
     custoUnitarioTotal,      // Custo Base Total Unitário
+    categoriaLinha: receita.categoriaLinha || 'personalizado',
     taxasDeducoesPct,        // % Impostos + Cartão
     deducoesValor,           // Valor R$ das taxas e impostos sobre a venda
     lucroLiquidoPct: lucroPct,
+    divisorMarkup: divisor,
+    multiplicadorMarkup,
     precoMinimo,             // Preço no Ponto de Equilíbrio
     precoSugerido,           // Preço Recomendado com Lucro Real
     custoPorUnidade: precoSugerido,
@@ -213,6 +278,10 @@ export function calcular(receita, insumos = [], bases = [], customCostSettings =
     pontoEquilibrioUnidadesDiario,
     pontoEquilibrioFaturamentoMensal,
     diasTrabalhadosMes,
+    faturamentoAlvoMensal: Number(rates.faturamentoAlvoMensal || 10000),
+    custoFixoPct: Number(rates.custoFixoPct || 0),
+    metaSemanal: Number(rates.metaSemanal || 0),
+    metaDiaria: Number(rates.metaDiaria || 0),
 
     // Campos de compatibilidade
     comMargem,

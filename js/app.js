@@ -35,6 +35,7 @@ import * as pricingView from './modules/pricingView.js';
 import * as customerForm from './modules/customerForm.js';
 import * as customerView from './modules/customerView.js';
 import * as purchasesView from './modules/purchasesView.js';
+import * as financialView from './modules/financialView.js';
 import * as systemInfo from './modules/systemInfo.js';
 import { initExcelModal } from './modules/excelModal.js';
 import { showToast } from './modules/toast.js';
@@ -42,11 +43,11 @@ import { showToast } from './modules/toast.js';
 /* ---------- Navegação entre telas ---------- */
 
 /**
- * Alterna a tela visível (Dashboard / Produtos / Produção / Pedidos / Clientes) e
+ * Alterna a tela visível (Dashboard / Produtos / Produção / Pedidos / Clientes / Compras / Inventário / Precificação / Financeiro) e
  * atualiza a aba ativa.
- * @param {string} target - Id da view ("dashboard" | "orders" | "produtos" | "estoque" | "clientes").
+ * @param {string} target - Id da view ("dashboard" | "orders" | "produtos" | "estoque" | "clientes" | "compras" | "inventario" | "precificacao" | "financeiro").
  */
-/* Telas Inventário/Precificação ficam ocultas no mobile (abaixo de 768px):
+/* Telas Inventário/Precificação/Financeiro ficam ocultas no mobile (abaixo de 768px):
    evitamos renderizar/carregar dados dessas views nesses dispositivos. */
 const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
 
@@ -78,6 +79,8 @@ function navigate(target) {
     if (!isMobile()) pricingView.render();
   } else if (target === 'compras') {
     if (!isMobile()) purchasesView.render();
+  } else if (target === 'financeiro') {
+    if (!isMobile()) financialView.render();
   } else {
     orderList.render();
   }
@@ -370,6 +373,9 @@ function init() {
   // Inicializa modal e indicador de versão e novidades do sistema
   systemInfo.init();
 
+  // Inicializa tela de Gestão Financeira e Metas
+  financialView.init();
+
   // 1. Render inicial INSTANTÂNEO (0ms) a partir do cache local
   dashboard.render();
   orderList.render();
@@ -380,6 +386,7 @@ function init() {
     inventoryView.render();
     pricingView.render();
     purchasesView.render();
+    financialView.render();
   }
 
   // 2. Em segundo plano, busca os dados atualizados da nuvem (Supabase) e sincroniza a UI
@@ -395,6 +402,7 @@ function init() {
       inventoryView.render();
       pricingView.render();
       purchasesView.render();
+      financialView.render();
     }
   }).catch(() => {
     // Erros de conexão são notificados pelo errorHandler do storage

@@ -422,6 +422,21 @@ function updateModeUI() {
 }
 
 /**
+ * Define o botão de categoria ativo e atualiza o input oculto.
+ * @param {string} cat - 'premium' | 'basico' | 'comissionado' | 'subreceita' | 'personalizado'
+ */
+export function setActiveCategoriaPill(cat) {
+  const container = document.getElementById('precCategoriaPills');
+  if (!container) return;
+  const buttons = container.querySelectorAll('.prec-cat-btn');
+  buttons.forEach((b) => {
+    b.classList.toggle('active', b.dataset.categoria === cat);
+  });
+  const catInput = document.getElementById('precCategoriaLinha');
+  if (catInput) catInput.value = cat;
+}
+
+/**
  * Carrega o produto selecionado.
  * @param {string} produtoId
  */
@@ -449,6 +464,9 @@ function loadProduto(produtoId) {
   if (emb) emb.value = baseData.embalagem != null ? baseData.embalagem : pricing.PRICING_DEFAULTS.embalagem;
   if (custoAdic) custoAdic.value = baseData.custoAdicional != null ? baseData.custoAdicional : pricing.PRICING_DEFAULTS.custoAdicional;
   if (obs) obs.value = baseData.custoAdicionalObs || '';
+
+  const cat = baseData.categoriaLinha || 'personalizado';
+  setActiveCategoriaPill(cat);
 
   insumoRows = (baseData.itens || [])
     .filter((i) => !i || !i._meta)
@@ -730,6 +748,9 @@ function updatePreview() {
 
   // 1. Preço de Venda
   add('Preço Sugerido (Cardápio)', `${formatCurrency(c.precoSugerido)} /un`, true, false, 'var(--color-primary)');
+  if (c.multiplicadorMarkup) {
+    add('Multiplicador Markup (Divisor)', `${c.multiplicadorMarkup.toFixed(2)}x`, false, true);
+  }
 
   const precoAlvoEl = document.getElementById('precPrecoAlvo');
   if (precoAlvoEl && document.activeElement !== precoAlvoEl) {
@@ -826,6 +847,8 @@ function buildReceitaFromForm() {
 
   const precoAlvoEl = document.getElementById('precPrecoAlvo');
   const precoAlvoVal = precoAlvoEl && precoAlvoEl.value !== '' ? Number(precoAlvoEl.value) : null;
+  const catInput = document.getElementById('precCategoriaLinha');
+  const categoriaLinha = catInput ? catInput.value : 'personalizado';
 
   return pricing.createReceita({
     id: editingReceita ? editingReceita.id : generateId(),
@@ -838,6 +861,7 @@ function buildReceitaFromForm() {
         quantidade: Number(r.quantidade) || 0,
       })),
     tempoPreparoMinutos: num('precTempoPreparo', pricing.PRICING_DEFAULTS.tempoPreparoMinutos),
+    categoriaLinha,
     lucroLiquidoDesejado: num('precLucroLiquido', pricing.PRICING_DEFAULTS.lucroLiquidoDesejado),
     precoAlvo: precoAlvoVal != null && Number.isFinite(precoAlvoVal) && precoAlvoVal > 0 ? precoAlvoVal : null,
     rendimento: num('precRendimento', pricing.PRICING_DEFAULTS.rendimento),
@@ -1128,6 +1152,36 @@ if (toggleOverviewBtn && overviewContent) {
   });
 }
 
+// Pílulas de categoria de linha de produto (Passo 4 da Planilha)
+const catPills = document.getElementById('precCategoriaPills');
+if (catPills) {
+  catPills.addEventListener('click', (e) => {
+    const btn = e.target.closest('.prec-cat-btn');
+    if (!btn) return;
+    const cat = btn.dataset.categoria;
+    setActiveCategoriaPill(cat);
+
+    const lucroInput = document.getElementById('precLucroLiquido');
+    const precoAlvoInput = document.getElementById('precPrecoAlvo');
+
+    if (cat === 'premium') {
+      if (lucroInput) lucroInput.value = 20;
+      if (precoAlvoInput) precoAlvoInput.value = '';
+    } else if (cat === 'basico') {
+      if (lucroInput) lucroInput.value = 10;
+      if (precoAlvoInput) precoAlvoInput.value = '';
+    } else if (cat === 'comissionado') {
+      if (lucroInput) lucroInput.value = 5;
+      if (precoAlvoInput) precoAlvoInput.value = '';
+    } else if (cat === 'subreceita') {
+      if (lucroInput) lucroInput.value = 0;
+      if (precoAlvoInput) precoAlvoInput.value = '';
+    }
+    showAviso('');
+    updatePreview();
+  });
+}
+
 ['precTempoPreparo', 'precLucroLiquido', 'precRendimento', 'precEmbalagem', 'precCustoAdicional', 'precCustoAdicionalObs']
   .forEach((id) => {
     const el = document.getElementById(id);
@@ -1135,6 +1189,12 @@ if (toggleOverviewBtn && overviewContent) {
       if (id === 'precLucroLiquido' && document.activeElement === el) {
         const precoAlvoEl = document.getElementById('precPrecoAlvo');
         if (precoAlvoEl) precoAlvoEl.value = '';
+        const val = Number(el.value);
+        if (val === 20) setActiveCategoriaPill('premium');
+        else if (val === 10) setActiveCategoriaPill('basico');
+        else if (val === 5) setActiveCategoriaPill('comissionado');
+        else if (val === 0) setActiveCategoriaPill('subreceita');
+        else setActiveCategoriaPill('personalizado');
       }
       updatePreview();
     });
@@ -1144,6 +1204,7 @@ if (toggleOverviewBtn && overviewContent) {
 const precoAlvoInput = document.getElementById('precPrecoAlvo');
 if (precoAlvoInput) {
   precoAlvoInput.addEventListener('input', () => {
+    setActiveCategoriaPill('personalizado');
     const precoAlvoVal = Number(precoAlvoInput.value);
     if (precoAlvoVal > 0) {
       const receita = buildReceitaFromForm();

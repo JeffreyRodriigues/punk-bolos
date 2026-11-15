@@ -292,3 +292,77 @@ test('createReceita e recalcular: aceita, normaliza e preserva precoAlvo', () =>
   assert.equal(rZero.precoAlvo, null);
 });
 
+/* ---------- Regras da Planilha: Categorias de Produto e Metas Globais ---------- */
+
+test('CATEGORIAS_LINHA: define presets da planilha com margens corretas', () => {
+  assert.equal(pricing.CATEGORIAS_LINHA.premium.lucroPadrao, 20);
+  assert.equal(pricing.CATEGORIAS_LINHA.basico.lucroPadrao, 10);
+  assert.equal(pricing.CATEGORIAS_LINHA.comissionado.lucroPadrao, 5);
+  assert.equal(pricing.CATEGORIAS_LINHA.subreceita.lucroPadrao, 0);
+  assert.equal(pricing.CATEGORIAS_LINHA.personalizado.lucroPadrao, 25);
+});
+
+test('createReceita e calcular: aplica categoriaLinha com lucro da categoria', () => {
+  const insumos = insumosExemplo();
+  const rPremium = pricing.createReceita({
+    produtoId: 'pPremium',
+    categoriaLinha: 'premium',
+    itens: [{ insumoId: insumos[0].id, quantidade: 100 }],
+  });
+  assert.equal(rPremium.categoriaLinha, 'premium');
+  assert.equal(rPremium.lucroLiquidoDesejado, 20);
+
+  const rSub = pricing.createReceita({
+    produtoId: 'pSub',
+    categoriaLinha: 'subreceita',
+    lucroLiquidoDesejado: 40, // Deve ser forçado a 0 para não encavalar margem
+    itens: [{ insumoId: insumos[0].id, quantidade: 100 }],
+  });
+  assert.equal(rSub.categoriaLinha, 'subreceita');
+  assert.equal(rSub.lucroLiquidoDesejado, 0);
+
+  // No cálculo, sub-receita calcula com 0% de lucro líquido
+  const cSub = pricing.calcular(rSub, insumos, []);
+  assert.equal(cSub.lucroLiquidoPct, 0);
+  assert.equal(cSub.lucroLiquidoValor, 0);
+});
+
+test('costSettings: calcula desdobramento de metas da planilha e % custo fixo', () => {
+  const settings = {
+    faturamentoAlvoMensal: 10000,
+    aluguel: 500,
+    energia: 200,
+    gas: 100,
+    agua: 0,
+    internetSistemas: 0,
+    manutencaoDepreciacao: 0,
+    contadorOuMei: 0,
+    produtosLimpeza: 0,
+    outrosCustosFixos: 0,
+    diasTrabalhadosMes: 20,
+    horasPorDia: 8,
+    proLaboreMensal: 2500,
+    salarioAjudantes: 0,
+    impostoVendaPct: 4,
+    taxaCartaoMediaPct: 3.5
+  };
+
+  const rates = costSettings.calculateCostRates(settings);
+  assert.equal(rates.faturamentoAlvoMensal, 10000);
+  assert.equal(rates.totalCustosFixos, 800);
+  // % Custo Fixo = 800 / 10000 = 8%
+  assert.equal(rates.custoFixoPct, 8.0);
+  // Meta semanal = 10000 / 4 = 2500
+  assert.equal(rates.metaSemanal, 2500);
+  // Meta diária = 10000 / 20 = 500
+  assert.equal(rates.metaDiaria, 500);
+  // DRE Sintético projetado
+  assert.equal(rates.deducoesProjetadasValor, 750); // 7.5% de 10000
+  assert.equal(rates.faturamentoLiquidoProjetado, 9250);
+  assert.equal(rates.cmvEstimadoValor, 3500); // 35% de 10000
+  assert.equal(rates.lucroBrutoProjetado, 5750); // 9250 - 3500
+  // Lucro líquido = 5750 - 800 (fixos) - 2500 (mão de obra) = 2450
+  assert.equal(rates.lucroLiquidoProjetado, 2450);
+  assert.equal(rates.margemLucroProjetadaPct, 24.5);
+});
+
