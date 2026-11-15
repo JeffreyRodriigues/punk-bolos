@@ -130,6 +130,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -4208,7 +4209,9 @@ html.dark .badge-purple {
   display: none !important;
 }
 
-.prec-readonly #precEditActions {
+.prec-readonly #precEditActions,
+.prec-readonly #precBaseActions,
+.prec-readonly #precIngredienteActions {
   display: none !important;
 }
 
@@ -5940,6 +5943,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -6706,22 +6710,57 @@ html.dark .badge-purple {
           </div>
           <p id="precificacaoStatus" class="prec-status prec-status-warn"></p>
 
-          <div class="prec-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-top: 22px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-            <h2 class="insumo-section-title" style="margin: 0;">Receita (Ingredientes e Bases)</h2>
-            <div id="precEditActions" class="receita-actions-bar" style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button type="button" id="btnAddPrecInsumo" class="btn-add-item">＋ Adicionar Insumo</button>
-              <button type="button" id="btnPastePrecExcel" class="btn-paste-excel" title="Importar colunas do Excel">Colar do Excel</button>
-              <button type="button" id="btnClearPrecInsumos" class="btn btn-ghost btn-sm" title="Apagar todos os ingredientes desta ficha técnica" style="color: var(--color-danger); border: 1px solid var(--color-border); font-size: 0.8rem; padding: 6px 10px;">Limpar Todos</button>
+          <!-- Bloco A: Bases e Sub-Receitas -->
+          <div class="prec-block-section" style="margin-top: 22px;">
+            <div class="prec-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h2 class="insumo-section-title" style="margin: 0; font-size: 0.95rem;">1. Bases e Sub-Receitas</h2>
+                <p class="view-subtitle" style="font-size: 0.78rem; margin: 0;">Massas e recheios pré-produzidos a 0% de margem (custo puro de produção).</p>
+              </div>
+              <div id="precBaseActions" class="receita-actions-bar" style="display: flex; gap: 8px;">
+                <button type="button" id="btnAddPrecBase" class="btn btn-secondary btn-sm" style="font-size: 0.82rem; padding: 6px 10px;">＋ Adicionar Base</button>
+                <button type="button" id="btnClearPrecBases" class="btn btn-ghost btn-sm" title="Remover todas as bases da receita" style="color: var(--color-danger); font-size: 0.8rem; padding: 4px 8px;">Limpar Bases</button>
+              </div>
+            </div>
+
+            <div id="precBasesList" class="prec-insumos" aria-live="polite"></div>
+
+            <div id="precBasesSummary" class="prec-insumos-summary" style="display: none; margin-top: 6px; padding: 6px 12px; font-size: 0.8rem; background: var(--color-surface-alt);">
+              <span><strong id="precBasesCount">0</strong> base(s) na receita</span>
+              <span>Subtotal Bases: <strong id="precBasesCusto" style="color: var(--color-text);">R$ 0,00</strong></span>
             </div>
           </div>
 
-          <div id="precInsumos" class="prec-insumos" aria-live="polite"></div>
+          <!-- Divisor entre Bases e Ingredientes -->
+          <div style="border-bottom: 1px dashed var(--color-border); margin: 20px 0 16px;"></div>
 
-          <!-- Faixa de Subtotal dos Insumos da Receita -->
-          <div id="precInsumosSummary" class="prec-insumos-summary" style="display: none;">
-            <span><strong id="precInsumosCount">0</strong> ingrediente(s) na receita</span>
-            <span>Custo Total Insumos (Lote): <strong id="precInsumosLoteCusto" style="color: var(--color-text);">R$ 0,00</strong></span>
-            <span>Custo Insumos/un: <strong id="precInsumosUnitCusto" style="color: var(--color-primary);">R$ 0,00</strong></span>
+          <!-- Bloco B: Ingredientes Diretos & Decoração -->
+          <div class="prec-block-section">
+            <div class="prec-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h2 class="insumo-section-title" style="margin: 0; font-size: 0.95rem;">2. Ingredientes Diretos & Decoração</h2>
+                <p class="view-subtitle" style="font-size: 0.78rem; margin: 0;">Insumos do estoque utilizados diretamente no lote ou montagem.</p>
+              </div>
+              <div id="precIngredienteActions" class="receita-actions-bar" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" id="btnAddPrecInsumo" class="btn-add-item">＋ Adicionar Ingrediente</button>
+                <button type="button" id="btnPastePrecExcel" class="btn-paste-excel" title="Importar colunas do Excel">Colar do Excel</button>
+                <button type="button" id="btnClearPrecInsumos" class="btn btn-ghost btn-sm" title="Apagar todos os ingredientes desta ficha técnica" style="color: var(--color-danger); border: 1px solid var(--color-border); font-size: 0.8rem; padding: 6px 10px;">Limpar Ingredientes</button>
+              </div>
+            </div>
+
+            <div id="precInsumos" class="prec-insumos" aria-live="polite"></div>
+
+            <div id="precIngredientesSummary" class="prec-insumos-summary" style="display: none; margin-top: 6px; padding: 6px 12px; font-size: 0.8rem; background: var(--color-surface-alt);">
+              <span><strong id="precIngredientesCount">0</strong> ingrediente(s)</span>
+              <span>Subtotal Ingredientes: <strong id="precIngredientesCusto" style="color: var(--color-text);">R$ 0,00</strong></span>
+            </div>
+          </div>
+
+          <!-- Bloco C: Resumo Consolidado de Matéria-Prima (Bases + Ingredientes) -->
+          <div id="precInsumosSummary" class="prec-insumos-summary" style="display: none; margin-top: 16px; border: 1px solid var(--color-primary-soft); background: var(--color-surface-alt); padding: 10px 14px; border-radius: var(--radius-sm);">
+            <span><strong>Total Matéria-Prima:</strong> <span id="precTotalItensCount">0</span> itens (Bases + Insumos)</span>
+            <span>Custo Total no Lote: <strong id="precInsumosLoteCusto" style="color: var(--color-text);">R$ 0,00</strong></span>
+            <span>Custo por Unidade: <strong id="precInsumosUnitCusto" style="color: var(--color-primary); font-size: 0.95rem;">R$ 0,00</strong></span>
           </div>
         </div>
       </div>
@@ -8415,6 +8454,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=65"></script>
+  <script type="module" src="js/app.js?v=66"></script>
 </body>
 </html>

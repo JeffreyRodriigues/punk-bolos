@@ -47,8 +47,11 @@ let isEditing = false;
 /** Snapshot do formulário para permitir cancelar alterações. */
 let originalSnapshot = null;
 
-/** Rascunho das linhas de insumo do formulário. */
-let insumoRows = [];
+/** Rascunho das linhas de bases da receita (sub-receitas). */
+let baseRows = [];
+
+/** Rascunho das linhas de ingredientes da receita (insumos de estoque). */
+let ingredienteRows = [];
 
 /** Estado de busca e filtros da Matriz de Rentabilidade */
 let precSearchTerm = '';
@@ -355,7 +358,8 @@ function saveSnapshot() {
     embalagem: (document.getElementById('precEmbalagem') || {}).value,
     custoAdicional: (document.getElementById('precCustoAdicional') || {}).value,
     custoAdicionalObs: (document.getElementById('precCustoAdicionalObs') || {}).value,
-    insumoRows: JSON.parse(JSON.stringify(insumoRows)),
+    baseRows: JSON.parse(JSON.stringify(baseRows)),
+    ingredienteRows: JSON.parse(JSON.stringify(ingredienteRows)),
   };
 }
 
@@ -375,7 +379,8 @@ function restoreSnapshot() {
   setVal('precEmbalagem', originalSnapshot.embalagem);
   setVal('precCustoAdicional', originalSnapshot.custoAdicional);
   setVal('precCustoAdicionalObs', originalSnapshot.custoAdicionalObs);
-  insumoRows = JSON.parse(JSON.stringify(originalSnapshot.insumoRows || []));
+  baseRows = JSON.parse(JSON.stringify(originalSnapshot.baseRows || []));
+  ingredienteRows = JSON.parse(JSON.stringify(originalSnapshot.ingredienteRows || []));
 }
 
 /**
@@ -386,6 +391,8 @@ function updateModeUI() {
   const btnEdit = document.getElementById('btnEditPrecificacao');
   const editingButtons = document.getElementById('precEditingButtons');
   const editActions = document.getElementById('precEditActions');
+  const baseActions = document.getElementById('precBaseActions');
+  const ingredienteActions = document.getElementById('precIngredienteActions');
   const badgeStatus = document.getElementById('precificacaoStatusBadge');
 
   if (formEl) {
@@ -401,6 +408,8 @@ function updateModeUI() {
   if (btnEdit) btnEdit.style.display = isEditing ? 'none' : 'block';
   if (editingButtons) editingButtons.style.display = isEditing ? 'flex' : 'none';
   if (editActions) editActions.style.display = isEditing ? 'flex' : 'none';
+  if (baseActions) baseActions.style.display = isEditing ? 'flex' : 'none';
+  if (ingredienteActions) ingredienteActions.style.display = isEditing ? 'flex' : 'none';
 
   if (badgeStatus) {
     if (!editingReceita) {
@@ -468,32 +477,219 @@ function loadProduto(produtoId) {
   const cat = baseData.categoriaLinha || 'personalizado';
   setActiveCategoriaPill(cat);
 
-  insumoRows = (baseData.itens || [])
-    .filter((i) => !i || !i._meta)
+  const itens = (baseData.itens || []).filter((i) => !i || !i._meta);
+  baseRows = itens
+    .filter((i) => i.baseId)
     .map((i) => ({
-      refId: i.baseId || i.insumoId || '',
-      tipo: i.baseId ? 'base' : 'insumo',
+      refId: i.baseId,
+      tipo: 'base',
       quantidade: i.quantidade,
     }));
-  if (insumoRows.length === 0) {
-    insumoRows.push({ refId: '', tipo: '', quantidade: '' });
+  ingredienteRows = itens
+    .filter((i) => !i.baseId && i.insumoId)
+    .map((i) => ({
+      refId: i.insumoId,
+      tipo: 'insumo',
+      quantidade: i.quantidade,
+    }));
+  if (ingredienteRows.length === 0) {
+    ingredienteRows.push({ refId: '', tipo: 'insumo', quantidade: '' });
   }
 
   saveSnapshot();
   showAviso('');
   updateModeUI();
-  renderInsumoRows();
+  renderAllRows();
   updatePreview();
 }
 
 /* ============================================================
-   LINHAS DE INSUMO
+   LINHAS DE BASES E INGREDIENTES
    ============================================================ */
 
 /**
- * Renderiza as linhas de insumo do formulário.
+ * Renderiza as linhas de bases (sub-receitas) do formulário.
  */
-function renderInsumoRows() {
+function renderBaseRows() {
+  const wrap = document.getElementById('precBasesList');
+  if (!wrap) return;
+
+  wrap.innerHTML = '';
+  const insumos = storage.getAllInsumos();
+  const bases = [...base.getBases()].sort((a, b) =>
+    sortKey(a.nome || '').localeCompare(sortKey(b.nome || ''))
+  );
+  const baseById = new Map(bases.map((b) => [b.id, b]));
+
+  if (bases.length === 0) {
+    const aviso = document.createElement('p');
+    aviso.className = 'estoque-history-empty';
+    aviso.style.margin = '4px 0';
+    aviso.textContent = 'Nenhuma base cadastrada. Cadastre na aba Inventário (Bases).';
+    wrap.appendChild(aviso);
+    updateInsumosSummary();
+    return;
+  }
+
+  if (baseRows.length === 0) {
+    const aviso = document.createElement('p');
+    aviso.className = 'estoque-history-empty';
+    aviso.style.fontSize = '0.85rem';
+    aviso.style.padding = '8px 0';
+    aviso.style.margin = '0';
+    aviso.textContent = isEditing
+      ? 'Nenhuma base ou sub-receita vinculada. Clique em "＋ Adicionar Base" se esta receita utiliza massas ou recheios prontos.'
+      : 'Nenhuma base utilizada nesta receita.';
+    wrap.appendChild(aviso);
+    updateInsumosSummary();
+    return;
+  }
+
+  wrap.classList.add('base-componentes');
+
+  const head = document.createElement('div');
+  head.className = 'base-componentes-head';
+  head.innerHTML =
+    '<span class="base-col-ing">Base / Sub-Receita</span>' +
+    '<span class="base-col-uso">Qtd utilizada</span>' +
+    '<span class="base-col-preco">Custo do lote da base</span>' +
+    '<span class="base-col-custo">Quanto custou</span>' +
+    '<span class="base-col-act"></span>';
+  wrap.appendChild(head);
+
+  const trimNum = (n) => String(Math.round((Number(n) || 0) * 1000) / 1000);
+
+  baseRows.forEach((row, index) => {
+    const linha = document.createElement('div');
+    linha.className = 'item-row base-componente-row';
+
+    const sel = document.createElement('select');
+    sel.className = 'base-componente-select item-tipo';
+    sel.setAttribute('aria-label', 'Base ou Sub-Receita');
+    sel.setAttribute('data-label', 'Base');
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '— Selecionar Base —';
+    sel.appendChild(placeholder);
+
+    bases.forEach((b) => {
+      const opt = document.createElement('option');
+      opt.value = b.id;
+      const bUnd = b.rendimentoUnidade === 'unidade' ? 'un' : (b.rendimentoUnidade || 'un');
+      opt.textContent = `${b.nome} (${trimNum(b.rendimento)} ${bUnd})`;
+      sel.appendChild(opt);
+    });
+    sel.value = row.refId || '';
+    sel.disabled = !isEditing;
+
+    const qtd = document.createElement('input');
+    qtd.type = 'number';
+    qtd.className = 'base-componente-qtd item-qtd';
+    qtd.min = '0';
+    qtd.step = '0.001';
+    qtd.placeholder = 'Qtd';
+    qtd.value = row.quantidade != null ? row.quantidade : '';
+    qtd.setAttribute('aria-label', 'Quantidade utilizada');
+    qtd.disabled = !isEditing;
+
+    const unitEl = document.createElement('span');
+    unitEl.className = 'base-componente-unit';
+
+    const precoEl = document.createElement('span');
+    precoEl.className = 'base-componente-preco';
+    precoEl.title = 'Custo total de produção da base e seu rendimento';
+    precoEl.setAttribute('data-label', 'Custo da base');
+
+    const costEl = document.createElement('span');
+    costEl.className = 'base-componente-cost';
+    costEl.title = 'Custo proporcional desta base no produto';
+    costEl.setAttribute('data-label', 'Quanto custou');
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'item-remove';
+    del.textContent = '✕';
+    del.title = 'Remover base';
+    del.setAttribute('aria-label', 'Remover base');
+    del.disabled = !isEditing;
+    if (!isEditing) {
+      del.style.visibility = 'hidden';
+    }
+
+    const uso = document.createElement('div');
+    uso.className = 'base-componente-uso';
+    uso.setAttribute('data-label', 'Quantidade utilizada');
+    uso.append(qtd, unitEl);
+
+    function atualizarLinha() {
+      baseRows[index].refId = sel.value;
+      baseRows[index].tipo = 'base';
+
+      const b = baseById.get(sel.value);
+      if (b) {
+        const bUnd = b.rendimentoUnidade === 'unidade' ? 'un' : (b.rendimentoUnidade || 'un');
+        unitEl.textContent = bUnd;
+        const custoTotal = base.custoBase(b, insumos);
+        const rend = Number(b.rendimento) || 0;
+        if (custoTotal > 0 && rend > 0) {
+          precoEl.textContent = `${formatCurrency(custoTotal)} / ${trimNum(rend)} ${bUnd}`;
+          precoEl.style.color = '';
+        } else if (custoTotal === 0) {
+          precoEl.textContent = 'Base sem custo (R$ 0)';
+          precoEl.style.color = 'var(--color-warn)';
+        } else {
+          precoEl.textContent = formatCurrency(custoTotal);
+          precoEl.style.color = '';
+        }
+      } else {
+        unitEl.textContent = '';
+        precoEl.textContent = '—';
+        precoEl.style.color = '';
+      }
+
+      const item = {
+        baseId: sel.value,
+        insumoId: '',
+        quantidade: Number(qtd.value) || 0,
+      };
+      const custo = sel.value ? pricing.custoItem(item, insumos, bases) : 0;
+      const isZeroComQtd = sel.value && Number(qtd.value) > 0 && custo === 0;
+      if (isZeroComQtd) {
+        costEl.textContent = 'R$ 0,00 (!)';
+        costEl.style.color = 'var(--color-warn)';
+        costEl.title = 'Base com quantidade informada mas custo zero no inventário';
+      } else {
+        costEl.textContent = sel.value ? formatCurrency(custo) : '—';
+        costEl.style.color = '';
+        costEl.title = 'Custo proporcional desta base';
+      }
+      updatePreview();
+    }
+
+    sel.addEventListener('change', atualizarLinha);
+    qtd.addEventListener('input', () => {
+      baseRows[index].quantidade = qtd.value;
+      atualizarLinha();
+    });
+    del.addEventListener('click', () => {
+      baseRows.splice(index, 1);
+      renderBaseRows();
+      updatePreview();
+    });
+
+    linha.append(sel, uso, precoEl, costEl, del);
+    wrap.appendChild(linha);
+
+    atualizarLinha();
+  });
+
+  updateInsumosSummary();
+}
+
+/**
+ * Renderiza as linhas de ingredientes diretos do formulário.
+ */
+function renderIngredienteRows() {
   const wrap = document.getElementById('precInsumos');
   if (!wrap) return;
 
@@ -501,16 +697,29 @@ function renderInsumoRows() {
   const insumos = [...storage.getAllInsumos()].sort((a, b) =>
     sortKey(a.nome || '').localeCompare(sortKey(b.nome || ''))
   );
-  const bases = [...base.getBases()].sort((a, b) =>
-    sortKey(a.nome || '').localeCompare(sortKey(b.nome || ''))
-  );
-  const baseById = new Map(bases.map((b) => [b.id, b]));
+  const bases = base.getBases();
 
-  if (insumos.length === 0 && bases.length === 0) {
+  if (insumos.length === 0) {
     const aviso = document.createElement('p');
     aviso.className = 'estoque-history-empty';
-    aviso.textContent = 'Nenhum insumo ou base cadastrado. Cadastre na aba Inventário.';
+    aviso.style.margin = '4px 0';
+    aviso.textContent = 'Nenhum insumo cadastrado. Cadastre na aba Inventário.';
     wrap.appendChild(aviso);
+    updateInsumosSummary();
+    return;
+  }
+
+  if (ingredienteRows.length === 0) {
+    const aviso = document.createElement('p');
+    aviso.className = 'estoque-history-empty';
+    aviso.style.fontSize = '0.85rem';
+    aviso.style.padding = '8px 0';
+    aviso.style.margin = '0';
+    aviso.textContent = isEditing
+      ? 'Nenhum ingrediente direto cadastrado. Clique em "＋ Adicionar Ingrediente".'
+      : 'Nenhum ingrediente direto nesta receita.';
+    wrap.appendChild(aviso);
+    updateInsumosSummary();
     return;
   }
 
@@ -526,30 +735,25 @@ function renderInsumoRows() {
     '<span class="base-col-act"></span>';
   wrap.appendChild(head);
 
-  insumoRows.forEach((row, index) => {
+  const trimNum = (n) => String(Math.round((Number(n) || 0) * 1000) / 1000);
+
+  ingredienteRows.forEach((row, index) => {
     const linha = document.createElement('div');
     linha.className = 'item-row base-componente-row';
 
     const sel = document.createElement('select');
     sel.className = 'base-componente-select item-tipo';
-    sel.setAttribute('aria-label', 'Insumo ou base');
+    sel.setAttribute('aria-label', 'Ingrediente do estoque');
     sel.setAttribute('data-label', 'Ingrediente');
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = '— Insumo / Base —';
+    placeholder.textContent = '— Selecionar Ingrediente —';
     sel.appendChild(placeholder);
+
     insumos.forEach((i) => {
       const opt = document.createElement('option');
       opt.value = i.id;
-      opt.dataset.tipo = 'insumo';
       opt.textContent = `${i.nome} (${i.unidade})`;
-      sel.appendChild(opt);
-    });
-    bases.forEach((b) => {
-      const opt = document.createElement('option');
-      opt.value = b.id;
-      opt.dataset.tipo = 'base';
-      opt.textContent = `${b.nome} (base)`;
       sel.appendChild(opt);
     });
     sel.value = row.refId || '';
@@ -582,8 +786,8 @@ function renderInsumoRows() {
     del.type = 'button';
     del.className = 'item-remove';
     del.textContent = '✕';
-    del.title = 'Remover item';
-    del.setAttribute('aria-label', 'Remover item');
+    del.title = 'Remover ingrediente';
+    del.setAttribute('aria-label', 'Remover ingrediente');
     del.disabled = !isEditing;
     if (!isEditing) {
       del.style.visibility = 'hidden';
@@ -594,70 +798,42 @@ function renderInsumoRows() {
     uso.setAttribute('data-label', 'Quantidade utilizada');
     uso.append(qtd, unitEl);
 
-    const trimNum = (n) => String(Math.round((Number(n) || 0) * 1000) / 1000);
-
     function atualizarLinha() {
-      const opt = sel.selectedOptions[0];
-      const tipo = opt ? opt.dataset.tipo : '';
-      insumoRows[index].tipo = tipo;
-      insumoRows[index].refId = sel.value;
+      ingredienteRows[index].refId = sel.value;
+      ingredienteRows[index].tipo = 'insumo';
 
-      const item = {
-        insumoId: tipo === 'insumo' ? sel.value : '',
-        baseId: tipo === 'base' ? sel.value : '',
-        quantidade: Number(qtd.value) || 0,
-      };
-
-      if (tipo === 'base') {
-        const b = baseById.get(sel.value);
-        const bUnd = b ? b.rendimentoUnidade : '';
-        unitEl.textContent = bUnd === 'unidade' ? 'un' : bUnd;
-        if (b) {
-          const custoTotal = base.custoBase(b, insumos);
-          const rend = Number(b.rendimento) || 0;
-          if (custoTotal > 0 && rend > 0) {
-            precoEl.textContent = `${formatCurrency(custoTotal)} / ${trimNum(rend)} ${b.rendimentoUnidade || 'un'}`;
-            precoEl.style.color = '';
-          } else if (custoTotal === 0) {
-            precoEl.textContent = 'Base sem custo (R$ 0)';
-            precoEl.style.color = 'var(--color-warn)';
-          } else {
-            precoEl.textContent = formatCurrency(custoTotal);
-            precoEl.style.color = '';
-          }
-        } else {
-          precoEl.textContent = '—';
-          precoEl.style.color = '';
-        }
+      const ins = insumos.find((i) => i.id === sel.value);
+      const insUnd = ins ? ins.unidade : '';
+      unitEl.textContent = insUnd === 'unidade' ? 'un' : insUnd;
+      const compra = ins ? inventory.ultimaCompra(ins) : null;
+      if (compra && Number(compra.custoTotal) > 0) {
+        const q = Number(compra.quantidadeCompra) || 0;
+        const und = compra.unidade || (ins && ins.unidade) || 'un';
+        precoEl.textContent = q > 0
+          ? `${formatCurrency(Number(compra.custoTotal) || 0)} / ${trimNum(q)} ${und}`
+          : formatCurrency(Number(compra.custoTotal) || 0);
+        precoEl.style.color = '';
+      } else if (sel.value) {
+        precoEl.textContent = 'Sem compra (R$ 0)';
+        precoEl.style.color = 'var(--color-warn)';
       } else {
-        const ins = insumos.find((i) => i.id === sel.value);
-        const insUnd = ins ? ins.unidade : '';
-        unitEl.textContent = insUnd === 'unidade' ? 'un' : insUnd;
-        const compra = ins ? inventory.ultimaCompra(ins) : null;
-        if (compra && Number(compra.custoTotal) > 0) {
-          const q = Number(compra.quantidadeCompra) || 0;
-          const und = compra.unidade || (ins && ins.unidade) || 'un';
-          precoEl.textContent = q > 0
-            ? `${formatCurrency(Number(compra.custoTotal) || 0)} / ${trimNum(q)} ${und}`
-            : formatCurrency(Number(compra.custoTotal) || 0);
-          precoEl.style.color = '';
-        } else if (sel.value) {
-          precoEl.textContent = 'Sem compra (R$ 0)';
-          precoEl.style.color = 'var(--color-warn)';
-        } else {
-          precoEl.textContent = '—';
-          precoEl.style.color = '';
-        }
+        precoEl.textContent = '—';
+        precoEl.style.color = '';
       }
 
-      const custo = pricing.custoItem(item, insumos, bases);
-      const isZeroComQtd = tipo && sel.value && Number(qtd.value) > 0 && custo === 0;
+      const item = {
+        insumoId: sel.value,
+        baseId: '',
+        quantidade: Number(qtd.value) || 0,
+      };
+      const custo = sel.value ? pricing.custoItem(item, insumos, bases) : 0;
+      const isZeroComQtd = sel.value && Number(qtd.value) > 0 && custo === 0;
       if (isZeroComQtd) {
         costEl.textContent = 'R$ 0,00 (!)';
         costEl.style.color = 'var(--color-warn)';
         costEl.title = 'Item com quantidade informada mas custo zero no inventário';
       } else {
-        costEl.textContent = tipo && sel.value ? formatCurrency(custo) : '—';
+        costEl.textContent = sel.value ? formatCurrency(custo) : '—';
         costEl.style.color = '';
         costEl.title = 'Custo proporcional deste item';
       }
@@ -666,13 +842,13 @@ function renderInsumoRows() {
 
     sel.addEventListener('change', atualizarLinha);
     qtd.addEventListener('input', () => {
-      insumoRows[index].quantidade = qtd.value;
+      ingredienteRows[index].quantidade = qtd.value;
       atualizarLinha();
     });
     del.addEventListener('click', () => {
-      insumoRows.splice(index, 1);
-      if (insumoRows.length === 0) insumoRows.push({ refId: '', tipo: '', quantidade: '' });
-      renderInsumoRows();
+      ingredienteRows.splice(index, 1);
+      if (ingredienteRows.length === 0) ingredienteRows.push({ refId: '', tipo: 'insumo', quantidade: '' });
+      renderIngredienteRows();
       updatePreview();
     });
 
@@ -686,45 +862,105 @@ function renderInsumoRows() {
 }
 
 /**
- * Atualiza a faixa de subtotal de ingredientes cadastrados na receita.
+ * Renderiza todos os blocos de ingredientes (Bases e Insumos).
  */
-function updateInsumosSummary() {
-  const summaryEl = document.getElementById('precInsumosSummary');
-  const countEl = document.getElementById('precInsumosCount');
-  const loteCustoEl = document.getElementById('precInsumosLoteCusto');
-  const unitCustoEl = document.getElementById('precInsumosUnitCusto');
-  if (!summaryEl || !countEl || !loteCustoEl || !unitCustoEl) return;
-
-  const validRows = insumoRows.filter((r) => r.refId && Number(r.quantidade) > 0);
-  if (validRows.length === 0) {
-    summaryEl.style.display = 'none';
-    return;
-  }
-
-  summaryEl.style.display = 'flex';
-  countEl.textContent = String(validRows.length);
-
-  const insumos = storage.getAllInsumos();
-  const bases = base.getBases();
-  let custoLote = 0;
-  validRows.forEach((row) => {
-    custoLote += pricing.custoItem(row, insumos, bases);
-  });
-
-  const receita = buildReceitaFromForm();
-  const rendimento = Math.max(1, Number(receita.rendimento) || 1);
-  const custoUnit = custoLote / rendimento;
-
-  loteCustoEl.textContent = formatCurrency(custoLote);
-  unitCustoEl.textContent = formatCurrency(custoUnit);
+function renderAllRows() {
+  renderBaseRows();
+  renderIngredienteRows();
+  updateInsumosSummary();
 }
 
 /**
- * Adiciona uma linha de insumo em branco ao formulário.
+ * Alias de compatibilidade para renderAllRows.
+ */
+function renderInsumoRows() {
+  renderAllRows();
+}
+
+/**
+ * Atualiza os subtotais de Bases, Ingredientes Diretos e o Resumo Consolidado de Matéria-Prima.
+ */
+function updateInsumosSummary() {
+  const insumos = storage.getAllInsumos();
+  const bases = base.getBases();
+
+  // 1. Bloco Bases
+  const basesSummaryEl = document.getElementById('precBasesSummary');
+  const basesCountEl = document.getElementById('precBasesCount');
+  const basesCustoEl = document.getElementById('precBasesCusto');
+  const validBases = baseRows.filter((r) => r.refId && Number(r.quantidade) > 0);
+  let custoBases = 0;
+  validBases.forEach((r) => {
+    custoBases += pricing.custoItem({ baseId: r.refId, insumoId: '', quantidade: Number(r.quantidade) || 0 }, insumos, bases);
+  });
+  if (basesSummaryEl && basesCountEl && basesCustoEl) {
+    if (validBases.length > 0) {
+      basesSummaryEl.style.display = 'flex';
+      basesCountEl.textContent = String(validBases.length);
+      basesCustoEl.textContent = formatCurrency(custoBases);
+    } else {
+      basesSummaryEl.style.display = 'none';
+    }
+  }
+
+  // 2. Bloco Ingredientes Diretos
+  const ingSummaryEl = document.getElementById('precIngredientesSummary');
+  const ingCountEl = document.getElementById('precIngredientesCount');
+  const ingCustoEl = document.getElementById('precIngredientesCusto');
+  const validIngs = ingredienteRows.filter((r) => r.refId && Number(r.quantidade) > 0);
+  let custoIngs = 0;
+  validIngs.forEach((r) => {
+    custoIngs += pricing.custoItem({ insumoId: r.refId, baseId: '', quantidade: Number(r.quantidade) || 0 }, insumos, bases);
+  });
+  if (ingSummaryEl && ingCountEl && ingCustoEl) {
+    if (validIngs.length > 0) {
+      ingSummaryEl.style.display = 'flex';
+      ingCountEl.textContent = String(validIngs.length);
+      ingCustoEl.textContent = formatCurrency(custoIngs);
+    } else {
+      ingSummaryEl.style.display = 'none';
+    }
+  }
+
+  // 3. Bloco Consolidado Matéria-Prima (Bases + Ingredientes)
+  const summaryEl = document.getElementById('precInsumosSummary');
+  const countEl = document.getElementById('precTotalItensCount');
+  const loteCustoEl = document.getElementById('precInsumosLoteCusto');
+  const unitCustoEl = document.getElementById('precInsumosUnitCusto');
+  const totalItensCount = validBases.length + validIngs.length;
+  const custoTotalLote = custoBases + custoIngs;
+
+  if (summaryEl && countEl && loteCustoEl && unitCustoEl) {
+    if (totalItensCount > 0) {
+      summaryEl.style.display = 'flex';
+      countEl.textContent = String(totalItensCount);
+      loteCustoEl.textContent = formatCurrency(custoTotalLote);
+
+      const receita = buildReceitaFromForm();
+      const rendimento = Math.max(1, Number(receita.rendimento) || 1);
+      const custoUnit = custoTotalLote / rendimento;
+      unitCustoEl.textContent = formatCurrency(custoUnit);
+    } else {
+      summaryEl.style.display = 'none';
+    }
+  }
+}
+
+/**
+ * Adiciona uma linha de base em branco ao formulário.
+ */
+function addBaseRow() {
+  baseRows.push({ refId: '', tipo: 'base', quantidade: '' });
+  renderBaseRows();
+  updatePreview();
+}
+
+/**
+ * Adiciona uma linha de ingrediente direto em branco ao formulário.
  */
 function addInsumoRow() {
-  insumoRows.push({ refId: '', tipo: '', quantidade: '' });
-  renderInsumoRows();
+  ingredienteRows.push({ refId: '', tipo: 'insumo', quantidade: '' });
+  renderIngredienteRows();
   updatePreview();
 }
 
@@ -918,16 +1154,26 @@ function buildReceitaFromForm() {
   const catInput = document.getElementById('precCategoriaLinha');
   const categoriaLinha = catInput ? catInput.value : 'personalizado';
 
+  const baseItens = baseRows
+    .filter((r) => r.refId)
+    .map((r) => ({
+      insumoId: '',
+      baseId: r.refId,
+      quantidade: Number(r.quantidade) || 0,
+    }));
+
+  const ingItens = ingredienteRows
+    .filter((r) => r.refId)
+    .map((r) => ({
+      insumoId: r.refId,
+      baseId: '',
+      quantidade: Number(r.quantidade) || 0,
+    }));
+
   return pricing.createReceita({
     id: editingReceita ? editingReceita.id : generateId(),
     produtoId: currentProdutoId,
-    itens: insumoRows
-      .filter((r) => r.refId)
-      .map((r) => ({
-        insumoId: r.tipo === 'insumo' ? r.refId : '',
-        baseId: r.tipo === 'base' ? r.refId : '',
-        quantidade: Number(r.quantidade) || 0,
-      })),
+    itens: [...baseItens, ...ingItens],
     tempoPreparoMinutos: num('precTempoPreparo', pricing.PRICING_DEFAULTS.tempoPreparoMinutos),
     categoriaLinha,
     lucroLiquidoDesejado: num('precLucroLiquido', pricing.PRICING_DEFAULTS.lucroLiquidoDesejado),
@@ -1178,6 +1424,29 @@ if (cancelBtn) {
   });
 }
 
+const addBaseBtn = document.getElementById('btnAddPrecBase');
+if (addBaseBtn) addBaseBtn.addEventListener('click', () => addBaseRow());
+
+const clearBasesBtn = document.getElementById('btnClearPrecBases');
+if (clearBasesBtn) {
+  clearBasesBtn.addEventListener('click', () => {
+    if (!isEditing) return;
+    const temItens = baseRows.some((r) => r.refId || (r.quantidade && Number(r.quantidade) > 0));
+    if (!temItens) {
+      baseRows = [];
+      renderBaseRows();
+      updatePreview();
+      return;
+    }
+    if (confirm('Tem certeza que deseja apagar todas as bases desta ficha técnica?')) {
+      baseRows = [];
+      renderBaseRows();
+      updatePreview();
+      showToast('Todas as bases foram removidas da ficha técnica.', 'info');
+    }
+  });
+}
+
 const addBtn = document.getElementById('btnAddPrecInsumo');
 if (addBtn) addBtn.addEventListener('click', () => addInsumoRow());
 
@@ -1185,18 +1454,18 @@ const clearBtn = document.getElementById('btnClearPrecInsumos');
 if (clearBtn) {
   clearBtn.addEventListener('click', () => {
     if (!isEditing) return;
-    const temItens = insumoRows.some((r) => r.refId || (r.quantidade && Number(r.quantidade) > 0));
+    const temItens = ingredienteRows.some((r) => r.refId || (r.quantidade && Number(r.quantidade) > 0));
     if (!temItens) {
-      insumoRows = [{ refId: '', tipo: 'insumo', quantidade: '' }];
-      renderInsumoRows();
+      ingredienteRows = [{ refId: '', tipo: 'insumo', quantidade: '' }];
+      renderIngredienteRows();
       updatePreview();
       return;
     }
-    if (confirm('Tem certeza que deseja apagar todos os ingredientes desta ficha técnica?')) {
-      insumoRows = [{ refId: '', tipo: 'insumo', quantidade: '' }];
-      renderInsumoRows();
+    if (confirm('Tem certeza que deseja apagar todos os ingredientes diretos desta ficha técnica?')) {
+      ingredienteRows = [{ refId: '', tipo: 'insumo', quantidade: '' }];
+      renderIngredienteRows();
       updatePreview();
-      showToast('Todos os ingredientes foram removidos da ficha técnica.', 'info');
+      showToast('Todos os ingredientes diretos foram removidos da ficha técnica.', 'info');
     }
   });
 }
@@ -1207,16 +1476,36 @@ if (pasteExcelBtn) {
     openExcelImportModal((importedRows) => {
       if (!Array.isArray(importedRows) || importedRows.length === 0) return;
 
-      // Substitui 100% dos ingredientes anteriores da ficha técnica
-      insumoRows = importedRows.map((r) => ({
-        refId: r.refId,
-        tipo: r.tipo || 'insumo',
-        quantidade: r.quantidade,
-      }));
+      const importedBases = importedRows.filter((r) => r.tipo === 'base');
+      const importedInsumos = importedRows.filter((r) => r.tipo !== 'base');
 
-      renderInsumoRows();
+      if (importedBases.length > 0) {
+        baseRows = importedBases.map((r) => ({
+          refId: r.refId,
+          tipo: 'base',
+          quantidade: r.quantidade,
+        }));
+      }
+
+      if (importedInsumos.length > 0) {
+        ingredienteRows = importedInsumos.map((r) => ({
+          refId: r.refId,
+          tipo: 'insumo',
+          quantidade: r.quantidade,
+        }));
+      } else if (importedBases.length > 0 && importedInsumos.length === 0) {
+        ingredienteRows = [{ refId: '', tipo: 'insumo', quantidade: '' }];
+      } else {
+        ingredienteRows = importedRows.map((r) => ({
+          refId: r.refId,
+          tipo: 'insumo',
+          quantidade: r.quantidade,
+        }));
+      }
+
+      renderAllRows();
       updatePreview();
-      showToast(`${importedRows.length} ingrediente(s) importado(s) substituindo a lista anterior.`, 'success');
+      showToast(`${importedRows.length} item(ns) importado(s) substituindo a lista anterior.`, 'success');
     });
   });
 }

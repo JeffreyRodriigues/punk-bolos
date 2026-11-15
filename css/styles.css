@@ -3985,7 +3985,9 @@ html.dark .badge-purple {
   display: none !important;
 }
 
-.prec-readonly #precEditActions {
+.prec-readonly #precEditActions,
+.prec-readonly #precBaseActions,
+.prec-readonly #precIngredienteActions {
   display: none !important;
 }
 

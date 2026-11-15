@@ -189,7 +189,11 @@ O sistema organiza a ficha técnica em 3 blocos estratégicos:
 ### Precificação
 - **1 receita por produto** (bloqueia dupla).
 - Produto do catálogo **sem receita**: aparece com status **"Sem precificação"** + convite "＋ Criar precificação".
-- **Itens podem ser insumos ou bases**: o seletor lista ambos; cada linha mostra o **custo proporcional ao vivo** e um **cabeçalho igual à tela de Bases** (*Ingrediente · Quantidade utilizada · Custo e gramas da embalagem · Quanto custou*). O custo de uma base leva em conta todos os seus componentes.
+- **Separação em Blocos Estruturados (Bases vs. Ingredientes Diretos):**
+  - **1. Bases e Sub-Receitas:** massas e recheios pré-produzidos a 0% de margem (custo puro de produção). Possui botões dedicados `＋ Adicionar Base` e `Limpar Bases`, além de subtotal independente.
+  - **2. Ingredientes Diretos & Decoração:** insumos de estoque usados diretamente na montagem do lote. Possui `＋ Adicionar Ingrediente`, `Colar do Excel` e `Limpar Ingredientes`, com subtotal independente.
+  - **3. Resumo Consolidado de Matéria-Prima:** totaliza itens de bases e insumos diretos, exibindo o custo total no lote e custo unitário.
+  - **Importador do Excel:** distribui automaticamente os itens importados entre os blocos de Bases (tipo `'base'`) e Ingredientes (tipo `'insumo'`).
 - A receita é um **snapshot**: guarda `dataCalculo`, `custoIngredientes` e `custoPorUnidade` no momento do cálculo. **Mudanças futuras** no preço do inventário — inclusive em insumos que compõem uma **base** usada na receita — **não alteram** receitas já calculadas; a precificação "vira" desatualizada até o usuário **recalcular manualmente**.
 - **Valor de venda sempre à mão**: a precificação **só sugere** o valor ("usar este preço no catálogo" copia para o campo de valor do produto, sem sobreescrever sozinho). Não há escrita automática no `valor` do catálogo.
 - Campos personalizáveis na receita: `margem` (default 25%), `multiplicador` (default 3), `rendimento` (default 10), `embalagem` (default 1,00), `custoAdicional` + `observacaoAdicional`.
