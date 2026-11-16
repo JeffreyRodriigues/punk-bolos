@@ -132,6 +132,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -4306,13 +4307,122 @@ html.dark .badge-purple {
   font-size: 0.84rem;
 }
 
-/* ---------- Blocos Estruturados de Detalhes da Precificação ---------- */
+/* ---------- Faixa de Contexto Rápido do Produto (HUD) ---------- */
+.prec-product-context {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 860px) {
+  .prec-product-context {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.prec-context-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.prec-context-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.prec-context-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+/* ---------- Grupos Semânticos de Parâmetros ---------- */
+.prec-param-group {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.prec-param-group-header {
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.prec-param-group-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+}
+
+/* ---------- Blocos Estruturados de Detalhes da Precificação (Acordeon) ---------- */
 .prec-detail-section {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   margin-bottom: 10px;
+}
+
+.prec-detail-accordion {
+  user-select: none;
+}
+
+.prec-detail-accordion summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  outline: none;
+}
+
+.prec-detail-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.prec-accordion-chevron {
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.prec-detail-accordion[open] .prec-accordion-chevron {
+  transform: rotate(-135deg);
+}
+
+.prec-detail-accordion[open] summary {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.prec-detail-accordion:not([open]) summary {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.prec-detail-content {
+  cursor: default;
 }
 
 .prec-detail-section-title {
@@ -4386,6 +4496,10 @@ html.dark .badge-purple {
 
 .base-componente-row.item-row:hover {
   border-color: var(--color-primary-soft, var(--color-border));
+}
+
+.base-componente-row--base {
+  border-left: 3px solid var(--color-primary) !important;
 }
 
 .base-componente-row .base-componente-select {
@@ -5946,6 +6060,7 @@ html.dark .badge-purple {
 
 
 
+
   <!-- Fonte Quicksand: preconnect + carga assíncrona (não bloqueia o LCP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -6700,7 +6815,14 @@ html.dark .badge-purple {
               <h2 style="margin-bottom: 4px;">Produto do Catálogo</h2>
               <p class="view-subtitle" style="font-size: 0.85rem; margin-bottom: 0;">Selecione o produto para visualizar ou editar a ficha técnica:</p>
             </div>
-            <span id="precificacaoStatusBadge" class="badge" style="font-size: 0.82rem;"></span>
+            <div class="prec-header-actions" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span id="precificacaoStatusBadge" class="badge" style="font-size: 0.82rem;"></span>
+              <button type="button" id="btnEditPrecificacao" class="btn btn-secondary btn-sm" style="font-weight: 600;">Editar Ficha Técnica</button>
+              <div id="precEditingButtons" class="prec-editing-buttons" style="display: none; gap: 8px;">
+                <button type="button" id="btnCancelEditPrec" class="btn btn-ghost btn-sm">Cancelar</button>
+                <button type="button" id="btnSavePrecificacao" class="btn btn-primary btn-sm">Salvar Ficha</button>
+              </div>
+            </div>
           </div>
 
           <div class="estoque-form" style="margin-top: 12px;">
@@ -6710,6 +6832,9 @@ html.dark .badge-purple {
             <select id="precificacaoProduto" aria-label="Produto a precificar"></select>
           </div>
           <p id="precificacaoStatus" class="prec-status prec-status-warn"></p>
+
+          <!-- Faixa de Contexto Rápido do Produto (Head-Up Display) -->
+          <div id="precProductContext" class="prec-product-context" style="display: none;"></div>
 
           <!-- Bloco A: Bases e Sub-Receitas -->
           <div class="prec-block-section" style="margin-top: 22px;">
@@ -6775,49 +6900,65 @@ html.dark .badge-purple {
             <h2 class="insumo-section-title" style="margin: 0;">Parâmetros da Ficha</h2>
             <span class="badge" id="precRatesBadge" style="font-size: 0.75rem;">Markup Divisor</span>
           </div>
-          <div class="form-grid prec-fatores-grid">
-            <div class="form-field form-field-full">
-              <label>Linha de Produto</label>
-              <div class="prec-categoria-pills" id="precCategoriaPills">
-                <button type="button" class="btn btn-ghost btn-sm prec-cat-btn" data-categoria="premium">Linha Premium (20%)</button>
-                <button type="button" class="btn btn-ghost btn-sm prec-cat-btn" data-categoria="basico">Linha Básica (10%)</button>
-                <button type="button" class="btn btn-ghost btn-sm prec-cat-btn" data-categoria="comissionado">Comissionado (5%)</button>
-                <button type="button" class="btn btn-ghost btn-sm prec-cat-btn" data-categoria="subreceita">Sub-Receita (0%)</button>
-                <button type="button" class="btn btn-ghost btn-sm prec-cat-btn active" data-categoria="personalizado">Personalizado</button>
+
+          <!-- Grupo 1: Lote & Produção -->
+          <div class="prec-param-group" style="margin-top: 14px;">
+            <div class="prec-param-group-header">
+              <span class="prec-param-group-title">1. Rendimento & Tempo do Lote</span>
+            </div>
+            <div class="form-grid prec-fatores-grid">
+              <div class="form-field">
+                <label for="precRendimento">Rendimento (unidades)</label>
+                <input type="number" id="precRendimento" min="1" step="1" value="10" aria-label="Rendimento em unidades">
               </div>
-              <input type="hidden" id="precCategoriaLinha" value="personalizado">
+              <div class="form-field">
+                <label for="precTempoPreparo">Tempo de Preparo (min)</label>
+                <input type="number" id="precTempoPreparo" min="0" step="1" value="30" placeholder="Ex.: 30" aria-label="Tempo de preparo e decoração em minutos">
+              </div>
             </div>
-            <div class="form-field">
-              <label for="precTempoPreparo">Tempo de Preparo (min)</label>
-              <input type="number" id="precTempoPreparo" min="0" step="1" value="30" placeholder="Ex.: 30" aria-label="Tempo de preparo e decoração em minutos">
+          </div>
+
+          <!-- Grupo 2: Estratégia Comercial & Custos Adicionais -->
+          <div class="prec-param-group" style="margin-top: 14px;">
+            <div class="prec-param-group-header">
+              <span class="prec-param-group-title">2. Estratégia Comercial & Embalagem</span>
             </div>
-            <div class="form-field">
-              <label for="precLucroLiquido">Margem Líquida Desejada (%)</label>
-              <input type="number" id="precLucroLiquido" min="0" max="89" step="0.5" value="25" aria-label="Margem líquida desejada">
+            <div class="form-grid prec-fatores-grid">
+              <div class="form-field form-field-full">
+                <label>Linha de Produto</label>
+                <div class="prec-categoria-pills" id="precCategoriaPills">
+                  <button type="button" class="btn btn-ghost btn-sm prec-cat-btn" data-categoria="premium">Linha Premium (20%)</button>
+                  <button type="button" class="btn btn-ghost btn-sm prec-cat-btn" data-categoria="basico">Linha Básica (10%)</button>
+                  <button type="button" class="btn btn-ghost btn-sm prec-cat-btn" data-categoria="comissionado">Comissionado (5%)</button>
+                  <button type="button" class="btn btn-ghost btn-sm prec-cat-btn" data-categoria="subreceita">Sub-Receita (0%)</button>
+                  <button type="button" class="btn btn-ghost btn-sm prec-cat-btn active" data-categoria="personalizado">Personalizado</button>
+                </div>
+                <input type="hidden" id="precCategoriaLinha" value="personalizado">
+              </div>
+              <div class="form-field">
+                <label for="precLucroLiquido">Margem Líquida (%)</label>
+                <input type="number" id="precLucroLiquido" min="0" max="89" step="0.5" value="25" aria-label="Margem líquida desejada">
+              </div>
+              <div class="form-field">
+                <label for="precPrecoAlvo">Preço Alvo / Fixar Preço (R$)</label>
+                <input type="number" id="precPrecoAlvo" min="0" step="0.10" placeholder="Ex.: 22,80" aria-label="Preço de venda alvo em reais">
+              </div>
+              <div class="form-field form-field-full">
+                <label for="precEmbalagem">Embalagem (R$/un)</label>
+                <input type="number" id="precEmbalagem" min="0" step="0.01" value="1" aria-label="Custo de embalagem por unidade">
+              </div>
+              <div class="form-field form-field-full">
+                <label for="precCustoAdicional">Custo Adicional (R$/un)</label>
+                <input type="number" id="precCustoAdicional" min="0" step="0.01" value="0" aria-label="Custo adicional por unidade">
+              </div>
+              <div class="form-field form-field-full">
+                <label for="precCustoAdicionalObs">Observação do Custo Adicional</label>
+                <input type="text" id="precCustoAdicionalObs" placeholder="Ex.: fita especial, topo de bolo, vela" autocomplete="off">
+              </div>
+              <!-- Inputs legados ocultos para retrocompatibilidade -->
+              <input type="hidden" id="precMargem" value="25">
+              <input type="hidden" id="precMultiplicador" value="3">
             </div>
-            <div class="form-field">
-              <label for="precPrecoAlvo">Preço Alvo / Fixar Preço (R$)</label>
-              <input type="number" id="precPrecoAlvo" min="0" step="0.10" placeholder="Ex.: 22,80" aria-label="Preço de venda alvo em reais">
-            </div>
-            <div class="form-field">
-              <label for="precRendimento">Rendimento (unidades)</label>
-              <input type="number" id="precRendimento" min="1" step="1" value="10" aria-label="Rendimento em unidades">
-            </div>
-            <div class="form-field">
-              <label for="precEmbalagem">Embalagem (R$/un)</label>
-              <input type="number" id="precEmbalagem" min="0" step="0.01" value="1" aria-label="Custo de embalagem por unidade">
-            </div>
-            <div class="form-field form-field-full">
-              <label for="precCustoAdicional">Custo Adicional (R$/un)</label>
-              <input type="number" id="precCustoAdicional" min="0" step="0.01" value="0" aria-label="Custo adicional por unidade">
-            </div>
-            <div class="form-field form-field-full">
-              <label for="precCustoAdicionalObs">Observação do Custo Adicional</label>
-              <input type="text" id="precCustoAdicionalObs" placeholder="Ex.: fita especial, topo de bolo, vela" autocomplete="off">
-            </div>
-            <!-- Inputs legados ocultos para retrocompatibilidade -->
-            <input type="hidden" id="precMargem" value="25">
-            <input type="hidden" id="precMultiplicador" value="3">
           </div>
         </div>
 
@@ -6828,12 +6969,8 @@ html.dark .badge-purple {
 
           <p id="precAviso" class="estoque-aviso" hidden></p>
 
-          <div class="prec-actions-footer">
-            <button type="button" id="btnEditPrecificacao" class="btn btn-ghost" style="width: 100%;">Editar Ficha Técnica</button>
-            <div id="precEditingButtons" class="prec-editing-buttons" style="display: none; gap: 8px; width: 100%;">
-              <button type="button" id="btnCancelEditPrec" class="btn btn-ghost" style="flex: 1;">Cancelar</button>
-              <button type="button" id="btnSavePrecificacao" class="btn btn-primary" style="flex: 1;">Salvar Ficha</button>
-            </div>
+          <div id="precActionsFooterBottom" class="prec-actions-footer" style="display: none;">
+            <button type="button" id="btnSavePrecificacaoBottom" class="btn btn-primary" style="width: 100%;">Salvar Ficha Técnica</button>
           </div>
         </div>
       </div>
@@ -8451,6 +8588,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=67"></script>
+  <script type="module" src="js/app.js?v=68"></script>
 </body>
 </html>

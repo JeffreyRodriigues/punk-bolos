@@ -4081,13 +4081,122 @@ html.dark .badge-purple {
   font-size: 0.84rem;
 }
 
-/* ---------- Blocos Estruturados de Detalhes da Precificação ---------- */
+/* ---------- Faixa de Contexto Rápido do Produto (HUD) ---------- */
+.prec-product-context {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 860px) {
+  .prec-product-context {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.prec-context-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.prec-context-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.prec-context-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+/* ---------- Grupos Semânticos de Parâmetros ---------- */
+.prec-param-group {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.prec-param-group-header {
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.prec-param-group-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+}
+
+/* ---------- Blocos Estruturados de Detalhes da Precificação (Acordeon) ---------- */
 .prec-detail-section {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   margin-bottom: 10px;
+}
+
+.prec-detail-accordion {
+  user-select: none;
+}
+
+.prec-detail-accordion summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  outline: none;
+}
+
+.prec-detail-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.prec-accordion-chevron {
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.prec-detail-accordion[open] .prec-accordion-chevron {
+  transform: rotate(-135deg);
+}
+
+.prec-detail-accordion[open] summary {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.prec-detail-accordion:not([open]) summary {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.prec-detail-content {
+  cursor: default;
 }
 
 .prec-detail-section-title {
@@ -4161,6 +4270,10 @@ html.dark .badge-purple {
 
 .base-componente-row.item-row:hover {
   border-color: var(--color-primary-soft, var(--color-border));
+}
+
+.base-componente-row--base {
+  border-left: 3px solid var(--color-primary) !important;
 }
 
 .base-componente-row .base-componente-select {

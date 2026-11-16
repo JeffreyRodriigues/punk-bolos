@@ -385,6 +385,67 @@ function restoreSnapshot() {
 
 /**
  * Atualiza a interface gráfica conforme o modo de edição.
+/**
+ * Atualiza a faixa de contexto rápido do produto (Head-Up Display).
+ * @param {Object|null} calc - Resultado do cálculo de precificação (opcional)
+ */
+export function updateProductContext(calc = null) {
+  const container = document.getElementById('precProductContext');
+  if (!container) return;
+  const prod = product.getProducts().find((p) => p.id === currentProdutoId);
+  if (!prod) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+  container.style.display = 'grid';
+
+  const precoCatalogo = Number(prod.valor) || 0;
+  const insumos = storage.getAllInsumos();
+  const bases = base.getBases();
+  const costRates = costSettings.getCostSettings();
+  const c = calc || (editingReceita ? pricing.calcular(editingReceita, insumos, bases, costRates) : null);
+  const custoUnit = c ? (c.custoUnitarioTotal || 0) : 0;
+  const precoSugerido = c ? (c.precoSugerido || 0) : 0;
+
+  let alinhamentoBadge = '';
+  if (!editingReceita) {
+    alinhamentoBadge = '<span class="badge" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-muted);">Sem Ficha Técnica</span>';
+  } else if (precoCatalogo > 0 && precoSugerido > 0) {
+    const diffPct = ((precoCatalogo - precoSugerido) / precoSugerido) * 100;
+    if (diffPct >= 0) {
+      alinhamentoBadge = `<span class="badge badge-success">+${diffPct.toFixed(0)}% vs Sugerido</span>`;
+    } else {
+      alinhamentoBadge = `<span class="badge badge-warning">${diffPct.toFixed(0)}% vs Sugerido</span>`;
+    }
+  } else if (precoCatalogo > 0) {
+    alinhamentoBadge = '<span class="badge badge-secondary">Em cálculo...</span>';
+  } else {
+    alinhamentoBadge = '<span class="badge badge-warning">Preço não cadastrado</span>';
+  }
+
+  container.innerHTML = `
+    <div class="prec-context-item">
+      <span class="prec-context-label">Preço no Catálogo</span>
+      <strong class="prec-context-val">${precoCatalogo > 0 ? formatCurrency(precoCatalogo) : 'R$ 0,00'}</strong>
+    </div>
+    <div class="prec-context-item">
+      <span class="prec-context-label">Custo Unitário Total</span>
+      <strong class="prec-context-val">${custoUnit > 0 ? formatCurrency(custoUnit) : '—'}</strong>
+    </div>
+    <div class="prec-context-item">
+      <span class="prec-context-label">Preço Sugerido (Markup)</span>
+      <strong class="prec-context-val">${precoSugerido > 0 ? formatCurrency(precoSugerido) : '—'}</strong>
+    </div>
+    <div class="prec-context-item prec-context-item--status">
+      <span class="prec-context-label">Alinhamento</span>
+      <div style="margin-top: 3px;">${alinhamentoBadge}</div>
+    </div>
+  `;
+}
+
+/**
+ * Atualiza o modo da interface (Edição vs Leitura).
  */
 function updateModeUI() {
   const formEl = document.getElementById('precificacaoForm');
@@ -394,6 +455,7 @@ function updateModeUI() {
   const baseActions = document.getElementById('precBaseActions');
   const ingredienteActions = document.getElementById('precIngredienteActions');
   const badgeStatus = document.getElementById('precificacaoStatusBadge');
+  const footerBottom = document.getElementById('precActionsFooterBottom');
 
   if (formEl) {
     formEl.classList.toggle('prec-readonly', !isEditing);
@@ -405,11 +467,12 @@ function updateModeUI() {
     if (el) el.disabled = !isEditing;
   });
 
-  if (btnEdit) btnEdit.style.display = isEditing ? 'none' : 'block';
-  if (editingButtons) editingButtons.style.display = isEditing ? 'flex' : 'none';
+  if (btnEdit) btnEdit.style.display = isEditing ? 'none' : 'inline-flex';
+  if (editingButtons) editingButtons.style.display = isEditing ? 'inline-flex' : 'none';
   if (editActions) editActions.style.display = isEditing ? 'flex' : 'none';
   if (baseActions) baseActions.style.display = isEditing ? 'flex' : 'none';
   if (ingredienteActions) ingredienteActions.style.display = isEditing ? 'flex' : 'none';
+  if (footerBottom) footerBottom.style.display = isEditing ? 'block' : 'none';
 
   if (badgeStatus) {
     if (!editingReceita) {
@@ -561,7 +624,7 @@ function renderBaseRows() {
 
   baseRows.forEach((row, index) => {
     const linha = document.createElement('div');
-    linha.className = 'item-row base-componente-row';
+    linha.className = 'item-row base-componente-row base-componente-row--base';
 
     const sel = document.createElement('select');
     sel.className = 'base-componente-select item-tipo';
@@ -1023,30 +1086,36 @@ function updatePreview() {
   }
 
   // 2. BLOCO ESTRUTURADO: FORMAÇÃO DO CUSTO UNITÁRIO
-  const secCustos = document.createElement('div');
-  secCustos.className = 'prec-detail-section';
+  const secCustos = document.createElement('details');
+  secCustos.className = 'prec-detail-section prec-detail-accordion';
+  secCustos.open = true;
   secCustos.innerHTML = `
-    <div class="prec-detail-section-title">Formação do Custo Unitário</div>
-    <div class="prec-preview-row prec-preview-row-small">
-      <span>Insumos da Receita (c/ 3% quebra)</span>
-      <strong>${formatCurrency(c.custoIngredientesComQuebra / rendimento)} /un</strong>
-    </div>
-    <div class="prec-preview-row prec-preview-row-small">
-      <span>Mão de Obra (${receita.tempoPreparoMinutos} min)</span>
-      <strong>${formatCurrency(c.custoMaoDeObraLote / rendimento)} /un</strong>
-    </div>
-    <div class="prec-preview-row prec-preview-row-small">
-      <span>Custos Fixos Rateados</span>
-      <strong>${formatCurrency(c.custoFixoLote / rendimento)} /un</strong>
-    </div>
-    ${embalagemUnit > 0 ? `
-    <div class="prec-preview-row prec-preview-row-small">
-      <span>Embalagem & Adicionais</span>
-      <strong>${formatCurrency(embalagemUnit)} /un</strong>
-    </div>` : ''}
-    <div class="prec-preview-row" style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--color-border);">
-      <span><strong>(=) Custo Unitário Total</strong></span>
-      <strong>${formatCurrency(c.custoUnitarioTotal)} /un</strong>
+    <summary class="prec-detail-section-title">
+      <span>Formação do Custo Unitário</span>
+      <span class="prec-accordion-chevron"></span>
+    </summary>
+    <div class="prec-detail-content">
+      <div class="prec-preview-row prec-preview-row-small">
+        <span>Insumos da Receita (c/ 3% quebra)</span>
+        <strong>${formatCurrency(c.custoIngredientesComQuebra / rendimento)} /un</strong>
+      </div>
+      <div class="prec-preview-row prec-preview-row-small">
+        <span>Mão de Obra (${receita.tempoPreparoMinutos} min)</span>
+        <strong>${formatCurrency(c.custoMaoDeObraLote / rendimento)} /un</strong>
+      </div>
+      <div class="prec-preview-row prec-preview-row-small">
+        <span>Custos Fixos Rateados</span>
+        <strong>${formatCurrency(c.custoFixoLote / rendimento)} /un</strong>
+      </div>
+      ${embalagemUnit > 0 ? `
+      <div class="prec-preview-row prec-preview-row-small">
+        <span>Embalagem & Adicionais</span>
+        <strong>${formatCurrency(embalagemUnit)} /un</strong>
+      </div>` : ''}
+      <div class="prec-preview-row" style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--color-border);">
+        <span><strong>(=) Custo Unitário Total</strong></span>
+        <strong>${formatCurrency(c.custoUnitarioTotal)} /un</strong>
+      </div>
     </div>
   `;
   preview.appendChild(secCustos);
@@ -1065,41 +1134,53 @@ function updatePreview() {
     mcColor = 'var(--color-warn)';
   }
 
-  const secSebrae = document.createElement('div');
-  secSebrae.className = 'prec-detail-section';
+  const secSebrae = document.createElement('details');
+  secSebrae.className = 'prec-detail-section prec-detail-accordion';
+  secSebrae.open = true;
   secSebrae.innerHTML = `
-    <div class="prec-detail-section-title">
+    <summary class="prec-detail-section-title">
       <span>Margem de Contribuição (Sebrae)</span>
-      <span class="badge" style="font-size: 0.72rem; color: ${mcColor};">${mcBadge}</span>
-    </div>
-    <div class="prec-preview-row prec-preview-row-small">
-      <span>(-) Custos Variáveis (Insumos + Emb.)</span>
-      <strong>- ${formatCurrency(c.custoRealUnitario)} /un</strong>
-    </div>
-    <div class="prec-preview-row prec-preview-row-small">
-      <span>(-) Taxas & Deduções (${c.taxasDeducoesPct.toFixed(1)}%)</span>
-      <strong>- ${formatCurrency(deducoesValor)} /un</strong>
-    </div>
-    <div class="prec-preview-row" style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--color-border);">
-      <span><strong>(=) Margem de Contribuição (MC)</strong></span>
-      <strong style="color: ${mcColor};">${formatCurrency(c.margemContribuicaoValor)} /un (${c.margemContribuicaoPct.toFixed(1)}%)</strong>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge" style="font-size: 0.72rem; color: ${mcColor};">${mcBadge}</span>
+        <span class="prec-accordion-chevron"></span>
+      </div>
+    </summary>
+    <div class="prec-detail-content">
+      <div class="prec-preview-row prec-preview-row-small">
+        <span>(-) Custos Variáveis (Insumos + Emb.)</span>
+        <strong>- ${formatCurrency(c.custoRealUnitario)} /un</strong>
+      </div>
+      <div class="prec-preview-row prec-preview-row-small">
+        <span>(-) Taxas & Deduções (${c.taxasDeducoesPct.toFixed(1)}%)</span>
+        <strong>- ${formatCurrency(deducoesValor)} /un</strong>
+      </div>
+      <div class="prec-preview-row" style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--color-border);">
+        <span><strong>(=) Margem de Contribuição (MC)</strong></span>
+        <strong style="color: ${mcColor};">${formatCurrency(c.margemContribuicaoValor)} /un (${c.margemContribuicaoPct.toFixed(1)}%)</strong>
+      </div>
     </div>
   `;
   preview.appendChild(secSebrae);
 
   // 4. BLOCO ESTRUTURADO: PONTO DE EQUILÍBRIO DO PRODUTO (PEF)
   if (c.pontoEquilibrioUnidadesMensal > 0) {
-    const secPef = document.createElement('div');
-    secPef.className = 'prec-detail-section';
+    const secPef = document.createElement('details');
+    secPef.className = 'prec-detail-section prec-detail-accordion';
+    secPef.open = false;
     secPef.innerHTML = `
-      <div class="prec-detail-section-title">Ponto de Equilíbrio do Produto</div>
-      <div class="prec-preview-row">
-        <span>Meta em Unidades</span>
-        <strong style="color: var(--color-primary);">${c.pontoEquilibrioUnidadesMensal} un/mês <small style="color: var(--color-text-muted); font-weight: normal;">(${c.pontoEquilibrioUnidadesDiario} un/dia)</small></strong>
-      </div>
-      <div class="prec-preview-row prec-preview-row-small">
-        <span>Meta em Faturamento</span>
-        <strong>${formatCurrency(c.pontoEquilibrioFaturamentoMensal)} /mês</strong>
+      <summary class="prec-detail-section-title">
+        <span>Ponto de Equilíbrio do Produto</span>
+        <span class="prec-accordion-chevron"></span>
+      </summary>
+      <div class="prec-detail-content">
+        <div class="prec-preview-row">
+          <span>Meta em Unidades</span>
+          <strong style="color: var(--color-primary);">${c.pontoEquilibrioUnidadesMensal} un/mês <small style="color: var(--color-text-muted); font-weight: normal;">(${c.pontoEquilibrioUnidadesDiario} un/dia)</small></strong>
+        </div>
+        <div class="prec-preview-row prec-preview-row-small">
+          <span>Meta em Faturamento</span>
+          <strong>${formatCurrency(c.pontoEquilibrioFaturamentoMensal)} /mês</strong>
+        </div>
       </div>
     `;
     preview.appendChild(secPef);
@@ -1136,6 +1217,9 @@ function updatePreview() {
       status.className = 'prec-status prec-status-ok';
     }
   }
+
+  // Atualiza a barra de contexto rápido do produto
+  updateProductContext(c);
 }
 
 /**
@@ -1654,3 +1738,12 @@ filterPills.forEach((pill) => {
 
 // Inicializa modal de Parâmetros de Custos
 initCostSettingsModal();
+
+// Botão secundário de salvar ficha no rodapé do DRE
+const btnSaveBottom = document.getElementById('btnSavePrecificacaoBottom');
+if (btnSaveBottom) {
+  btnSaveBottom.addEventListener('click', () => {
+    const mainSave = document.getElementById('btnSavePrecificacao');
+    if (mainSave) mainSave.click();
+  });
+}

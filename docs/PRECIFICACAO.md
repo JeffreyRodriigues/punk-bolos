@@ -248,3 +248,4 @@ js/modules/pricingView.js    # tela Precificação (seletor de produto + linhas 
 | 10 | Colar do Excel | Substituição total (100%) dos ingredientes existentes da ficha técnica. |
 | 11 | Limpar Todos | Botão para apagar todos os itens da receita com diálogo de confirmação rápida. |
 | 12 | Visualização Clara | Top 3 KPI cards no demonstrativo (Preço, Custo Unitário, Lucro Líquido), subtotal de insumos na tabela e blocos visuais nítidos. |
+| 13 | UX Otimizada (Senior UX) | Barra de ações no cabeçalho do produto (Editar/Salvar/Cancelar no topo), Faixa de Contexto Rápido (preço catálogo vs custo e markup), agrupamento de parâmetros em Lote vs Comercial, e acordeons colapsáveis no DRE para navegação ágil sem rolagem. |
