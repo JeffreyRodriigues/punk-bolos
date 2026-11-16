@@ -133,22 +133,22 @@ function renderPreviewTable(rows, existingInsumos, existingBases = []) {
 
     if (row.status === STATUS_TYPES.EXACT_MATCH_BASE) {
       badgeClass = 'badge-purple';
-      badgeText = '🍰 Base Cadastrada';
+      badgeText = 'Base Cadastrada';
     } else if (row.status === STATUS_TYPES.EXACT_MATCH_SAME_PRICE) {
       badgeClass = 'badge-success';
-      badgeText = '🟢 Existente';
+      badgeText = 'Existente';
     } else if (row.status === STATUS_TYPES.EXACT_MATCH_DIFF_PRICE) {
       badgeClass = 'badge-warning';
-      badgeText = '🟡 Preço Dif.';
+      badgeText = 'Preço Dif.';
     } else if (row.status === STATUS_TYPES.SIMILAR_BASE) {
       badgeClass = 'badge-orange';
-      badgeText = '🍰 Base Similar';
+      badgeText = 'Base Similar';
     } else if (row.status === STATUS_TYPES.SIMILAR_NAME) {
       badgeClass = 'badge-orange';
-      badgeText = '🟠 Nome Parecido';
+      badgeText = 'Nome Parecido';
     } else if (row.status === STATUS_TYPES.NEW_INSUMO) {
       badgeClass = 'badge-info';
-      badgeText = '🔵 Novo Insumo';
+      badgeText = 'Novo Insumo';
     }
 
     tdStatus.innerHTML = `<span class="badge ${badgeClass}">${badgeText}</span>`;
@@ -201,7 +201,7 @@ function renderPreviewTable(rows, existingInsumos, existingBases = []) {
 
       div.innerHTML = `
         <div style="font-weight: 600; color: var(--color-warn); margin-bottom: 4px;">
-          🍰 Parece com a Base: "${escapeHtml(bNome)}" (${Math.round((row.similarityScore || 0.7) * 100)}% similar)
+          Parece com a Base: "${escapeHtml(bNome)}" (${Math.round((row.similarityScore || 0.7) * 100)}% similar)
         </div>
         <label class="excel-radio-label">
           <input type="radio" name="acao_sim_base_${index}" value="use_similar_base" checked>
@@ -227,7 +227,7 @@ function renderPreviewTable(rows, existingInsumos, existingBases = []) {
 
       div.innerHTML = `
         <div style="font-weight: 600; color: var(--color-warn); margin-bottom: 4px;">
-          ⚠️ Parece com: "${escapeHtml(row.insumoMatch.nome)}" (${Math.round((row.similarityScore || 0.7) * 100)}% similar)
+          Parece com: "${escapeHtml(row.insumoMatch.nome)}" (${Math.round((row.similarityScore || 0.7) * 100)}% similar)
         </div>
         <label class="excel-radio-label">
           <input type="radio" name="acao_sim_${index}" value="use_similar" checked>

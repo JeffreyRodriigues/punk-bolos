@@ -371,10 +371,13 @@ function normalizeBase(base) {
   }
   return {
     id: base.id,
+    codigo: String(base.codigo || '').trim(),
     nome: String(base.nome || '').trim(),
     descricao: String(base.descricao || '').trim(),
     rendimento: Number(base.rendimento) || 0,
     rendimentoUnidade: String(base.rendimentoUnidade || 'un').trim(),
+    estoqueAtual: Number(base.estoqueAtual) || 0,
+    estoqueMinimo: base.estoqueMinimo != null && base.estoqueMinimo !== '' ? Number(base.estoqueMinimo) : null,
     componentes: Array.isArray(base.componentes)
       ? base.componentes.map((c) => ({
           insumoId: String(c.insumoId || ''),

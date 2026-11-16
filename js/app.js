@@ -290,9 +290,12 @@ function init() {
     orderList.render();
   });
 
-  // Inventário: após criar/editar/excluir insumo, re-renderiza a tela
+  // Inventário: após criar/editar/excluir insumo ou base, re-renderiza as telas
   inventoryView.setChangeListener(() => {
-    if (!isMobile()) inventoryView.render();
+    if (!isMobile()) {
+      inventoryView.render();
+      pricingView.render();
+    }
   });
 
   // Precificação: após salvar/usar preço, re-renderiza e reflete no catálogo

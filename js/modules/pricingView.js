@@ -538,7 +538,7 @@ function renderBaseRows() {
     aviso.style.padding = '8px 0';
     aviso.style.margin = '0';
     aviso.textContent = isEditing
-      ? 'Nenhuma base ou sub-receita vinculada. Clique em "＋ Adicionar Base" se esta receita utiliza massas ou recheios prontos.'
+      ? 'Nenhuma base ou sub-receita vinculada. Clique em "＋ Adicionar Base" ou "Colar Bases do Excel" se esta receita utiliza massas ou recheios prontos.'
       : 'Nenhuma base utilizada nesta receita.';
     wrap.appendChild(aviso);
     updateInsumosSummary();
@@ -1470,6 +1470,28 @@ if (clearBtn) {
   });
 }
 
+const pasteBaseExcelBtn = document.getElementById('btnPastePrecBaseExcel');
+if (pasteBaseExcelBtn) {
+  pasteBaseExcelBtn.addEventListener('click', () => {
+    openExcelImportModal((importedRows) => {
+      if (!Array.isArray(importedRows) || importedRows.length === 0) return;
+
+      const importedBases = importedRows.filter((r) => r.tipo === 'base');
+      const rowsToUse = importedBases.length > 0 ? importedBases : importedRows;
+
+      baseRows = rowsToUse.map((r) => ({
+        refId: r.refId,
+        tipo: 'base',
+        quantidade: r.quantidade,
+      }));
+
+      renderAllRows();
+      updatePreview();
+      showToast(`${rowsToUse.length} base(s) importada(s) com sucesso.`, 'success');
+    });
+  });
+}
+
 const pasteExcelBtn = document.getElementById('btnPastePrecExcel');
 if (pasteExcelBtn) {
   pasteExcelBtn.addEventListener('click', () => {
@@ -1479,23 +1501,27 @@ if (pasteExcelBtn) {
       const importedBases = importedRows.filter((r) => r.tipo === 'base');
       const importedInsumos = importedRows.filter((r) => r.tipo !== 'base');
 
-      if (importedBases.length > 0) {
-        baseRows = importedBases.map((r) => ({
-          refId: r.refId,
-          tipo: 'base',
-          quantidade: r.quantidade,
-        }));
-      }
-
-      if (importedInsumos.length > 0) {
+      if (importedInsumos.length > 0 && importedBases.length === 0) {
+        // Colou apenas ingredientes: atualiza ingredientes preservando bases já presentes
         ingredienteRows = importedInsumos.map((r) => ({
           refId: r.refId,
           tipo: 'insumo',
           quantidade: r.quantidade,
         }));
-      } else if (importedBases.length > 0 && importedInsumos.length === 0) {
-        ingredienteRows = [{ refId: '', tipo: 'insumo', quantidade: '' }];
+      } else if (importedInsumos.length > 0 && importedBases.length > 0) {
+        // Colou lista mista contendo ambos: distribui inteligentemente em cada bloco!
+        baseRows = importedBases.map((r) => ({
+          refId: r.refId,
+          tipo: 'base',
+          quantidade: r.quantidade,
+        }));
+        ingredienteRows = importedInsumos.map((r) => ({
+          refId: r.refId,
+          tipo: 'insumo',
+          quantidade: r.quantidade,
+        }));
       } else {
+        // Fallback: se nada foi reconhecido como base, usa todos como ingredientes
         ingredienteRows = importedRows.map((r) => ({
           refId: r.refId,
           tipo: 'insumo',
@@ -1505,7 +1531,7 @@ if (pasteExcelBtn) {
 
       renderAllRows();
       updatePreview();
-      showToast(`${importedRows.length} item(ns) importado(s) substituindo a lista anterior.`, 'success');
+      showToast(`${importedRows.length} ingrediente(s) importado(s) com sucesso.`, 'success');
     });
   });
 }

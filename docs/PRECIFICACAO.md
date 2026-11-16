@@ -190,10 +190,10 @@ O sistema organiza a ficha técnica em 3 blocos estratégicos:
 - **1 receita por produto** (bloqueia dupla).
 - Produto do catálogo **sem receita**: aparece com status **"Sem precificação"** + convite "＋ Criar precificação".
 - **Separação em Blocos Estruturados (Bases vs. Ingredientes Diretos):**
-  - **1. Bases e Sub-Receitas:** massas e recheios pré-produzidos a 0% de margem (custo puro de produção). Possui botões dedicados `＋ Adicionar Base` e `Limpar Bases`, além de subtotal independente.
-  - **2. Ingredientes Diretos & Decoração:** insumos de estoque usados diretamente na montagem do lote. Possui `＋ Adicionar Ingrediente`, `Colar do Excel` e `Limpar Ingredientes`, com subtotal independente.
+  - **1. Bases e Sub-Receitas:** massas e recheios pré-produzidos a 0% de margem (custo puro de produção). Possui botões dedicados `＋ Adicionar Base`, `Colar Bases do Excel` e `Limpar Bases`, além de subtotal independente.
+  - **2. Ingredientes Diretos & Decoração:** insumos de estoque usados diretamente na montagem do lote. Possui `＋ Adicionar Ingrediente`, `Colar Ingredientes do Excel` e `Limpar Ingredientes`, com subtotal independente.
   - **3. Resumo Consolidado de Matéria-Prima:** totaliza itens de bases e insumos diretos, exibindo o custo total no lote e custo unitário.
-  - **Importador do Excel:** distribui automaticamente os itens importados entre os blocos de Bases (tipo `'base'`) e Ingredientes (tipo `'insumo'`).
+  - **Importador do Excel:** importação independente para cada bloco (colar bases preserva ingredientes existentes, e colar ingredientes preserva bases existentes). Se copiado um bloco misto, distribui automaticamente cada item no seu destino correto.
 - A receita é um **snapshot**: guarda `dataCalculo`, `custoIngredientes` e `custoPorUnidade` no momento do cálculo. **Mudanças futuras** no preço do inventário — inclusive em insumos que compõem uma **base** usada na receita — **não alteram** receitas já calculadas; a precificação "vira" desatualizada até o usuário **recalcular manualmente**.
 - **Valor de venda sempre à mão**: a precificação **só sugere** o valor ("usar este preço no catálogo" copia para o campo de valor do produto, sem sobreescrever sozinho). Não há escrita automática no `valor` do catálogo.
 - Campos personalizáveis na receita: `margem` (default 25%), `multiplicador` (default 3), `rendimento` (default 10), `embalagem` (default 1,00), `custoAdicional` + `observacaoAdicional`.

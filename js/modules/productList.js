@@ -37,14 +37,14 @@ let searchQuery = '';
 
 /** Configuração das categorias conhecidas */
 const KNOWN_CATEGORIES = [
-  { key: '',              label: 'Todos',      icon: '📋' },
-  { key: 'Fatia',        label: 'Fatias',     icon: '🍰' },
-  { key: 'Punkitos',     label: 'Punkitos',   icon: '🧁' },
-  { key: 'Bolo Inteiro', label: 'Bolos',      icon: '🎂' },
-  { key: 'Bolo Naked',   label: 'Naked',      icon: '🍓' },
-  { key: 'Docinho',      label: 'Docinhos',   icon: '🍬' },
-  { key: 'Decoração',    label: 'Decoração',  icon: '✨' },
-  { key: 'Adicional',    label: 'Adicionais', icon: '➕' },
+  { key: '',              label: 'Todos' },
+  { key: 'Fatia',        label: 'Fatias' },
+  { key: 'Punkitos',     label: 'Punkitos' },
+  { key: 'Bolo Inteiro', label: 'Bolos' },
+  { key: 'Bolo Naked',   label: 'Naked' },
+  { key: 'Docinho',      label: 'Docinhos' },
+  { key: 'Decoração',    label: 'Decoração' },
+  { key: 'Adicional',    label: 'Adicionais' },
 ];
 
 // Eventos de fechamento do modal de exclusão
@@ -133,7 +133,7 @@ function renderCategoryPills(allProducts) {
 
   const extraCategories = Object.keys(counts)
     .filter((k) => k !== '' && !KNOWN_CATEGORIES.some((c) => c.key === k))
-    .map((k) => ({ key: k, label: k, icon: '📦' }));
+    .map((k) => ({ key: k, label: k }));
 
   const categoriesToShow = [...KNOWN_CATEGORIES, ...extraCategories];
 
@@ -146,7 +146,7 @@ function renderCategoryPills(allProducts) {
     btn.type = 'button';
     btn.className = `customer-filter-pill product-filter-pill ${selectedCategory === cat.key ? 'active' : ''}`.trim();
     btn.dataset.filter = cat.key;
-    btn.innerHTML = `${cat.icon ? `${cat.icon} ` : ''}${escapeHtml(cat.label)} <span class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">${count}</span>`;
+    btn.innerHTML = `${escapeHtml(cat.label)} <span class="count-badge" style="font-size:0.75rem; padding: 2px 6px;">${count}</span>`;
 
     btn.addEventListener('click', () => {
       selectedCategory = cat.key;

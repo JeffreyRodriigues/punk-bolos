@@ -524,11 +524,11 @@ function renderRankings(orders) {
 /* ---------- Abas de tipo de produto (Ideia 1) ---------- */
 
 const TYPE_TABS = [
-  { value: 'all',          label: 'Geral',    icon: '📊' },
-  { value: 'Fatia',        label: 'Fatias',   icon: '🍰' },
-  { value: 'Punkitos',     label: 'Punkitos', icon: '🧁' },
-  { value: 'Bolo Inteiro', label: 'Bolos',    icon: '🎂' },
-  { value: 'Docinho',      label: 'Docinhos', icon: '🍬' },
+  { value: 'all',          label: 'Geral' },
+  { value: 'Fatia',        label: 'Fatias' },
+  { value: 'Punkitos',     label: 'Punkitos' },
+  { value: 'Bolo Inteiro', label: 'Bolos' },
+  { value: 'Docinho',      label: 'Docinhos' },
 ];
 
 /**
@@ -538,12 +538,12 @@ function renderTypeTabs() {
   const container = document.getElementById('dash-type-tabs');
   if (!container) return;
   container.innerHTML = '';
-  TYPE_TABS.forEach(({ value, label, icon }) => {
+  TYPE_TABS.forEach(({ value, label }) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `dash-type-tab${activeType === value ? ' active' : ''}`;
     btn.dataset.type = value;
-    btn.innerHTML = `<span class="dash-type-tab-icon">${icon}</span> ${label}`;
+    btn.textContent = label;
     btn.addEventListener('click', () => {
       activeType = value;
       render();
@@ -555,10 +555,10 @@ function renderTypeTabs() {
 /* ---------- Cards de resumo por tipo (Ideia 2) ---------- */
 
 const TYPE_CONFIG = {
-  'Fatia':        { icon: '🍰', label: 'Fatias',   color: 'type-fatia' },
-  'Punkitos':     { icon: '🧁', label: 'Punkitos', color: 'type-punkitos' },
-  'Bolo Inteiro': { icon: '🎂', label: 'Bolos',    color: 'type-bolo' },
-  'Docinho':      { icon: '🍬', label: 'Docinhos', color: 'type-docinho' },
+  'Fatia':        { label: 'Fatias',   color: 'type-fatia' },
+  'Punkitos':     { label: 'Punkitos', color: 'type-punkitos' },
+  'Bolo Inteiro': { label: 'Bolos',    color: 'type-bolo' },
+  'Docinho':      { label: 'Docinhos', color: 'type-docinho' },
 };
 
 /**
@@ -571,17 +571,16 @@ function renderTypeSummaryCards(orders) {
   const summary = service.summaryByType(orders);
   container.innerHTML = '';
   Object.entries(summary).forEach(([tipo, data]) => {
-    const cfg = TYPE_CONFIG[tipo] || { icon: '📦', label: tipo, color: '' };
+    const cfg = TYPE_CONFIG[tipo] || { label: tipo, color: '' };
     const card = document.createElement('div');
     card.className = `type-summary-card ${cfg.color}`;
     card.innerHTML = `
       <div class="type-summary-header">
-        <span class="type-summary-icon">${cfg.icon}</span>
         <span class="type-summary-label">${cfg.label}</span>
       </div>
       <div class="type-summary-qty">${data.quantidade} <span>un</span></div>
       <div class="type-summary-revenue">${formatCurrency(data.receita)}</div>
-      <div class="type-summary-top">⭐ ${data.topSabor}</div>
+      <div class="type-summary-top">Mais vendido: ${data.topSabor}</div>
     `;
     container.appendChild(card);
   });
