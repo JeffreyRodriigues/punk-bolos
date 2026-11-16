@@ -421,19 +421,43 @@ function createCard(o) {
   if (o.observacoes && String(o.observacoes).trim()) {
     const obsTag = document.createElement('span');
     obsTag.className = 'order-obs-tag';
-    obsTag.textContent = '📝 Obs';
+    obsTag.textContent = 'Obs';
     obsTag.title = o.observacoes.trim();
     summaryItems.appendChild(obsTag);
   }
 
-  // Linha 3 do resumo: Ações compactas (Concluir rápido + Imprimir à esquerda, Expandir à direita)
+  // Linha 3 do resumo: Ações compactas (Avanço rápido de status + Imprimir à esquerda, Expandir à direita)
   const compactActions = document.createElement('div');
   compactActions.className = 'order-compact-actions';
 
   const compactActionsLeft = document.createElement('div');
   compactActionsLeft.className = 'order-compact-actions-left';
 
-  if (o.status !== 'Concluído' && o.status !== 'Cancelado') {
+  if (o.status === 'Pendente') {
+    compactActionsLeft.appendChild(
+      createTextActionBtn('Iniciar Produção', () => {
+        if (onAction.advance) {
+          onAction.advance(o, 'Em Produção', `Pedido #${o.numero} em produção!`);
+        } else {
+          onAction.complete(o);
+        }
+      }, 'action-info')
+    );
+  } else if (o.status === 'Em Produção') {
+    compactActionsLeft.appendChild(
+      createTextActionBtn('Marcar Embalado', () => {
+        if (onAction.advance) {
+          onAction.advance(o, 'Embalado', `Pedido #${o.numero} embalado!`);
+        } else {
+          onAction.complete(o);
+        }
+      }, 'action-info')
+    );
+  } else if (o.status === 'Embalado') {
+    compactActionsLeft.appendChild(
+      createTextActionBtn('Concluir', () => onAction.complete(o), 'action-ok')
+    );
+  } else if (o.status !== 'Concluído' && o.status !== 'Cancelado') {
     compactActionsLeft.appendChild(
       createTextActionBtn('Concluir', () => onAction.complete(o), 'action-ok')
     );

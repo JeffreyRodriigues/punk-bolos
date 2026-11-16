@@ -13,6 +13,7 @@
    ============================================================ */
 
 import * as storage from './storage.js';
+import * as inventory from './inventory.js';
 import * as purchases from './purchases.js';
 import * as receiptParser from './receiptParser.js';
 import { formatCurrency, formatDate } from '../utils/money.js';
@@ -256,11 +257,13 @@ function renderDraftItems() {
     const selWrap = document.createElement('div');
     selWrap.style.cssText = 'flex: 2 1 200px; min-width: 180px;';
 
+    const selectedInsumo = insumos.find((i) => i.id === item.insumoId);
+
     if (item.descricaoImportada) {
       const hint = document.createElement('div');
       hint.style.cssText = 'font-size: 0.76rem; color: var(--color-primary); font-weight: 700; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
       hint.title = item.descricaoImportada;
-      hint.textContent = `📋 Cupom: "${item.descricaoImportada}"`;
+      hint.textContent = `Cupom: "${item.descricaoImportada}"`;
       selWrap.appendChild(hint);
     }
 
@@ -281,6 +284,19 @@ function renderDraftItems() {
 
     selWrap.appendChild(select);
 
+    const lastBuy = selectedInsumo ? inventory.ultimaCompra(selectedInsumo) : null;
+    if (lastBuy && Number(lastBuy.custoTotal) > 0) {
+      const lastQtd = Number(lastBuy.quantidadeCompra) || 0;
+      const lastCost = Number(lastBuy.custoTotal) || 0;
+      const lastUnd = selectedInsumo.unidade === 'unidade' ? 'un' : selectedInsumo.unidade;
+      const lastUnitCost = lastQtd > 0 ? lastCost / lastQtd : lastCost;
+      const lastInfo = document.createElement('div');
+      lastInfo.className = 'compra-last-price';
+      lastInfo.style.cssText = 'font-size: 0.74rem; color: var(--color-text-muted); margin-top: 3px;';
+      lastInfo.textContent = `Último pago: ${formatCurrency(lastCost)} por ${formatTrim(lastQtd)} ${lastUnd} (${formatCurrency(lastUnitCost)}/${lastUnd})`;
+      selWrap.appendChild(lastInfo);
+    }
+
     // 2. Quantidade
     const qtdWrap = document.createElement('div');
     qtdWrap.style.cssText = 'flex: 1 1 100px; min-width: 90px;';
@@ -297,7 +313,6 @@ function renderDraftItems() {
     // 3. Unidade badge
     const undBadge = document.createElement('span');
     undBadge.style.cssText = 'font-size: 0.8rem; font-weight: 700; color: var(--color-text-muted); min-width: 28px; text-align: center;';
-    const selectedInsumo = insumos.find((i) => i.id === item.insumoId);
     undBadge.textContent = selectedInsumo ? (selectedInsumo.unidade === 'unidade' ? 'un' : selectedInsumo.unidade) : '—';
 
     // 4. Preço Total Pago no item (R$)

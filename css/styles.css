@@ -856,6 +856,18 @@ body.sidebar-collapsed .app-nav {
   color: #fff;
 }
 
+.btn-card-action.action-info {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.btn-card-action.action-info:hover {
+  background: var(--color-info);
+  color: #fff;
+  border-color: var(--color-info);
+}
+
 .btn-card-action.action-danger {
   color: var(--color-danger);
 }
@@ -1939,6 +1951,29 @@ body.modal-open {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+}
+
+.product-cost-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+.product-cost-badge--ok {
+  color: var(--color-ok);
+  background: var(--color-ok-soft);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.product-cost-badge--none {
+  color: var(--color-warn);
+  background: var(--color-warn-soft);
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 /* ============================================================
@@ -2280,6 +2315,14 @@ body.modal-open {
 .estoque-table .estoque-produzir {
   padding: 6px 12px;
   font-size: 0.82rem;
+}
+
+.estoque-table tr.estoque-row-alerta {
+  background-color: var(--color-warn-soft) !important;
+}
+
+.estoque-table tr.estoque-row-alerta td.estoque-name {
+  font-weight: 700;
 }
 
 /* Histórico de produções */

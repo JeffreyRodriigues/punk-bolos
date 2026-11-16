@@ -9,6 +9,9 @@
 import * as storage from './storage.js';
 import * as product from './product.js';
 import * as estoque from './estoque.js';
+import * as pricing from './pricing.js';
+import * as base from './base.js';
+import * as costSettings from './costSettings.js';
 import { formatCurrency } from '../utils/money.js';
 import { showToast } from './toast.js';
 
@@ -96,6 +99,7 @@ function closeDeleteModal() {
 
 /** Handlers definidos por app.js (edição abre o form). */
 let onEdit = () => {};
+let onPricing = () => {};
 
 /** Callback disparado após excluir (setado por app.js). */
 let onChange = () => {};
@@ -106,6 +110,14 @@ let onChange = () => {};
  */
 export function setEditHandler(cb) {
   onEdit = cb;
+}
+
+/**
+ * Registra o callback de precificação (usado para abrir a ficha técnica).
+ * @param {Function} cb - Função chamada ao clicar em "Precificar".
+ */
+export function setPricingHandler(cb) {
+  onPricing = cb;
 }
 
 /**
@@ -306,10 +318,34 @@ function createCard(p) {
 
   priceWrap.append(priceLabel, price);
 
+  const isPrecificavel = p.tipoProduto !== 'Adicional' && p.tipoProduto !== 'Decoração';
+  if (isPrecificavel) {
+    const receitas = storage.getAllPrecificacoes();
+    const rec = pricing.getReceita(receitas, p.id);
+    const costBadge = document.createElement('span');
+    costBadge.className = 'product-cost-badge';
+    if (rec) {
+      const insumos = storage.getAllInsumos();
+      const bases = base.getBases();
+      const rates = costSettings.getCostSettings();
+      const c = pricing.calcular(rec, insumos, bases, rates);
+      const custoUnit = c.custoUnitarioTotal || 0;
+      costBadge.classList.add('product-cost-badge--ok');
+      costBadge.textContent = `Custo: ${formatCurrency(custoUnit)}`;
+      costBadge.title = 'Ficha técnica calculada';
+    } else {
+      costBadge.classList.add('product-cost-badge--none');
+      costBadge.textContent = 'Sem ficha técnica';
+      costBadge.title = 'Produto ainda não precificado';
+    }
+    priceWrap.appendChild(costBadge);
+  }
+
   const actions = document.createElement('div');
   actions.className = 'product-actions';
   actions.append(
     createTextActionBtn('Editar', () => onEdit(p)),
+    createTextActionBtn('Precificar', () => onPricing(p), 'action-info'),
     createTextActionBtn('Excluir', () => openDeleteModal(p), 'action-danger')
   );
 

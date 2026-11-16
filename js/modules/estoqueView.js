@@ -338,6 +338,10 @@ function renderTable() {
     const disp = estoque.disponivel(p);
 
     const tr = document.createElement('tr');
+    if (reservado > 0 && disp <= 0) {
+      tr.classList.add('estoque-row-alerta');
+      tr.title = 'Atenção: há pedidos abertos aguardando este produto sem estoque disponível!';
+    }
 
     const name = document.createElement('td');
     name.className = 'estoque-name';
@@ -365,9 +369,10 @@ function renderTable() {
     dispTd.appendChild(badge);
 
     const actionTd = document.createElement('td');
+    actionTd.style.textAlign = 'right';
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn btn-ghost estoque-produzir';
+    btn.className = 'btn btn-secondary btn-sm estoque-produzir';
     btn.textContent = '＋ Produzir';
     btn.title = `Registrar produção de ${estoque.nomeProduto(p)}`;
     btn.addEventListener('click', () => openProducaoModal(p.id));

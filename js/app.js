@@ -238,7 +238,14 @@ function init() {
   orderList.setActionHandlers({
     edit: (o) => orderForm.openEdit(o),
     complete: (o) => updateStatus(o, 'Concluído', `Pedido #${o.numero} concluído!`),
+    advance: (o, nextStatus, msg) => updateStatus(o, nextStatus, msg),
     cancel: (o) => updateStatus(o, 'Cancelado', `Pedido #${o.numero} cancelado`),
+  });
+
+  // Atalho direto de precificação no card de produtos
+  productList.setPricingHandler((p) => {
+    navigate('precificacao');
+    pricingView.selectProduto(p.id);
   });
 
   // Ao duplicar ou excluir pedidos na lista, atualiza as telas dependentes

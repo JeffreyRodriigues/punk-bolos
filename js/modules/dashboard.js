@@ -631,7 +631,7 @@ function initTodayPanelClicks() {
   if (cardOrders && !cardOrders.dataset.bound) {
     cardOrders.dataset.bound = 'true';
     cardOrders.addEventListener('click', () => {
-      document.querySelector('.nav-tab[data-tab="pedidos"]')?.click();
+      document.querySelector('.nav-tab[data-view-target="orders"], .nav-tab[data-tab="pedidos"]')?.click();
     });
   }
 
@@ -639,7 +639,7 @@ function initTodayPanelClicks() {
   if (cardStock && !cardStock.dataset.bound) {
     cardStock.dataset.bound = 'true';
     cardStock.addEventListener('click', () => {
-      document.querySelector('.nav-tab[data-tab="estoque"]')?.click();
+      document.querySelector('.nav-tab[data-view-target="estoque"], .nav-tab[data-tab="estoque"]')?.click();
     });
   }
 
@@ -647,7 +647,11 @@ function initTodayPanelClicks() {
   if (cardAlerts && !cardAlerts.dataset.bound) {
     cardAlerts.dataset.bound = 'true';
     cardAlerts.addEventListener('click', () => {
-      document.querySelector('.nav-tab[data-tab="inventario"]')?.click();
+      document.querySelector('.nav-tab[data-view-target="inventario"], .nav-tab[data-tab="inventario"]')?.click();
+      setTimeout(() => {
+        const pillBaixo = document.querySelector('.inventory-filter-pill[data-filter="baixo"]');
+        if (pillBaixo) pillBaixo.click();
+      }, 50);
     });
   }
 }

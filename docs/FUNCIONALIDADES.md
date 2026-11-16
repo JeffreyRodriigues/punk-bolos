@@ -12,7 +12,7 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 ## 1. Módulos e Abas do Painel Administrativo
 
 ### 1.1 Dashboard
-- **Painel Operacional "Visão do Dia":** Widget no topo com foco na rotina diária da cozinha: Encomendas para Hoje (pendentes vs. prontas), Pronta Entrega disponível no estoque para venda imediata, e Alertas de Reposição de Insumos zerados ou em nível crítico com links de ação rápida.
+- **Painel Operacional "Visão do Dia":** Widget no topo com foco na rotina diária da cozinha: Encomendas para Hoje (pendentes vs. prontas), Pronta Entrega disponível no estoque para venda imediata, e Alertas de Reposição de Insumos zerados ou em nível crítico com links de ação rápida (clique em Alertas abre o Inventário já filtrado por Estoque Baixo).
 - **Cards de Métricas:** Faturamento total, quantidade de pedidos, ticket médio, lucro bruto com subtítulo dinâmico de Margem Média (%) e CMV Médio (%), além de contadores de status do fluxo de produção.
 - **Ponto de Equilíbrio Inteligente:** Barra de progresso com status de meta mensal e diária, identificação automática de mês encerrado (*Meta Atingida com excedente* ou *Não Atingido*) e acompanhamento em tempo real para meses em aberto.
 - **Gráficos e Logística:** Faturamento diário, distribuição por status, divisão de receita por meios de pagamento (PIX, Crédito, Débito, Dinheiro) e comparativo de canais de entrega (Retirada no Balcão, Entrega Própria e Uber Cliente).
@@ -22,20 +22,26 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 ### 1.2 Produtos
 - **Catálogo Completo:** Cadastro de bolos inteiros, bolos naked, fatias, punkitos, docinhos, adicionais e confeitos.
 - **Pílulas de Categoria & Busca Instantânea:** Navegação rápida por categorias com badges de contagem em tempo real (`Todos`, `Fatias`, `Punkitos`, `Bolos`, `Docinhos`, etc.) e campo de busca textual por sabor/título.
+- **Integração com Precificação:** Badge visual com Custo Unitário (CMV) em produtos precificados e botão de atalho direto "Precificar" nos cards, redirecionando automaticamente para a ficha técnica do item.
 - **Paginação Eficiente:** Visualização em grade de 12 produtos por página, com navegação responsiva (Anterior/Próxima e total de páginas/itens).
 - **Tamanhos e Detalhes:** Tamanhos exclusivos para bolos inteiros e bolos naked (Mini, PP, P, M, G, GG, Bento Cake, Coração).
 - **Valores e Descrições:** Valores de venda sugeridos e integração com controle de estoque.
 
 ### 1.3 Produção (Estoque de Bolos)
 - **Modelo de Estoque Derivado:** `Disponível = Produzido - Reservado - Vendido`.
+- **Ação Rápida "＋ Produzir":** Botão direto na linha da tabela de saldo que abre o modal pré-selecionado para agilizar o apontamento da cozinha.
+- **Destaque Visual de Alerta:** Destaque automático em linhas com reservas pendentes sem estoque suficiente para entrega.
 - **Controle de Disponibilidade:** Bloqueia automaticamente a venda de produtos sem produção suficiente.
 - **Histórico de Produções:** Registro auditável de lotes produzidos com data e observações.
 
 ### 1.4 Pedidos
 - **Visão Compacta & Detalhes Expansíveis:** Cards redesenhados com resumo inteligente de alto impacto (cliente, WhatsApp, entrega/retirada, resumo discriminado de itens `formatItemsSummary`, tag de observação e valor total em destaque no cabeçalho).
-- **Expansão Individual e Global:** Botão "Ver detalhes ▾ / Ocultar detalhes ▴" em cada card para exibir lista discriminada de itens com subtotais, endereço completo de entrega, observações completas e ações de gestão (Editar, Duplicar, Cancelar, Excluir), além do alternador global "Expandir Todos / Recolher Todos".
+- **Avanço Rápido de Status (Esteira Operacional):** Botão contextual no card para transição imediata sem modais:
+  - De **Pendente** para **"Iniciar Produção"**
+  - De **Em Produção** para **"Marcar Embalado"**
+  - De **Embalado** para **"Concluir"**
+- **Expansão Individual e Global:** Botão "Ver detalhes / Ocultar detalhes" em cada card para exibir lista discriminada de itens com subtotais, endereço completo de entrega, observações e ações de gestão (Editar, Duplicar, Cancelar, Excluir), além do alternador global "Expandir Todos / Recolher Todos".
 - **Filtros Rápidos por Status (Pills):** Pílulas interativas com contadores em tempo real (`Todos`, `Pendentes`, `Em Produção`, `Embalados`, `Concluídos`, `Cancelados`) integradas ao filtro de período da data.
-- **Ações Rápidas de Produção:** Botão de conclusão rápida ("Concluir") e botão direto de "Imprimir comanda" acessíveis diretamente no card compacto.
 - **Gestão Completa de Pedidos:** Ações de criar, editar, duplicar (com reset de status), concluir, cancelar e excluir.
 - **Numeração Automática:** Começa em 1001 e nunca repete.
 - **Formas de Pagamento:** PIX, Dinheiro, Crédito, Débito e Cortesia (R$ 0,00).
@@ -52,9 +58,9 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
   - `PIN0001`, `PIN0002`... para **Ingredientes / Insumos**.
   - `PBA0001`, `PBA0002`... para **Bases (receitas compostas)**.
 - **Controle de Estoque Físico:** Campos de `Estoque Atual` e `Estoque Mínimo` (alerta de reposição).
-- **Semáforo Visual de Status:** 🟢 Normal, 🟡 Baixo (no limite de reposição) e 🔴 Zerado.
+- **Semáforo Visual de Status:** Normal, Baixo (no limite de reposição) e Zerado.
 - **Tabela de 8 Colunas:** Código, Categoria, Nome, Custo Ref., Última Compra, Estoque Atual, Status e Ações.
-- **Filtros Rápidos por Categoria:** `[ Todos ]`, `[ 🥣 Ingredientes ]`, `[ 🍰 Bases ]` e `[ ⚠️ Estoque Baixo ]`.
+- **Filtros Rápidos por Categoria:** `[ Todos ]`, `[ Ingredientes ]`, `[ Bases ]` e `[ Estoque Baixo ]`.
 - **Entrada Inteligente de Compras:** Ao cadastrar uma compra, o estoque atual é somado automaticamente.
 
 ### 1.7 Precificação & Ficha Técnica Profissional
