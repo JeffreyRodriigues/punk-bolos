@@ -75,12 +75,12 @@ Punk Bolos/
 │       ├── pricingView.js       # Tela de Precificação (grid e fatores)
 │       ├── product.js           # Regras do catálogo de produtos
 │       ├── productForm.js       # Modal de produtos
-│       ├── productList.js       # Lista de produtos
+│       ├── productList.js       # Catálogo de produtos (Grade/Tabela, KPIs, margens)
 │       ├── storage.js           # Camada de dados (cache local + sync)
 │       ├── supabase.js          # Cliente REST do Supabase
 │       └── toast.js             # Notificações visuais
 │   └── utils/                   # Utilitários (money, theme, dateRange, describe)
-├── test/                        # 224 Testes unitários (node:test)
+├── test/                        # 260 Testes unitários (node:test)
 ├── supabase/                    # Scripts SQL (schema, cardapio, clientes, rls)
 ├── tools/build-css.js           # Compila CSS inline nas páginas HTML
 └── server.js                    # Servidor estático Node.js para dev e produção

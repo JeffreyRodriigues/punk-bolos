@@ -1,9 +1,9 @@
 /* ============================================================
    PRODUCTLIST.JS — Lista de produtos (view Produtos)
    ------------------------------------------------------------
-   Renderiza os cards do catálogo com preço e ações de
-   editar/excluir. Delega a criação/edição ao productForm e a
-   exclusão ao próprio módulo (com confirmação).
+   Renderiza o catálogo de produtos nos modos Grade e Tabela,
+   com micro-KPIs analíticos, faixa financeira com margem real,
+   ações de editar/precificar/excluir e filtros por categoria.
    ============================================================ */
 
 import * as storage from './storage.js';
@@ -25,6 +25,27 @@ const paginationNav = document.getElementById('productPagination');
 const pageInfo = document.getElementById('productPaginationInfo');
 const prevBtn = document.getElementById('btnProductPrevPage');
 const nextBtn = document.getElementById('btnProductNextPage');
+
+/* Indicadores analíticos do cardápio */
+const prodStatTotalEl = document.getElementById('prodStatTotal');
+const prodStatSemEstoqueEl = document.getElementById('prodStatSemEstoque');
+const prodStatSemFichaEl = document.getElementById('prodStatSemFicha');
+const prodStatPrecoMedioEl = document.getElementById('prodStatPrecoMedio');
+
+/* Alternadores de modo de visualização */
+const btnViewGrid = document.getElementById('btnProductViewGrid');
+const btnViewList = document.getElementById('btnProductViewList');
+
+const VIEW_MODE_KEY = 'punkbolos.products.viewMode';
+let currentViewMode = 'grid';
+try {
+  const saved = localStorage.getItem(VIEW_MODE_KEY);
+  if (saved === 'list' || saved === 'grid') {
+    currentViewMode = saved;
+  }
+} catch {
+  // Ignora restrições de localStorage
+}
 
 /* Modal de exclusão customizado */
 const deleteModal = document.getElementById('productDeleteModal');
@@ -129,6 +150,156 @@ export function setChangeListener(cb) {
 }
 
 /**
+ * Atualiza o estado visual ativo dos botões de alternância Grade/Tabela.
+ */
+function updateViewToggleButtons() {
+  if (btnViewGrid) btnViewGrid.classList.toggle('active', currentViewMode === 'grid');
+  if (btnViewList) btnViewList.classList.toggle('active', currentViewMode === 'list');
+}
+
+btnViewGrid?.addEventListener('click', () => {
+  if (currentViewMode !== 'grid') {
+    currentViewMode = 'grid';
+    try { localStorage.setItem(VIEW_MODE_KEY, 'grid'); } catch {}
+    updateViewToggleButtons();
+    render();
+  }
+});
+
+btnViewList?.addEventListener('click', () => {
+  if (currentViewMode !== 'list') {
+    currentViewMode = 'list';
+    try { localStorage.setItem(VIEW_MODE_KEY, 'list'); } catch {}
+    updateViewToggleButtons();
+    render();
+  }
+});
+
+/**
+ * Calcula dados financeiros de um produto (preço, custo unitário e margem real).
+ * @param {Object} p - Produto.
+ * @param {Array<Object>} receitas - Lista de receitas salvas.
+ * @param {Array<Object>} insumos - Insumos cadastrados.
+ * @param {Array<Object>} bases - Bases cadastradas.
+ * @param {Object} rates - Configurações de custos.
+ * @returns {Object} Dados calculados.
+ */
+function getProductFinancials(p, receitas, insumos, bases, rates) {
+  const precoVenda = Number(p.valor) || 0;
+  const isPrecificavel = p.tipoProduto !== 'Adicional' && p.tipoProduto !== 'Decoração';
+
+  if (!isPrecificavel) {
+    return {
+      isPrecificavel: false,
+      hasFicha: false,
+      precoVenda,
+      custoUnit: null,
+      margemPct: null,
+    };
+  }
+
+  const rec = pricing.getReceita(receitas, p.id);
+  if (!rec) {
+    return {
+      isPrecificavel: true,
+      hasFicha: false,
+      precoVenda,
+      custoUnit: null,
+      margemPct: null,
+    };
+  }
+
+  const c = pricing.calcular(rec, insumos, bases, rates);
+  const custoUnit = c.custoUnitarioTotal || 0;
+  const margemPct = precoVenda > 0 ? ((precoVenda - custoUnit) / precoVenda) * 100 : 0;
+
+  return {
+    isPrecificavel: true,
+    hasFicha: true,
+    precoVenda,
+    custoUnit,
+    margemPct,
+  };
+}
+
+/**
+ * Renderiza o elemento de badge de margem real.
+ * @param {Object} fin - Objeto retornado por getProductFinancials.
+ * @returns {HTMLElement} Elemento span com o badge.
+ */
+function renderMarginBadge(fin) {
+  const badge = document.createElement('span');
+  badge.className = 'product-margin-badge';
+
+  if (!fin.isPrecificavel) {
+    badge.classList.add('product-margin-badge--none');
+    badge.textContent = 'Livre';
+    badge.title = 'Item adicional ou decoração sem ficha técnica';
+    return badge;
+  }
+
+  if (!fin.hasFicha) {
+    badge.classList.add('product-margin-badge--none');
+    badge.textContent = 'Sem ficha';
+    badge.title = 'Produto ainda não precificado na aba Precificação';
+    return badge;
+  }
+
+  const pct = fin.margemPct;
+  const pctStr = `${pct.toFixed(1).replace('.', ',')}%`;
+
+  if (pct >= 50) {
+    badge.classList.add('product-margin-badge--ok');
+    badge.textContent = pctStr;
+    badge.title = `Margem saudável: ${pctStr}`;
+  } else if (pct >= 30) {
+    badge.classList.add('product-margin-badge--warn');
+    badge.textContent = pctStr;
+    badge.title = `Margem moderada: ${pctStr}`;
+  } else {
+    badge.classList.add('product-margin-badge--low');
+    badge.textContent = pctStr;
+    badge.title = `Margem baixa ou negativa: ${pctStr}`;
+  }
+
+  return badge;
+}
+
+/**
+ * Atualiza os 4 cards de micro-KPIs do topo da tela de produtos.
+ * @param {Array<Object>} allProducts - Todos os produtos cadastrados.
+ * @param {Array<Object>} receitas - Receitas salvas de precificação.
+ */
+function updateProductStats(allProducts, receitas) {
+  const total = allProducts.length;
+  let semEstoque = 0;
+  let semFicha = 0;
+  let somaPreco = 0;
+
+  allProducts.forEach((p) => {
+    const disp = estoque.disponivel(p);
+    if (disp <= 0) {
+      semEstoque++;
+    }
+    const isPrecificavel = p.tipoProduto !== 'Adicional' && p.tipoProduto !== 'Decoração';
+    if (isPrecificavel) {
+      const rec = pricing.getReceita(receitas, p.id);
+      if (!rec) {
+        semFicha++;
+      }
+    }
+    somaPreco += Number(p.valor) || 0;
+  });
+
+  const precoMedio = total > 0 ? somaPreco / total : 0;
+
+  if (prodStatTotalEl) prodStatTotalEl.textContent = total;
+  if (prodStatSemEstoqueEl) prodStatSemEstoqueEl.textContent = semEstoque;
+  if (prodStatSemFichaEl) prodStatSemFichaEl.textContent = semFicha;
+  if (prodStatPrecoMedioEl) prodStatPrecoMedioEl.textContent = formatCurrency(precoMedio);
+}
+
+/**
  * Renderiza as pílulas de filtro por categoria com suas respectivas contagens.
  * @param {Array<Object>} allProducts - Todos os produtos do catálogo.
  */
@@ -174,8 +345,15 @@ function renderCategoryPills(allProducts) {
  * Renderiza a lista de produtos na view (com filtros, busca e paginação de 12 itens).
  */
 export function render() {
-  const all = storage.getAllProducts();
+  updateViewToggleButtons();
 
+  const all = storage.getAllProducts();
+  const receitas = storage.getAllPrecificacoes();
+  const insumos = storage.getAllInsumos();
+  const bases = base.getBases();
+  const rates = costSettings.getCostSettings();
+
+  updateProductStats(all, receitas);
   renderCategoryPills(all);
 
   const filtered = product.filterProducts(all, selectedCategory, searchQuery);
@@ -226,7 +404,20 @@ export function render() {
   }
 
   listEl.innerHTML = '';
-  pageItems.forEach((p) => listEl.appendChild(createCard(p)));
+
+  if (pageItems.length === 0) {
+    return;
+  }
+
+  const getFin = (p) => getProductFinancials(p, receitas, insumos, bases, rates);
+
+  if (currentViewMode === 'list') {
+    listEl.className = 'product-list-view';
+    listEl.appendChild(createTable(pageItems, getFin));
+  } else {
+    listEl.className = 'product-grid';
+    pageItems.forEach((p) => listEl.appendChild(createCard(p, getFin(p))));
+  }
 }
 
 /* ---------- Eventos de Busca e Paginação ---------- */
@@ -257,11 +448,12 @@ if (nextBtn) {
 }
 
 /**
- * Cria o card de um produto com visualização profissional e padronizada.
+ * Cria o card de um produto em modo grade.
  * @param {Object} p - Produto.
- * @returns {HTMLElement} Card.
+ * @param {Object} fin - Dados financeiros do produto.
+ * @returns {HTMLElement} Card do produto.
  */
-function createCard(p) {
+function createCard(p, fin) {
   const card = document.createElement('article');
   card.className = 'product-card';
 
@@ -301,45 +493,43 @@ function createCard(p) {
 
   body.append(name, desc);
 
-  /* Rodapé do Card: Preço + Ações textuais */
+  /* Faixa Financeira: Venda, Custo Unit. e Margem Real */
+  const finStrip = document.createElement('div');
+  finStrip.className = 'product-financial-strip';
+
+  const colPreco = document.createElement('div');
+  colPreco.className = 'product-fin-col';
+  const lblPreco = document.createElement('span');
+  lblPreco.className = 'product-fin-label';
+  lblPreco.textContent = 'Venda';
+  const valPreco = document.createElement('span');
+  valPreco.className = 'product-fin-value product-fin-value--price';
+  valPreco.textContent = formatCurrency(fin.precoVenda);
+  colPreco.append(lblPreco, valPreco);
+
+  const colCusto = document.createElement('div');
+  colCusto.className = 'product-fin-col';
+  const lblCusto = document.createElement('span');
+  lblCusto.className = 'product-fin-label';
+  lblCusto.textContent = 'Custo Unit.';
+  const valCusto = document.createElement('span');
+  valCusto.className = 'product-fin-value';
+  valCusto.textContent = fin.custoUnit !== null ? formatCurrency(fin.custoUnit) : '—';
+  colCusto.append(lblCusto, valCusto);
+
+  const colMargem = document.createElement('div');
+  colMargem.className = 'product-fin-col';
+  colMargem.style.alignItems = 'flex-end';
+  const lblMargem = document.createElement('span');
+  lblMargem.className = 'product-fin-label';
+  lblMargem.textContent = 'Margem';
+  colMargem.append(lblMargem, renderMarginBadge(fin));
+
+  finStrip.append(colPreco, colCusto, colMargem);
+
+  /* Rodapé do Card: Ações ergonômicas textuais */
   const footer = document.createElement('div');
   footer.className = 'product-footer';
-
-  const priceWrap = document.createElement('div');
-  priceWrap.className = 'product-price-wrap';
-
-  const priceLabel = document.createElement('span');
-  priceLabel.className = 'product-price-label';
-  priceLabel.textContent = 'Preço';
-
-  const price = document.createElement('span');
-  price.className = 'product-price';
-  price.textContent = formatCurrency(p.valor);
-
-  priceWrap.append(priceLabel, price);
-
-  const isPrecificavel = p.tipoProduto !== 'Adicional' && p.tipoProduto !== 'Decoração';
-  if (isPrecificavel) {
-    const receitas = storage.getAllPrecificacoes();
-    const rec = pricing.getReceita(receitas, p.id);
-    const costBadge = document.createElement('span');
-    costBadge.className = 'product-cost-badge';
-    if (rec) {
-      const insumos = storage.getAllInsumos();
-      const bases = base.getBases();
-      const rates = costSettings.getCostSettings();
-      const c = pricing.calcular(rec, insumos, bases, rates);
-      const custoUnit = c.custoUnitarioTotal || 0;
-      costBadge.classList.add('product-cost-badge--ok');
-      costBadge.textContent = `Custo: ${formatCurrency(custoUnit)}`;
-      costBadge.title = 'Ficha técnica calculada';
-    } else {
-      costBadge.classList.add('product-cost-badge--none');
-      costBadge.textContent = 'Sem ficha técnica';
-      costBadge.title = 'Produto ainda não precificado';
-    }
-    priceWrap.appendChild(costBadge);
-  }
 
   const actions = document.createElement('div');
   actions.className = 'product-actions';
@@ -349,17 +539,120 @@ function createCard(p) {
     createTextActionBtn('Excluir', () => openDeleteModal(p), 'action-danger')
   );
 
-  footer.append(priceWrap, actions);
+  footer.append(actions);
 
-  card.append(header, body, footer);
+  card.append(header, body, finStrip, footer);
   return card;
+}
+
+/**
+ * Cria a tabela completa de produtos para o modo de exibição Lista / Tabela.
+ * @param {Array<Object>} pageItems - Produtos da página atual.
+ * @param {Function} getFin - Função para obter dados financeiros do produto.
+ * @returns {HTMLElement} Container com a tabela responsiva.
+ */
+function createTable(pageItems, getFin) {
+  const wrap = document.createElement('div');
+  wrap.className = 'product-table-responsive';
+
+  const table = document.createElement('table');
+  table.className = 'product-table';
+
+  const thead = document.createElement('thead');
+  thead.innerHTML = `
+    <tr>
+      <th scope="col" style="width: 110px;">Categoria</th>
+      <th scope="col">Produto</th>
+      <th scope="col" style="width: 120px;">Estoque</th>
+      <th scope="col" class="num" style="width: 110px;">Preço Venda</th>
+      <th scope="col" class="num" style="width: 110px;">Custo Unit.</th>
+      <th scope="col" style="width: 100px; text-align: center;">Margem</th>
+      <th scope="col" style="width: 200px; text-align: right;">Ações</th>
+    </tr>
+  `;
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  pageItems.forEach((p) => {
+    const fin = getFin(p);
+    const disp = estoque.disponivel(p);
+    const size = (p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked') && p.tamanho ? p.tamanho : '';
+    const parts = [size, p.detalhes].filter(Boolean);
+    const subText = parts.length > 0 ? parts.join(' · ') : 'Sem detalhes adicionais';
+
+    const tr = document.createElement('tr');
+
+    // Categoria
+    const tdCat = document.createElement('td');
+    const badgeType = document.createElement('span');
+    badgeType.className = 'product-type';
+    badgeType.textContent = p.tipoProduto || 'Sem tipo';
+    tdCat.appendChild(badgeType);
+
+    // Produto
+    const tdProd = document.createElement('td');
+    const mainCell = document.createElement('div');
+    mainCell.className = 'product-cell-main';
+    const cellTitle = document.createElement('span');
+    cellTitle.className = 'product-cell-title';
+    cellTitle.textContent = p.titulo || 'Produto sem título';
+    const cellSub = document.createElement('span');
+    cellSub.className = 'product-cell-sub';
+    cellSub.textContent = subText;
+    mainCell.append(cellTitle, cellSub);
+    tdProd.appendChild(mainCell);
+
+    // Estoque
+    const tdStock = document.createElement('td');
+    const stockBadge = document.createElement('span');
+    stockBadge.className = `stock-badge stock-${estoque.stockStatus(disp)}`;
+    stockBadge.textContent = disp <= 0 ? 'Sem estoque' : `Estoque: ${disp}`;
+    tdStock.appendChild(stockBadge);
+
+    // Preço Venda
+    const tdPreco = document.createElement('td');
+    tdPreco.className = 'num';
+    const strongPreco = document.createElement('strong');
+    strongPreco.style.color = 'var(--color-primary)';
+    strongPreco.textContent = formatCurrency(fin.precoVenda);
+    tdPreco.appendChild(strongPreco);
+
+    // Custo Unitário
+    const tdCusto = document.createElement('td');
+    tdCusto.className = 'num';
+    tdCusto.textContent = fin.custoUnit !== null ? formatCurrency(fin.custoUnit) : '—';
+
+    // Margem
+    const tdMargem = document.createElement('td');
+    tdMargem.style.textAlign = 'center';
+    tdMargem.appendChild(renderMarginBadge(fin));
+
+    // Ações
+    const tdAcoes = document.createElement('td');
+    const actionsWrap = document.createElement('div');
+    actionsWrap.className = 'product-table-actions';
+    actionsWrap.append(
+      createTextActionBtn('Editar', () => onEdit(p)),
+      createTextActionBtn('Precificar', () => onPricing(p), 'action-info'),
+      createTextActionBtn('Excluir', () => openDeleteModal(p), 'action-danger')
+    );
+    tdAcoes.appendChild(actionsWrap);
+
+    tr.append(tdCat, tdProd, tdStock, tdPreco, tdCusto, tdMargem, tdAcoes);
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
 }
 
 /**
  * Cria um botão de ação com rótulo em texto puro.
  * @param {string} label - Rótulo do botão.
  * @param {Function} onClick - Handler de clique.
- * @param {string} [variant] - 'action-ok' ou 'action-danger'.
+ * @param {string} [variant] - 'action-ok', 'action-info' ou 'action-danger'.
  * @returns {HTMLButtonElement} Botão criado.
  */
 function createTextActionBtn(label, onClick, variant = '') {

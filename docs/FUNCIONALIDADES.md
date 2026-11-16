@@ -20,12 +20,14 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Filtro por Período:** Hoje, 7 dias, Este Mês e Faixa Customizada (De/Até).
 
 ### 1.2 Produtos
-- **Catálogo Completo:** Cadastro de bolos inteiros, bolos naked, fatias, punkitos, docinhos, adicionais e confeitos.
+- **Micro-KPIs do Cardápio:** 4 indicadores analíticos no topo da tela (`Total de Produtos`, `Sem Estoque` com alerta visual, `Fichas Pendentes` sem precificação e `Preço Médio` do cardápio).
+- **Modos de Exibição Grade vs. Tabela:** Alternador visual no topo permitindo alternar entre visualização em cards (`Grade`) ou tabela analítica tipo planilha (`Tabela`), com preferência salva no `localStorage`.
+- **Faixa Financeira & Margem Real (%):** Exibição do Preço de Venda, Custo Unitário (CMV) e **Margem Real (%)** calculada a partir da ficha técnica com badges coloridos de rentabilidade (*Saudável >= 50%*, *Moderada 30-49%*, *Baixa < 30%* ou *Sem ficha*).
+- **Tabela Analítica Responsiva:** Visualização compacta em modo Tabela com rolagem horizontal em dispositivos menores e colunas dedicadas para Categoria, Produto e Detalhes, Estoque, Preço de Venda, Custo Unitário, Margem e Ações.
+- **Ações Ergonômicas:** Botões de ação em texto puro (`Editar`, `Precificar` com atalho direto para a ficha técnica, e `Excluir` com confirmação segura).
 - **Pílulas de Categoria & Busca Instantânea:** Navegação rápida por categorias com badges de contagem em tempo real (`Todos`, `Fatias`, `Punkitos`, `Bolos`, `Docinhos`, etc.) e campo de busca textual por sabor/título.
-- **Integração com Precificação:** Badge visual com Custo Unitário (CMV) em produtos precificados e botão de atalho direto "Precificar" nos cards, redirecionando automaticamente para a ficha técnica do item.
-- **Paginação Eficiente:** Visualização em grade de 12 produtos por página, com navegação responsiva (Anterior/Próxima e total de páginas/itens).
+- **Paginação Consistente:** Paginação de 12 produtos por página mantida de forma unificada entre a grade e a tabela.
 - **Tamanhos e Detalhes:** Tamanhos exclusivos para bolos inteiros e bolos naked (Mini, PP, P, M, G, GG, Bento Cake, Coração).
-- **Valores e Descrições:** Valores de venda sugeridos e integração com controle de estoque.
 
 ### 1.3 Produção (Estoque de Bolos)
 - **Modelo de Estoque Derivado:** `Disponível = Produzido - Reservado - Vendido`.

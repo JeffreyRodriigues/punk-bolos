@@ -280,7 +280,8 @@
     max-width: 560px;
   }
 
-  .cust-hist-stats-grid {
+  .cust-hist-stats-grid,
+  .product-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
