@@ -36,6 +36,7 @@ import * as customerView from './modules/customerView.js';
 import * as purchasesView from './modules/purchasesView.js';
 import * as financialView from './modules/financialView.js';
 import * as systemInfo from './modules/systemInfo.js';
+import * as shoppingList from './modules/shoppingList.js';
 import { initExcelModal } from './modules/excelModal.js';
 import { showToast } from './modules/toast.js';
 
@@ -379,6 +380,9 @@ function init() {
 
   // Inicializa tela de Gestão Financeira e Metas
   financialView.init();
+
+  // Inicializa modal de Lista de Compras Automática (Atacadista)
+  shoppingList.init();
 
   // Atalho do Inventário: Registrar Compras
   const btnInvRegistrarCompra = document.getElementById('btnInvRegistrarCompra');

@@ -103,7 +103,7 @@ function showCardapioToast(message, type = 'success', durationMs = 3200) {
 let pendingConfirmCallback = null;
 let pendingCancelCallback = null;
 
-function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okText = 'Sim', cancelText = 'Cancelar', onConfirm, onCancel }) {
+function showConfirmDialog({ icon = '', title = 'Confirmar', desc = '', okText = 'Sim', cancelText = 'Cancelar', onConfirm, onCancel }) {
   const modal = document.getElementById('confirmDialogModal');
   const iconEl = document.getElementById('confirmDialogIcon');
   const titleEl = document.getElementById('confirmDialogTitle');
@@ -120,7 +120,10 @@ function showConfirmDialog({ icon = '❓', title = 'Confirmar', desc = '', okTex
     return;
   }
 
-  if (iconEl) iconEl.textContent = icon;
+  if (iconEl) {
+    iconEl.textContent = icon;
+    iconEl.hidden = !icon;
+  }
   if (titleEl) titleEl.textContent = title;
   if (descEl) descEl.textContent = desc;
   if (okBtn) okBtn.textContent = okText;

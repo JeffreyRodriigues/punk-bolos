@@ -18,6 +18,7 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Gráficos e Logística:** Faturamento diário, distribuição por status, divisão de receita por meios de pagamento (PIX, Crédito, Débito, Dinheiro) e comparativo de canais de entrega (Retirada no Balcão, Entrega Própria e Uber Cliente).
 - **Paridade de Categorias e Rankings de Sabores:** Filtros rápidos por categoria e rankings de sabores dedicados para 4 frentes: Fatias, Punkitos, Bolos (incluindo Bolo Naked) e Docinhos.
 - **Filtro por Período:** Hoje, 7 dias, Este Mês e Faixa Customizada (De/Até).
+- **Performance & Animação Contínua dos Gráficos:** Atualização inteligente via `chart.update()` reaproveitando as instâncias do Chart.js na troca de datas ou tema, eliminando destruição de canvases, vazamentos de memória e cintilação de tela.
 
 ### 1.2 Produtos
 - **Micro-KPIs do Cardápio:** 4 indicadores analíticos no topo da tela (`Total de Produtos`, `Sem Estoque` com alerta visual, `Fichas Pendentes` sem precificação e `Preço Médio` do cardápio).
@@ -31,6 +32,7 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 
 ### 1.3 Produção (Estoque de Bolos)
 - **Modelo de Estoque Derivado:** `Disponível = Produzido - Reservado - Vendido`.
+- **Busca Instantânea & Filtros por Categoria:** Barra de pesquisa em tempo real por nome/sabor de produto e pílulas interativas com contadores dinâmicos (`Todos`, `Fatias`, `Punkitos`, `Docinhos` e `Bolos`) para localização ágil dos itens na bancada de trabalho.
 - **Ação Rápida "＋ Produzir":** Botão direto na linha da tabela de saldo que abre o modal pré-selecionado para agilizar o apontamento da cozinha.
 - **Destaque Visual de Alerta:** Destaque automático em linhas com reservas pendentes sem estoque suficiente para entrega.
 - **Controle de Disponibilidade:** Bloqueia automaticamente a venda de produtos sem produção suficiente.
@@ -64,6 +66,7 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Semáforo Visual de Status:** Normal, Baixo (no limite de reposição) e Zerado.
 - **Tabela de 8 Colunas:** Código, Categoria, Nome, Custo Ref., Última Compra, Estoque Atual, Status e Ações.
 - **Filtros Rápidos por Categoria:** `[ Todos ]`, `[ Ingredientes ]`, `[ Bases ]` e `[ Estoque Baixo ]`.
+- **Lista de Compras Automática (Atacadista):** Botão "Lista de Compras" que abre modal consolidado de reposição para cotação em atacadista, calculando a quantidade sugerida de compra com base na margem de segurança (2x o estoque mínimo) e no histórico de tamanho de embalagens, com ações instantâneas de "Copiar p/ WhatsApp" (formatação limpa) e "Imprimir Lista" (prancheta física de conferência).
 - **Entrada Inteligente de Compras:** Ao cadastrar uma compra, o estoque atual é somado automaticamente.
 
 ### 1.7 Precificação & Ficha Técnica Profissional
@@ -76,11 +79,12 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 
 ### 1.8 Compras (Entrada de Notas / Feira em Lote)
 - **Registro em Lote de Entradas:** Formulário dinâmico para registrar múltiplos insumos de uma mesma nota ou compra na feira/atacadista com data, fornecedor (com sugestões via datalist: Assaí, Atacadão, Sam's Club, etc.), forma de pagamento e observações.
+- **Gatilho de Lista de Compras:** Botão no cabeçalho permitindo conferir a lista de ingredientes em falta e insumos críticos antes de registrar novas entradas.
 - **Cálculo Automático de Custo Unitário e Total:** Exibição em tempo real do custo por unidade (R$ / g, R$ / kg, R$ / un) e do valor total acumulado da compra.
 - **Atualização Automática no Inventário & Precificação:** Ao salvar a compra, o estoque físico de cada insumo é somado imediatamente e o custo unitário vigente é atualizado para cálculo do custo de receitas no módulo de precificação.
 - **Espelho da Compra & Exclusão Segura:** Modal detalhado com todos os itens da compra e modal de exclusão com reversão automática das quantidades no estoque e do histórico de compras.
 - **Métricas & Gestão:** Cards com total gasto no mês, contagem de compras e itens adquiridos, busca textual instantânea por código CMP, fornecedor ou insumo, filtro por meio de pagamento e paginação (10 itens por página).
-- **Leitura Inteligente de Notas (Foto IA & XML):** Botão "📷 Ler Nota com IA" com suporte duplo: foto tirada com a câmera do celular ou upload de imagem lida via Google Gemini Vision API (Google AI Studio gratuito) e leitura instantânea de arquivo .XML de NF-e/NFC-e. Reconhece automaticamente o fornecedor, data, forma de pagamento, valores e cruza os ingredientes com o Inventário por casamento difuso de texto (fuzzy matching).
+- **Leitura Inteligente de Notas (Foto IA & XML):** Botão "Ler Nota com IA" com suporte duplo: foto tirada com a câmera do celular ou upload de imagem lida via Google Gemini Vision API (Google AI Studio gratuito) e leitura instantânea de arquivo .XML de NF-e/NFC-e. Reconhece automaticamente o fornecedor, data, forma de pagamento, valores e cruza os ingredientes com o Inventário por casamento difuso de texto (fuzzy matching).
 
 ---
 

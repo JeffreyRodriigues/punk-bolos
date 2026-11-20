@@ -263,11 +263,13 @@ function updateFilterPills() {
   const pillTodos = document.getElementById('estoquePillTodos');
   const pillFatia = document.getElementById('estoquePillFatia');
   const pillPunkitos = document.getElementById('estoquePillPunkitos');
+  const pillDocinho = document.getElementById('estoquePillDocinho');
   const pillBolo = document.getElementById('estoquePillBolo');
 
   if (pillTodos) pillTodos.textContent = products.length;
   if (pillFatia) pillFatia.textContent = products.filter((p) => p.tipoProduto === 'Fatia').length;
   if (pillPunkitos) pillPunkitos.textContent = products.filter((p) => p.tipoProduto === 'Punkitos').length;
+  if (pillDocinho) pillDocinho.textContent = products.filter((p) => p.tipoProduto === 'Docinho').length;
   if (pillBolo) {
     pillBolo.textContent = products.filter(
       (p) => p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked'
