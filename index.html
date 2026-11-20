@@ -136,6 +136,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -709,6 +711,46 @@ body.sidebar-collapsed .app-nav {
   outline: none;
   background: transparent;
   font-size: 1rem;
+}
+
+/* Barra de busca e botão de Foco da Cozinha na tela de pedidos */
+.orders-search-bar-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.orders-search-bar {
+  flex: 1 1 280px;
+  margin-bottom: 0;
+}
+
+.btn-order-cozinha {
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.btn-order-cozinha:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+.btn-order-cozinha.active {
+  background-color: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* ---------- Filtros ---------- */
@@ -5801,6 +5843,19 @@ html.dark .badge-purple {
     gap: 10px;
   }
 
+  .orders-search-bar-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-order-cozinha {
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+
   .order-view-toggle {
     width: 100%;
     display: flex;
@@ -6121,6 +6176,8 @@ html.dark .badge-purple {
 
 </style>
 <!-- CSS_INLINE:END -->
+
+
 
 
 
@@ -6617,9 +6674,14 @@ html.dark .badge-purple {
       </div>
     </div>
 
-    <!-- Pesquisa instantânea -->
-    <div class="search-bar">
-      <input id="orderSearch" type="search" placeholder="Pesquisar pedido por cliente ou número..." autocomplete="off">
+    <!-- Pesquisa instantânea e foco rápido da cozinha -->
+    <div class="orders-search-bar-wrap">
+      <div class="search-bar orders-search-bar">
+        <input id="orderSearch" type="search" placeholder="Pesquisar pedido por cliente ou número..." autocomplete="off">
+      </div>
+      <button id="btnOrderCozinha" type="button" class="btn-order-cozinha" title="Alternar foco exclusivo nos pedidos de hoje e em produção">
+        Foco Cozinha (Hoje / Ativos)
+      </button>
     </div>
 
     <!-- Pílulas de filtro por status -->
@@ -8798,6 +8860,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=70"></script>
+  <script type="module" src="js/app.js?v=71"></script>
 </body>
 </html>

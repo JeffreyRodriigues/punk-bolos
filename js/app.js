@@ -10,12 +10,11 @@
    - toast      -> notificações
 
    Responsabilidades:
-   - carregar os dados da nuvem (storage.init) antes do 1º render
-   - navegação entre telas (abas Dashboard / Produtos / Produção / Pedidos)
+   - carregar os dados da nuvem (storage.init) com sincronização em background
+   - navegação entre telas com lazy rendering e invalidação seletiva (dirty flags)
    - botão flutuante (FAB) abre o modal "Novo Pedido"
-   - ações de status (Concluir / Cancelar) com atualização automática
+   - ações de status (Concluir / Cancelar) com atualização otimizada
    - botão "Atualizar" recarrega os dados compartilhados
-   - re-render global após qualquer mudança de dados
    ============================================================ */
 
 import * as theme from './utils/theme.js';
@@ -40,17 +39,74 @@ import * as systemInfo from './modules/systemInfo.js';
 import { initExcelModal } from './modules/excelModal.js';
 import { showToast } from './modules/toast.js';
 
+/* ---------- Renderização Lazy & Controle de Views Sujas (Dirty Flags) ---------- */
+
+/** Telas Inventário/Precificação/Financeiro/Compras ficam ocultas no mobile (abaixo de 768px). */
+const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+
+/** Mapa central de renderizadores por view. */
+const VIEW_RENDERERS = {
+  dashboard: () => dashboard.render(),
+  orders: () => orderList.render(),
+  produtos: () => productList.render(),
+  estoque: () => estoqueView.render(),
+  clientes: () => customerView.render(),
+  inventario: () => { if (!isMobile()) inventoryView.render(); },
+  precificacao: () => { if (!isMobile()) pricingView.render(); },
+  compras: () => { if (!isMobile()) purchasesView.render(); },
+  financeiro: () => { if (!isMobile()) financialView.render(); },
+};
+
+const ALL_VIEW_KEYS = Object.keys(VIEW_RENDERERS);
+
+/** Conjunto de telas que tiveram dados alterados e precisam de re-renderização. */
+const dirtyViews = new Set(ALL_VIEW_KEYS);
+
+/**
+ * Obtém o identificador da view atualmente visível no app.
+ * @returns {string} Id da view ativa ('dashboard', 'orders', etc.)
+ */
+function getActiveTarget() {
+  const activeView = document.querySelector('.view.active');
+  return activeView ? activeView.id.replace('view-', '') : 'dashboard';
+}
+
+/**
+ * Garante a renderização da view solicitada caso ela esteja marcada como desatualizada (dirty).
+ * @param {string} target - Id da view.
+ */
+function ensureViewRendered(target) {
+  if (dirtyViews.has(target) && typeof VIEW_RENDERERS[target] === 'function') {
+    dirtyViews.delete(target);
+    VIEW_RENDERERS[target]();
+  }
+}
+
+/**
+ * Invalida uma ou mais views marcando-as como 'dirty'.
+ * Se a view ativa estiver entre as afetadas, renderiza-a imediatamente.
+ * As demais permanecem marcadas e serão renderizadas sob demanda ao serem acessadas.
+ * @param {Array<string>|string} targets - Views a invalidar.
+ */
+function invalidateViews(targets) {
+  const list = Array.isArray(targets) ? targets : [targets];
+  const current = getActiveTarget();
+
+  list.forEach((t) => {
+    dirtyViews.add(t);
+  });
+
+  if (dirtyViews.has(current)) {
+    ensureViewRendered(current);
+  }
+}
+
 /* ---------- Navegação entre telas ---------- */
 
 /**
- * Alterna a tela visível (Dashboard / Produtos / Produção / Pedidos / Clientes / Compras / Inventário / Precificação / Financeiro) e
- * atualiza a aba ativa.
- * @param {string} target - Id da view ("dashboard" | "orders" | "produtos" | "estoque" | "clientes" | "compras" | "inventario" | "precificacao" | "financeiro").
+ * Alterna a tela visível e renderiza o conteúdo sob demanda (lazy).
+ * @param {string} target - Id da view de destino.
  */
-/* Telas Inventário/Precificação/Financeiro ficam ocultas no mobile (abaixo de 768px):
-   evitamos renderizar/carregar dados dessas views nesses dispositivos. */
-const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
-
 function navigate(target) {
   document.querySelectorAll('.view').forEach((view) => {
     view.classList.toggle('active', view.id === `view-${target}`);
@@ -61,35 +117,20 @@ function navigate(target) {
 
   // Filtro de período só faz sentido em Dashboard/Pedidos/Produção
   const hasPeriodFilter = target === 'dashboard' || target === 'orders' || target === 'estoque';
-  document.querySelector('.date-filter').hidden = !hasPeriodFilter;
-  document.getElementById('fabNewOrder').hidden = target !== 'orders';
+  const filterEl = document.querySelector('.date-filter');
+  if (filterEl) filterEl.hidden = !hasPeriodFilter;
 
-  // A cada troca de tela, garante dados atualizados
-  if (target === 'dashboard') {
-    dashboard.render();
-  } else if (target === 'produtos') {
-    productList.render();
-  } else if (target === 'estoque') {
-    estoqueView.render();
-  } else if (target === 'clientes') {
-    customerView.render();
-  } else if (target === 'inventario') {
-    if (!isMobile()) inventoryView.render();
-  } else if (target === 'precificacao') {
-    if (!isMobile()) pricingView.render();
-  } else if (target === 'compras') {
-    if (!isMobile()) purchasesView.render();
-  } else if (target === 'financeiro') {
-    if (!isMobile()) financialView.render();
-  } else {
-    orderList.render();
-  }
+  const fab = document.getElementById('fabNewOrder');
+  if (fab) fab.hidden = target !== 'orders';
+
+  // Renderiza a tela sob demanda se estiver pendente
+  ensureViewRendered(target);
 }
 
 /* ---------- Ações de status ---------- */
 
 /**
- * Atualiza o status de um pedido e re-renderiza tudo.
+ * Atualiza o status de um pedido e invalida as telas dependentes.
  * Ao CONCLUIR, valida o estoque (bloqueia a conclusão se não houver
  * produto disponível para a venda).
  * @param {Object} orderToUpdate - Pedido a alterar.
@@ -102,8 +143,6 @@ function updateStatus(orderToUpdate, newStatus, successMessage) {
   if (index === -1) return;
 
   // Ao concluir, garante que ainda há estoque para os itens do pedido.
-  // Passa excludeOrderId para não contar a própria reserva (o pedido ora
-  // em andamento) contra a conclusão.
   if (newStatus === 'Concluído') {
     const stockErrors = estoque.validateItens(orderToUpdate.itens, { excludeOrderId: orderToUpdate.id });
     if (stockErrors.length > 0) {
@@ -117,10 +156,7 @@ function updateStatus(orderToUpdate, newStatus, successMessage) {
   storage.save(orders);
 
   updatePendingOrdersBadge();
-  orderList.render();
-  dashboard.render();
-  estoqueView.render();
-  productList.render();
+  invalidateViews(['orders', 'dashboard', 'estoque', 'produtos']);
   showToast(successMessage);
 }
 
@@ -155,31 +191,23 @@ function init() {
   // Filtro por período (Dashboard + Pedidos + Produção)
   dateFilter.init();
   dateFilter.subscribe(() => {
-    dashboard.render();
-    orderList.render();
-    estoqueView.render();
+    invalidateViews(['dashboard', 'orders', 'estoque']);
   });
 
   // Alternância do tema pelo botão do header
   document.getElementById('themeToggle').addEventListener('click', () => {
     theme.toggleTheme();
-    // Gráficos usam cores do tema: recria após a troca
-    dashboard.render();
+    // Gráficos usam cores do tema: invalida dashboard para recriar se necessário
+    invalidateViews(['dashboard']);
   });
 
   // Atualizar dados compartilhados (nuvem)
   document.getElementById('refreshBtn').addEventListener('click', () => {
     storage.init()
       .then(() => {
-        dashboard.render();
-        orderList.render();
-        productList.render();
-        estoqueView.render();
-        if (!isMobile()) {
-          inventoryView.render();
-          pricingView.render();
-          customerView.render();
-        }
+        updatePendingOrdersBadge();
+        orderForm.updateCustomersDatalist();
+        invalidateViews(ALL_VIEW_KEYS);
         showToast('Dados atualizados!');
       })
       .catch(() => {
@@ -250,17 +278,12 @@ function init() {
 
   // Ao duplicar ou excluir pedidos na lista, atualiza as telas dependentes
   orderList.setChangeListener(() => {
-    dashboard.render();
-    estoqueView.render();
-    productList.render();
+    invalidateViews(['orders', 'dashboard', 'estoque', 'produtos']);
   });
 
-  // Após salvar/editar no modal, atualiza todas as telas
+  // Após salvar/editar no modal, atualiza todas as telas dependentes
   orderForm.setChangeListener(() => {
-    orderList.render();
-    dashboard.render();
-    estoqueView.render();
-    productList.render();
+    invalidateViews(['orders', 'dashboard', 'estoque', 'produtos', 'clientes']);
   });
 
   // Atalho "cadastrar produto" dentro do modal de pedido:
@@ -274,16 +297,10 @@ function init() {
   // Catálogo de produtos: edição abre o modal e qualquer mudança re-renderiza
   productList.setEditHandler((p) => productForm.openEdit(p));
   productList.setChangeListener(() => {
-    productList.render();
-    orderList.render();
-    dashboard.render();
-    estoqueView.render();
+    invalidateViews(['produtos', 'orders', 'dashboard', 'estoque']);
   });
   productForm.setChangeListener(() => {
-    productList.render();
-    orderList.render();
-    dashboard.render();
-    estoqueView.render();
+    invalidateViews(['produtos', 'orders', 'dashboard', 'estoque']);
     // Se o cadastro veio do modal de pedido, volta ao pedido preservado
     if (orderForm.restorePending()) {
       navigate('orders');
@@ -292,52 +309,31 @@ function init() {
 
   // Produção (estoque): após registrar/excluir, reflete o estoque no catálogo
   estoqueView.setChangeListener(() => {
-    estoqueView.render();
-    productList.render();
-    orderList.render();
+    invalidateViews(['estoque', 'produtos', 'orders']);
   });
 
   // Inventário: após criar/editar/excluir insumo ou base, re-renderiza as telas
   inventoryView.setChangeListener(() => {
-    if (!isMobile()) {
-      inventoryView.render();
-      pricingView.render();
-    }
+    invalidateViews(['inventario', 'precificacao']);
   });
 
   // Precificação: após salvar/usar preço, re-renderiza e reflete no catálogo
   pricingView.setChangeListener(() => {
-    if (!isMobile()) pricingView.render();
-    productList.render();
-    orderList.render();
-    dashboard.render();
+    invalidateViews(['precificacao', 'produtos', 'orders', 'dashboard']);
   });
 
   // Compras: inicializa modais, eventos e listener de mudanças
   purchasesView.initPurchasesEvents();
   purchasesView.setChangeListener(() => {
-    if (!isMobile()) {
-      purchasesView.render();
-      inventoryView.render();
-      pricingView.render();
-    }
+    invalidateViews(['compras', 'inventario', 'precificacao']);
   });
 
   // Clientes: inicializa modais e ações
   customerForm.init();
   customerView.init();
   customerView.setChangeListener(() => {
-    customerView.render();
+    invalidateViews(['clientes']);
     orderForm.updateCustomersDatalist();
-  });
-
-  // Após salvar pedido, atualiza também a view de clientes
-  orderForm.setChangeListener(() => {
-    orderList.render();
-    dashboard.render();
-    estoqueView.render();
-    productList.render();
-    customerView.render();
   });
 
   // Importar / exportar planilha (CSV)
@@ -356,9 +352,7 @@ function init() {
       const text = await file.text();
       const result = importExport.importCsv(text);
       if (result.ok) {
-        orderList.render();
-        dashboard.render();
-        customerView.render();
+        invalidateViews(['orders', 'dashboard', 'clientes']);
         const aviso = result.erros.length > 0 ? ` (${result.erros.length} linha(s) ignorada(s))` : '';
         showToast(`Importados ${result.pedidos} pedido(s) e ${result.itens} item(ns).${aviso}`);
         if (result.produtosCriados > 0) {
@@ -392,34 +386,16 @@ function init() {
     btnInvRegistrarCompra.addEventListener('click', () => navigate('compras'));
   }
 
-  // 1. Render inicial INSTANTÂNEO (0ms) a partir do cache local
-  dashboard.render();
-  orderList.render();
-  productList.render();
-  estoqueView.render();
-  customerView.render();
-  if (!isMobile()) {
-    inventoryView.render();
-    pricingView.render();
-    purchasesView.render();
-    financialView.render();
-  }
+  // 1. Render inicial INSTANTÂNEO (0ms): renderiza apenas a tela ativa inicial
+  dirtyViews.clear();
+  ALL_VIEW_KEYS.forEach((k) => dirtyViews.add(k));
+  ensureViewRendered(activeTarget);
 
-  // 2. Em segundo plano, busca os dados atualizados da nuvem (Supabase) e sincroniza a UI
+  // 2. Em segundo plano, busca os dados atualizados da nuvem (Supabase) e invalida as telas
   storage.init().then(() => {
     updatePendingOrdersBadge();
-    dashboard.render();
-    orderList.render();
-    productList.render();
-    estoqueView.render();
-    customerView.render();
     orderForm.updateCustomersDatalist();
-    if (!isMobile()) {
-      inventoryView.render();
-      pricingView.render();
-      purchasesView.render();
-      financialView.render();
-    }
+    invalidateViews(ALL_VIEW_KEYS);
   }).catch(() => {
     // Erros de conexão são notificados pelo errorHandler do storage
   });

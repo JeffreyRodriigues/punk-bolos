@@ -208,6 +208,19 @@
     gap: 10px;
   }
 
+  .orders-search-bar-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-order-cozinha {
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+
   .order-view-toggle {
     width: 100%;
     display: flex;

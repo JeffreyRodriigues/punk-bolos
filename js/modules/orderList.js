@@ -38,6 +38,7 @@ const filterProduto = document.getElementById('filter-produto');
 const filterStatus = document.getElementById('filter-status');
 const orderStatusFilters = document.getElementById('orderStatusFilters');
 const btnToggleAll = document.getElementById('btnOrderToggleAll');
+const btnOrderCozinha = document.getElementById('btnOrderCozinha');
 
 const btnViewGrid = document.getElementById('btnOrderViewGrid');
 const btnViewList = document.getElementById('btnOrderViewList');
@@ -52,6 +53,12 @@ const printContainer = document.getElementById('printContainer');
 
 const VIEW_STORAGE_KEY = 'punk_order_view_mode';
 let currentViewMode = localStorage.getItem(VIEW_STORAGE_KEY) || 'grid';
+
+const COZINHA_STORAGE_KEY = 'punkbolos.orders.modo_cozinha';
+let isCozinhaMode = false;
+try {
+  isCozinhaMode = localStorage.getItem(COZINHA_STORAGE_KEY) === 'true';
+} catch (_) {}
 
 /** Callback de ação (setado por app.js): editar / concluir / cancelar */
 let onAction = { edit: () => {}, complete: () => {}, cancel: () => {} };
@@ -71,6 +78,33 @@ export function setChangeListener(cb) {
  */
 export function setActionHandlers(handlers) {
   onAction = { ...onAction, ...handlers };
+}
+
+/**
+ * Atualiza o estado visual ativo do botão de Modo Cozinha.
+ */
+function updateCozinhaBtn() {
+  if (btnOrderCozinha) {
+    btnOrderCozinha.classList.toggle('active', isCozinhaMode);
+  }
+}
+
+/**
+ * Retorna os pedidos base para filtragem (aplica modo cozinha se ativo, ou filtro por data global).
+ * @returns {Array<Object>} Pedidos base.
+ */
+function getBaseOrders() {
+  const all = order.getOrders();
+  if (isCozinhaMode) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return all.filter((o) => {
+      if (o.status === 'Cancelado') return false;
+      const isToday = o.data === todayStr;
+      const isActive = o.status === 'Pendente' || o.status === 'Em Produção' || o.status === 'Embalado';
+      return isToday || isActive;
+    });
+  }
+  return dateFilter.applyFilter(all);
 }
 
 /**
@@ -104,8 +138,7 @@ function getFilteredOrders() {
   const produto = filterProduto ? filterProduto.value : '';
   const status = currentStatusFilter || (filterStatus ? filterStatus.value : '');
 
-  return dateFilter
-    .applyFilter(order.getOrders())
+  return getBaseOrders()
     .filter((o) => {
       // Busca instantânea: casa com cliente ou número do pedido
       if (query) {
@@ -183,10 +216,10 @@ function formatItemsSummary(itens = []) {
 }
 
 /**
- * Atualiza os contadores nas pílulas de filtro por status com base no dateFilter ativo.
+ * Atualiza os contadores nas pílulas de filtro por status com base no modo ativo (cozinha ou dateFilter).
  */
 function updateStatusPills() {
-  const orders = dateFilter.applyFilter(order.getOrders());
+  const orders = getBaseOrders();
   const counts = {
     '': orders.length,
     'Pendente': 0,
@@ -244,6 +277,7 @@ function updateToggleAllBtn() {
  * Renderiza os cards de pedidos com paginação e atualiza os contadores.
  */
 export function render() {
+  updateCozinhaBtn();
   updateClienteFilter();
   setViewMode(currentViewMode);
   updatePendingBadge();
@@ -277,6 +311,14 @@ export function render() {
 
   if (emptyState) {
     emptyState.hidden = totalItems > 0;
+    const msgEl = emptyState.querySelector('.empty-state-text');
+    if (msgEl) {
+      if (isCozinhaMode) {
+        msgEl.textContent = 'Nenhum pedido ativo ou para entrega hoje.';
+      } else {
+        msgEl.textContent = 'Nenhum pedido encontrado.';
+      }
+    }
   }
 
   // Atualiza controles de paginação
@@ -979,6 +1021,17 @@ if (btnImprimirCozinha) {
       return;
     }
     printKitchenSummary(list);
+  });
+}
+
+if (btnOrderCozinha) {
+  btnOrderCozinha.addEventListener('click', () => {
+    isCozinhaMode = !isCozinhaMode;
+    try {
+      localStorage.setItem(COZINHA_STORAGE_KEY, String(isCozinhaMode));
+    } catch (_) {}
+    updateCozinhaBtn();
+    resetAndRender();
   });
 }
 

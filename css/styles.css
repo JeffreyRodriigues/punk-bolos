@@ -482,6 +482,46 @@ body.sidebar-collapsed .app-nav {
   font-size: 1rem;
 }
 
+/* Barra de busca e botão de Foco da Cozinha na tela de pedidos */
+.orders-search-bar-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.orders-search-bar {
+  flex: 1 1 280px;
+  margin-bottom: 0;
+}
+
+.btn-order-cozinha {
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.btn-order-cozinha:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+.btn-order-cozinha.active {
+  background-color: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
 /* ---------- Filtros ---------- */
 .filters {
   display: flex;
