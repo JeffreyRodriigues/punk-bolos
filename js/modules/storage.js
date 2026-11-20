@@ -672,6 +672,9 @@ export function getAll() {
   return ordersCache;
 }
 
+/** Alias para getAllOrders garantindo compatibilidade com chamadas de relatorios. */
+export const getAllOrders = getAll;
+
 /**
  * Lê todos os produtos do catálogo.
  * @returns {Array<Object>} Lista de produtos.

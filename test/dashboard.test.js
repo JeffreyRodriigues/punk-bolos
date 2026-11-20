@@ -523,4 +523,86 @@ test('prontaEntregaSummary: contabiliza saldo disponível apenas para produtos q
   assert.equal(res.items[1].titulo, 'Punkito');
   assert.equal(res.items[1].disponivel, 8);
 });
+
+test('breakEvenProgress: calcula margem total, meta mensal e percentual de atingimento', () => {
+  const products = [
+    { id: 'p1', tipoProduto: 'Bolo Inteiro', tamanho: 'M', titulo: 'Cenoura', valor: 80 },
+    { id: 'p2', tipoProduto: 'Fatia', titulo: 'Chocolate', valor: 15 },
+  ];
+  const receitas = [
+    { produtoId: 'p1', custoRealUnitario: 30 }, // CMV = 30
+    { produtoId: 'p2', custoRealUnitario: 5 },  // CMV = 5
+  ];
+  const rates = {
+    totalCustosFixos: 1000,
+    totalMaoDeObraMensal: 2000,
+    deducoesVendaPct: 10, // 10% de imposto/taxas
+  };
+  const orders = [
+    {
+      id: 'o1',
+      status: 'Concluído',
+      itens: [
+        { produtoId: 'p1', quantidade: 20, valorUnitario: 80 }, // Preco 80, CMV 30, Ded 8 => MC = 42. Total: 20 * 42 = 840
+      ],
+    },
+    {
+      id: 'o2',
+      status: 'Pendente',
+      // Sem produtoId explícito, deve resolver por tipo + sabor + valor
+      itens: [
+        { tipoProduto: 'Fatia', sabor: 'Chocolate', quantidade: 40, valorUnitario: 15 }, // Preco 15, CMV 5, Ded 1.5 => MC = 8.5. Total: 40 * 8.5 = 340
+      ],
+    },
+    {
+      id: 'o3',
+      status: 'Concluído',
+      pagamento: 'Cortesia',
+      itens: [{ produtoId: 'p1', quantidade: 5, valorUnitario: 80 }], // ignorado
+    },
+    {
+      id: 'o4',
+      status: 'Cancelado',
+      itens: [{ produtoId: 'p1', quantidade: 10, valorUnitario: 80 }], // ignorado
+    },
+  ];
+
+  // Total margem esperada: 840 + 340 = 1180
+  // Meta mensal esperada: 1000 + 2000 = 3000
+  // Percentual: (1180 / 3000) * 100 = 39.33%
+  const res = s.breakEvenProgress(orders, products, receitas, null, [], [], rates);
+  assert.equal(res.metaMensal, 3000);
+  assert.equal(res.margemTotal, 1180);
+  assert.equal(res.percentual, 39.33);
+  assert.equal(res.restante, 1820);
+  assert.equal(res.atingido, false);
+});
+
+test('breakEvenProgress: detecta meta atingida e calcula excedente de lucro', () => {
+  const products = [{ id: 'p1', tipoProduto: 'Fatia', titulo: 'Morango', valor: 20 }];
+  const receitas = [{ produtoId: 'p1', custoRealUnitario: 5 }];
+  const rates = {
+    totalCustosFixos: 500,
+    totalMaoDeObraMensal: 500,
+    deducoesVendaPct: 0,
+  };
+  // MC = 20 - 5 = 15 por unidade.
+  // 100 unidades => Margem 1500. Meta = 1000.
+  const orders = [
+    {
+      id: 'o1',
+      status: 'Concluído',
+      itens: [{ produtoId: 'p1', quantidade: 100, valorUnitario: 20 }],
+    },
+  ];
+
+  const res = s.breakEvenProgress(orders, products, receitas, null, [], [], rates);
+  assert.equal(res.metaMensal, 1000);
+  assert.equal(res.margemTotal, 1500);
+  assert.equal(res.percentual, 150);
+  assert.equal(res.restante, 0);
+  assert.equal(res.excedente, 500);
+  assert.equal(res.atingido, true);
+});
+
 

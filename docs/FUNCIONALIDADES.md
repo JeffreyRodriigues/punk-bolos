@@ -90,6 +90,13 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Métricas & Gestão:** Cards com total gasto no mês, contagem de compras e itens adquiridos, busca textual instantânea por código CMP, fornecedor ou insumo, filtro por meio de pagamento e paginação (10 itens por página).
 - **Leitura Inteligente de Notas (Foto IA & XML):** Botão "Ler Nota com IA" com suporte duplo: foto tirada com a câmera do celular ou upload de imagem lida via Google Gemini Vision API (Google AI Studio gratuito) e leitura instantânea de arquivo .XML de NF-e/NFC-e. Reconhece automaticamente o fornecedor, data, forma de pagamento, valores e cruza os ingredientes com o Inventário por casamento difuso de texto (fuzzy matching).
 
+### 1.9 Financeiro & Metas (SENAC / Sebrae)
+- **Gestão de Custos Fixos & Mão de Obra (MOD):** Cadastro e rateio de despesas operacionais da estrutura física (energia, gás, água, internet, manutenção, aluguel, contador/MEI) e equipe (pró-labore dos confeiteiros, ajudantes e encargos sociais CLT ou contratação fixa).
+- **Desdobramento de Metas & Faturamento Alvo:** Planejamento de faturamento mensal e conversão automática em metas fracionadas por semana e por dia de produção.
+- **Ponto de Equilíbrio Operacional (Break-Even):** Cálculo do faturamento mínimo necessário para cobrir 100% dos custos fixos e salários sem prejuízo. Acompanhamento real do mês vigente via termômetro interativo com percentual de atingimento, margem gerada acumulada pelas vendas e projeção de excedente de lucro.
+- **DRE Sintético Projetado:** Demonstrativo financeiro completo (Faturamento Bruto, Deduções de Venda e Taxas, Faturamento Líquido, Custo das Mercadorias Vendidas - CMV, Margem de Contribuição, Gastos Operacionais e Lucro Líquido Final com badge de saúde financeira).
+- **Modo de Edição Seguro:** Interface com alternador visual "Editar Custos / Salvar Parâmetros / Cancelar" e cálculo dinâmico em tempo real de horas produtivas e custo do minuto de produção.
+
 ---
 
 ## 2. Cardápio Digital Público (`cardapio.html`)

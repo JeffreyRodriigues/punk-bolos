@@ -223,7 +223,7 @@ export function updateBreakEvenThermometer() {
   const statusEl = document.getElementById('dashBreakevenStatus');
   if (!badgeEl || !fillEl || !margemEl || !metaEl || !statusEl) return;
 
-  const allOrders = storage.getAllOrders();
+  const allOrders = storage.getAll();
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');

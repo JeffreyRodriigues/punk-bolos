@@ -642,25 +642,40 @@ export function breakEvenProgress(orders, products = [], receitas = [], calcular
   const metaMensal = round2((rates && rates.totalCustosFixos ? rates.totalCustosFixos : 0) + (rates && rates.totalMaoDeObraMensal ? rates.totalMaoDeObraMensal : 0));
   const taxasDeducoesPct = Number(rates && rates.deducoesVendaPct ? rates.deducoesVendaPct : 0);
 
-  const prodById = new Map((products || []).map((p) => [p.id, p]));
-  const recsByProd = new Map((receitas || []).map((r) => [r.produtoId, r]));
+  const prodById = new Map((products || []).map((p) => [String(p.id), p]));
+  const recsByProd = new Map((receitas || []).map((r) => [String(r.produtoId || ''), r]));
 
   let margemTotal = 0;
 
   activeOrders(orders).forEach((order) => {
-    (order.itens || []).forEach((item) => {
+    if (order.pagamento === 'Cortesia') return;
+    const itens = Array.isArray(order.itens) && order.itens.length > 0
+      ? order.itens
+      : [{
+          quantidade: order.quantidade || 1,
+          valorUnitario: order.valorTotal || 0,
+          tipoProduto: order.tipoProduto,
+          sabor: order.sabor,
+          tamanho: order.tamanho,
+          produtoId: order.produtoId,
+          cortesia: false,
+        }];
+
+    itens.forEach((item) => {
       if (item.cortesia) return;
       const qtd = Number(item.quantidade) || 0;
       const precoUnit = Number(item.valorUnitario) || 0;
       if (qtd <= 0 || precoUnit <= 0) return;
 
-      const prod = prodById.get(item.produtoId);
-      const rec = prod ? recsByProd.get(prod.id) : null;
+      const prodId = resolveItemProductId(item, products);
+      const rec = prodId ? recsByProd.get(prodId) : null;
       let cmvUnit = 0;
 
       if (rec && typeof calcularPricingFn === 'function') {
         const calc = calcularPricingFn(rec, insumos, bases, rates);
         cmvUnit = calc.custoRealUnitario || 0;
+      } else if (rec) {
+        cmvUnit = getReceitaCustoUnitario(rec);
       }
 
       const deducoesUnit = precoUnit * (taxasDeducoesPct / 100);
