@@ -92,7 +92,8 @@ function destroyChart(key) {
 }
 
 /**
- * Cria um gráfico, destruindo o anterior do mesmo identificador.
+ * Cria ou atualiza um gráfico de forma inteligente, evitando destruir o canvas
+ * e vazamentos de memória quando a instância existente for reaproveitável.
  * @param {string} key - Identificador interno.
  * @param {string} canvasId - Id do canvas no HTML.
  * @param {Object} config - Configuração do Chart.js.
@@ -101,6 +102,23 @@ function createChart(key, canvasId, config) {
   if (typeof Chart === 'undefined') return;
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
+
+  const existing = charts[key];
+  if (
+    existing &&
+    existing.canvas === canvas &&
+    existing.canvas.isConnected &&
+    existing.config &&
+    existing.config.type === config.type
+  ) {
+    existing.data = config.data;
+    if (config.options) {
+      existing.options = config.options;
+    }
+    existing.update();
+    return;
+  }
+
   destroyChart(key);
   charts[key] = new Chart(canvas.getContext('2d'), config);
 }

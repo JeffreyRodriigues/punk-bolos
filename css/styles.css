@@ -4734,6 +4734,13 @@ html.dark .badge-purple {
     font-size: 16px !important;
     font-weight: 800 !important;
   }
+
+  .print-shopping-list {
+    width: 100% !important;
+    max-width: 100% !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
 }
 
 /* ============================================================
