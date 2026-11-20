@@ -492,6 +492,47 @@
     width: 100%;
   }
 
+  /* Novo modal de pedido no mobile */
+  .order-grid-client {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .item-product-pickers {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .item-product-pickers .item-tipo,
+  .item-product-pickers .item-sabor {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .order-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .order-modal-total-box {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .order-modal-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .order-modal-actions .btn {
+    flex: 1;
+  }
+
   .filters {
     flex-direction: column;
   }

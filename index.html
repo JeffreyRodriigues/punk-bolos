@@ -141,6 +141,8 @@
 
 
 
+
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -1737,81 +1739,453 @@ body.modal-open {
   display: none !important;
 }
 
-.item-row {
+/* ============================================================
+   NOVO PEDIDO & EDIÇÃO DE VENDA (MODAL REDESIGN)
+   ============================================================ */
+
+.order-modal-card {
+  max-width: 760px;
+}
+
+.order-modal-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+}
+
+.order-header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.order-numero-badge {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+.order-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-quick-balcao {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-quick-balcao:hover {
+  background-color: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.order-modal-body {
+  padding: 16px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Seções Agrupadas em Cards */
+.order-form-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.order-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+}
+
+.order-section-hint {
+  font-size: 0.75rem;
+  font-weight: normal;
+  text-transform: none;
+  color: var(--color-text-muted);
+}
+
+/* Grid de Cliente e Atendimento */
+.order-grid-client {
+  display: grid;
+  grid-template-columns: 2fr 1.3fr 1fr;
+  gap: 12px;
+}
+
+.input-with-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input-with-action input {
+  flex: 1;
+}
+
+.btn-subtle-fill {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-subtle-fill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+/* Cards Modernos de Itens */
+.items-container-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.item-card-modern {
   background-color: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  padding: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.item-row.item-cortesia-checked {
-  opacity: 0.6;
+.item-card-modern:hover {
+  border-color: var(--color-primary);
 }
 
-.item-row.item-cortesia-checked .item-price {
+.item-card-modern.item-cortesia-checked {
+  opacity: 0.7;
+}
+
+.item-card-modern.item-cortesia-checked .item-subtotal-val {
   text-decoration: line-through;
+  color: var(--color-warn);
+}
+
+.item-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.item-product-pickers {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 360px;
+  align-items: center;
+}
+
+.item-product-pickers .item-tipo {
+  flex: 0 0 130px;
+  font-weight: 600;
+}
+
+.item-product-pickers .item-sabor {
+  flex: 1 1 200px;
+  font-weight: 600;
+}
+
+.item-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-stock {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.item-stock.stock-ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.item-stock.stock-baixo {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.item-stock.stock-zerado {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.item-stock.stock-warning {
+  border: 1px dashed #dc2626;
+}
+
+.item-remove {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+
+.item-remove:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.item-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border);
+}
+
+/* Stepper Ergonômico de Quantidade */
+.item-stepper {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.btn-stepper {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.btn-stepper:hover {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.item-stepper .item-qtd {
+  width: 44px;
+  height: 34px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+/* Box de Preço e Subtotal */
+.item-price-box {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.item-price {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.item-subtotal-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-primary);
 }
 
 .item-cortesia-label {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-warn);
   cursor: pointer;
   user-select: none;
-  white-space: nowrap;
-  padding: 2px 4px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  position: relative;
-  z-index: 2;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease;
 }
 
 .item-cortesia-label:hover {
-  border-color: var(--color-warn);
   background: var(--color-warn-soft);
 }
 
-.item-cortesia-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  cursor: pointer;
-  appearance: auto;
-  -webkit-appearance: checkbox;
-  accent-color: var(--color-warn);
+/* Botão de Adicionar Item */
+.order-add-item-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.item-row input,
-.item-row select {
-  min-width: 0;
-}
-
-.item-row .item-tipo {
-  flex: 1 1 130px;
-}
-
-.item-row .item-sabor {
-  flex: 1 1 240px;
-}
-
-.item-row .item-qtd {
-  width: 78px;
-}
-
-.item-row .item-price {
-  white-space: nowrap;
+.btn-add-item-modern {
+  width: 100%;
+  padding: 10px 16px;
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-primary);
+  background-color: var(--color-primary-soft);
   color: var(--color-primary);
-  min-width: 64px;
-  text-align: right;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-add-item-modern:hover {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+/* Segmented Control / Pílulas de Seleção Rápida */
+.segmented-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.segmented-pill {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.segmented-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.segmented-pill.active {
+  background-color: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-weight: 700;
+}
+
+/* Barra Inferior Fixa (Sticky Footer) */
+.order-modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: 12px 20px;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.order-modal-total-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.order-modal-total-lbl {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.5px;
+}
+
+.order-modal-total-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1.1;
+}
+
+.order-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-save-order {
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 .items-warning {
@@ -1839,35 +2213,11 @@ body.modal-open {
   text-decoration: underline;
 }
 
-.prec-preview-row-small {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  margin-top: -2px;
-}
-
 .btn-link:hover {
   color: var(--color-primary-hover);
 }
 
-.item-remove {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 1.1rem;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-}
-
-.item-remove:hover {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-}
-
+.items-container-modern.invalid .item-card-modern,
 .items-container.invalid .item-row {
   border-color: var(--color-danger);
 }
@@ -1876,6 +2226,7 @@ body.modal-open {
   background: var(--color-warn-soft);
   color: var(--color-warn);
 }
+
 
 .items-total {
   display: flex;
@@ -6239,6 +6590,47 @@ html.dark .badge-purple {
     width: 100%;
   }
 
+  /* Novo modal de pedido no mobile */
+  .order-grid-client {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .item-product-pickers {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .item-product-pickers .item-tipo,
+  .item-product-pickers .item-sabor {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .order-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .order-modal-total-box {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .order-modal-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .order-modal-actions .btn {
+    flex: 1;
+  }
+
   .filters {
     flex-direction: column;
   }
@@ -6289,6 +6681,8 @@ html.dark .badge-purple {
 
 </style>
 <!-- CSS_INLINE:END -->
+
+
 
 
 
@@ -7818,113 +8212,169 @@ html.dark .badge-purple {
        ============================================================ -->
   <div id="orderModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
     <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2 id="orderModalTitle">Novo Pedido</h2>
-        <button class="modal-close" type="button" data-close-modal aria-label="Fechar">✕</button>
+    <div class="modal-card order-modal-card">
+      <div class="modal-header order-modal-header">
+        <div class="order-header-main">
+          <h2 id="orderModalTitle">Novo Pedido</h2>
+          <span id="field-numero-badge" class="order-numero-badge">#1001</span>
+        </div>
+        <div class="order-header-actions">
+          <button type="button" id="btnQuickBalcao" class="btn-quick-balcao" title="Preencher venda rápida de pronta entrega (Balcão / Retirada / Concluído)">
+            Venda Rápida Balcão
+          </button>
+          <button class="modal-close" type="button" data-close-modal aria-label="Fechar">✕</button>
+        </div>
       </div>
 
       <form id="orderForm" novalidate>
-        <div class="modal-body">
+        <div class="modal-body order-modal-body">
           <input type="hidden" id="field-id">
+          <input type="hidden" id="field-numero" min="1001" step="1">
 
-          <div class="form-grid">
-            <div class="form-field">
-              <label for="field-data">Data</label>
-              <input type="date" id="field-data" required>
-              <span class="error-hint"></span>
+          <!-- Bloco 1: Cliente & Atendimento -->
+          <div class="order-form-section">
+            <div class="order-section-title">
+              <span>Cliente & Atendimento</span>
             </div>
-
-            <div class="form-field">
-              <label for="field-numero">Número do Pedido</label>
-              <input type="number" id="field-numero" min="1001" step="1" readonly>
-            </div>
-
-            <div class="form-field form-field-full">
-              <label for="field-cliente">Nome do Cliente</label>
-              <input type="text" id="field-cliente" placeholder="Ex.: Maria Silva" list="customersDatalist" autocomplete="off" required>
-              <datalist id="customersDatalist"></datalist>
-              <span class="error-hint"></span>
-              <div id="orderLoyaltyHint" class="order-loyalty-hint" hidden></div>
-            </div>
-
-            <div class="form-field form-field-full">
-              <label for="field-contato">Contato</label>
-              <input type="tel" id="field-contato" placeholder="(00) 00000-0000">
-            </div>
-
-            <div class="form-field form-field-full">
-              <label>Itens do pedido</label>
-              <div id="itemsContainer" class="items-container"></div>
-
-              <p id="itemsNoProducts" class="items-warning" hidden>
-                Nenhum produto cadastrado ainda. Cadastre antes de registrar o pedido.
-              </p>
-
-              <div class="items-total">
-                <span>Valor Total</span>
-                <strong id="field-valor-total">R$ 0,00</strong>
+            <div class="order-grid-client">
+              <div class="form-field form-field-cliente">
+                <label for="field-cliente">Cliente *</label>
+                <div class="input-with-action">
+                  <input type="text" id="field-cliente" placeholder="Nome do cliente (ou 'Balcão')" list="customersDatalist" autocomplete="off" required>
+                  <button type="button" id="btnFillBalcao" class="btn-subtle-fill" title="Inserir 'Balcão' como cliente">Balcão</button>
+                </div>
+                <datalist id="customersDatalist"></datalist>
+                <span class="error-hint"></span>
+                <div id="orderLoyaltyHint" class="order-loyalty-hint" hidden></div>
               </div>
 
-              <button type="button" id="addItemBtn" class="btn-add-item">＋ Adicionar item</button>
+              <div class="form-field form-field-contato">
+                <label for="field-contato">WhatsApp / Telefone</label>
+                <input type="tel" id="field-contato" placeholder="(00) 00000-0000">
+              </div>
+
+              <div class="form-field form-field-data">
+                <label for="field-data">Data de Entrega *</label>
+                <input type="date" id="field-data" required>
+                <span class="error-hint"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bloco 2: Produtos e Quantidades -->
+          <div class="order-form-section">
+            <div class="order-section-title">
+              <span>Produtos & Quantidades</span>
+              <span class="order-section-hint">Selecione o sabor e ajuste a quantidade</span>
+            </div>
+
+            <div id="itemsContainer" class="items-container-modern"></div>
+
+            <p id="itemsNoProducts" class="items-warning" hidden>
+              Nenhum produto cadastrado ainda. Cadastre antes de registrar o pedido.
+            </p>
+
+            <div class="order-add-item-wrap">
+              <button type="button" id="addItemBtn" class="btn-add-item-modern">
+                ＋ Adicionar outro produto
+              </button>
               <div class="items-help">
-                <button type="button" id="btnCreateProduct" class="btn-link">Não achou o produto? Cadastrar na página de Produtos</button>
+                <button type="button" id="btnCreateProduct" class="btn-link">Não achou o produto? Cadastrar no Catálogo</button>
               </div>
               <span class="error-hint" id="items-error-hint"></span>
             </div>
+          </div>
 
-            <!-- Lista de sugestões de sabores compartilhada pelas linhas de item -->
-            <datalist id="lista-sabores">
-              <option value="Chocolate"></option>
-              <option value="Churros"></option>
-              <option value="Brigadeiro"></option>
-              <option value="Red Velvet"></option>
-              <option value="Baunilha"></option>
-              <option value="Cenoura"></option>
-              <option value="Morango"></option>
-            </datalist>
+          <!-- Datalist de sugestão para compatibilidade -->
+          <datalist id="lista-sabores">
+            <option value="Chocolate"></option>
+            <option value="Churros"></option>
+            <option value="Brigadeiro"></option>
+            <option value="Red Velvet"></option>
+            <option value="Baunilha"></option>
+            <option value="Cenoura"></option>
+            <option value="Morango"></option>
+          </datalist>
 
-            <div class="form-field">
-              <label for="field-status">Status</label>
-              <select id="field-status" required>
-                <option value="Pendente">Pendente</option>
-                <option value="Em Produção">Em Produção</option>
-                <option value="Embalado">Embalado</option>
-                <option value="Concluído">Concluído</option>
-                <option value="Cancelado">Cancelado</option>
-              </select>
+          <!-- Bloco 3: Pagamento, Entrega e Status -->
+          <div class="order-form-section">
+            <div class="order-section-title">
+              <span>Pagamento & Entrega</span>
             </div>
 
-            <div class="form-field">
-              <label for="field-pagamento">Forma de Pagamento</label>
-              <select id="field-pagamento" required>
-                <option value="PIX">PIX</option>
-                <option value="Dinheiro">Dinheiro</option>
-                <option value="Crédito">Crédito</option>
-                <option value="Débito">Débito</option>
-                <option value="Cortesia">Cortesia</option>
-              </select>
-            </div>
+            <div class="order-grid-pills">
+              <!-- Forma de Pagamento -->
+              <div class="form-field form-field-full">
+                <label>Forma de Pagamento</label>
+                <div class="segmented-pills" id="pills-pagamento" role="radiogroup" aria-label="Forma de Pagamento">
+                  <button type="button" class="segmented-pill active" data-val="PIX">PIX</button>
+                  <button type="button" class="segmented-pill" data-val="Crédito">Crédito</button>
+                  <button type="button" class="segmented-pill" data-val="Débito">Débito</button>
+                  <button type="button" class="segmented-pill" data-val="Dinheiro">Dinheiro</button>
+                  <button type="button" class="segmented-pill" data-val="Cortesia">Cortesia</button>
+                </div>
+                <select id="field-pagamento" class="visually-hidden" required>
+                  <option value="PIX">PIX</option>
+                  <option value="Dinheiro">Dinheiro</option>
+                  <option value="Crédito">Crédito</option>
+                  <option value="Débito">Débito</option>
+                  <option value="Cortesia">Cortesia</option>
+                </select>
+              </div>
 
-            <div class="form-field">
-              <label for="field-entrega">Entrega</label>
-              <select id="field-entrega" required>
-                <option value="Retirada">Retirada</option>
-                <option value="Entrega Própria">Entrega Própria</option>
-                <option value="Uber Cliente">Uber Cliente</option>
-              </select>
-            </div>
+              <!-- Modalidade de Entrega -->
+              <div class="form-field form-field-full">
+                <label>Modalidade de Entrega</label>
+                <div class="segmented-pills" id="pills-entrega" role="radiogroup" aria-label="Modalidade de Entrega">
+                  <button type="button" class="segmented-pill active" data-val="Retirada">Retirada no Balcão</button>
+                  <button type="button" class="segmented-pill" data-val="Entrega Própria">Entrega Própria</button>
+                  <button type="button" class="segmented-pill" data-val="Uber Cliente">Uber Cliente</button>
+                </div>
+                <select id="field-entrega" class="visually-hidden" required>
+                  <option value="Retirada">Retirada</option>
+                  <option value="Entrega Própria">Entrega Própria</option>
+                  <option value="Uber Cliente">Uber Cliente</option>
+                </select>
+              </div>
 
-            <div class="form-field form-field-full">
-              <label for="field-observacoes">Observações</label>
-              <textarea id="field-observacoes" rows="3" placeholder="Ex.: Escrever parabéns no bolo"></textarea>
+              <!-- Status do Pedido -->
+              <div class="form-field form-field-full">
+                <label>Status do Pedido</label>
+                <div class="segmented-pills" id="pills-status" role="radiogroup" aria-label="Status do Pedido">
+                  <button type="button" class="segmented-pill active" data-val="Pendente">Pendente</button>
+                  <button type="button" class="segmented-pill" data-val="Em Produção">Em Produção</button>
+                  <button type="button" class="segmented-pill" data-val="Embalado">Embalado</button>
+                  <button type="button" class="segmented-pill" data-val="Concluído">Concluído</button>
+                  <button type="button" class="segmented-pill" data-val="Cancelado">Cancelado</button>
+                </div>
+                <select id="field-status" class="visually-hidden" required>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Em Produção">Em Produção</option>
+                  <option value="Embalado">Embalado</option>
+                  <option value="Concluído">Concluído</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </div>
+
+              <!-- Observações -->
+              <div class="form-field form-field-full">
+                <label for="field-observacoes">Observações</label>
+                <textarea id="field-observacoes" rows="2" placeholder="Ex.: Escrever parabéns na tábua, levar troco para 50, etc."></textarea>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar</button>
+        <!-- Barra Inferior Fixa com Totalizador em Destaque -->
+        <div class="modal-footer order-modal-footer">
+          <div class="order-modal-total-box">
+            <span class="order-modal-total-lbl">Total do Pedido</span>
+            <strong id="field-valor-total" class="order-modal-total-val">R$ 0,00</strong>
+          </div>
+          <div class="order-modal-actions">
+            <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-save-order" id="btnSaveOrder">Salvar Pedido</button>
+          </div>
         </div>
       </form>
     </div>
@@ -9047,6 +9497,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=74"></script>
+  <script type="module" src="js/app.js?v=75"></script>
 </body>
 </html>

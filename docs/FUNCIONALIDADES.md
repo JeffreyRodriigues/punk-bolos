@@ -53,6 +53,11 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Filtros Rápidos por Status (Pills):** Pílulas interativas com contadores em tempo real (`Todos`, `Pendentes`, `Em Produção`, `Embalados`, `Concluídos`, `Cancelados`) integradas dinamicamente ao modo ativo (Modo Cozinha ou filtro global de data).
 - **Gestão Completa de Pedidos:** Ações de criar, editar, duplicar (com reset de status), concluir, cancelar e excluir.
 - **Numeração Automática:** Começa em 1001 e nunca repete.
+- **Modal de Venda Ágil (Redesign Moderno de Novo Pedido):** Formulário reestruturado em 3 blocos visuais nítidos (*Cliente & Atendimento*, *Produtos & Quantidades* e *Pagamento & Entrega*):
+  - *Atalho "Venda Rápida Balcão":* Botão no cabeçalho do modal que preenche automaticamente Cliente = "Balcão", Entrega = "Retirada no Balcão", Status = "Concluído", direcionando o foco diretamente para a seleção de produtos.
+  - *Cards Modernos de Itens com Stepper Ergonômico:* Seletor integrado de produtos com exibição de preço unitário e disponibilidade, botões rápidos `[ - ]` e `[ + ]` para ajuste de quantidade sem necessidade de abrir o teclado virtual, e subtotal da linha calculado ao vivo.
+  - *Segmented Controls (Pílulas de Toque Direto):* Substituição de dropdowns suspensos tradicionais por botões de seleção de 1 toque para Forma de Pagamento (`PIX`, `Crédito`, `Débito`, `Dinheiro`, `Cortesia`), Modalidade de Entrega (`Retirada`, `Entrega Própria`, `Uber Cliente`) e Status do Pedido.
+  - *Barra Inferior Fixa (Sticky Bottom):* Rodapé fixado na parte inferior com valor total em destaque e botão principal "Salvar Pedido" sempre visível e acessível sem rolagem.
 - **Formas de Pagamento:** PIX, Dinheiro, Crédito, Débito e Cortesia (R$ 0,00).
 - **Resumo no WhatsApp:** Botão para enviar o resumo formatado do pedido diretamente para o cliente.
 

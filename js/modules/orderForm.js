@@ -18,6 +18,7 @@ import * as estoque from './estoque.js';
 import * as customerService from './customerService.js';
 import { formatCurrency } from '../utils/money.js';
 import { defaultItemType } from '../utils/describe.js';
+import { showToast } from './toast.js';
 
 /* ---------- Elementos do DOM (resolvidos uma única vez) ---------- */
 const modal = document.getElementById('orderModal');
@@ -101,15 +102,15 @@ function resolveItemProductId(item) {
 }
 
 /**
- * Cria uma linha de item com seleção em cascata:
- * Tipo de produto → Sabor (produtos do catálogo daquele tipo) → Quantidade.
+ * Cria uma linha de item com seleção em cascata moderna:
+ * Tipo de produto → Sabor (produtos do catálogo daquele tipo) → Quantidade com stepper.
  * Nada é digitado — título e valor vêm do catálogo.
  * @param {Object} [item] - Dados iniciais do item (ao editar).
  * @returns {HTMLElement} Linha criada.
  */
 function createItemRow(item = {}) {
   const row = document.createElement('div');
-  row.className = 'item-row';
+  row.className = 'item-row item-card-modern';
 
   const inferredType = product.inferProductType(item);
   const normalizedItem = { ...item, tipoProduto: inferredType };
@@ -117,6 +118,13 @@ function createItemRow(item = {}) {
   // Produto que originou o item em edição (sempre exibido, mesmo sem estoque).
   const edittingProductId = resolveItemProductId(normalizedItem);
   const resolvedProd = product.getProducts().find((p) => p.id === edittingProductId);
+
+  // 1. Linha superior: Seletores e Ação Remover
+  const topRow = document.createElement('div');
+  topRow.className = 'item-row-top';
+
+  const pickersWrap = document.createElement('div');
+  pickersWrap.className = 'item-product-pickers';
 
   const tipoSelect = document.createElement('select');
   tipoSelect.className = 'item-tipo';
@@ -136,10 +144,6 @@ function createItemRow(item = {}) {
   /**
    * Popula o seletor de sabor com os produtos do catálogo do tipo
    * escolhido, preservando a seleção atual quando ainda válida.
-   * Só mostra produtos com DISPONIBILIDADE para venda (disponível > 0),
-   * já que não é possível vender sem produção. Ao editar um pedido, o
-   * produto do item atual é sempre incluído (mesmo sem o item segue
-   * fazendo parte do pedido).
    */
   function buildSaborOptions() {
     const tipo = tipoSelect.value;
@@ -164,7 +168,7 @@ function createItemRow(item = {}) {
 
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = '— Escolha o sabor —';
+    placeholder.textContent = '— Escolha o sabor / produto —';
     saborSelect.appendChild(placeholder);
 
     [...products]
@@ -184,6 +188,43 @@ function createItemRow(item = {}) {
   }
   buildSaborOptions();
 
+  pickersWrap.append(tipoSelect, saborSelect);
+
+  const topActions = document.createElement('div');
+  topActions.className = 'item-top-actions';
+
+  const stockEl = document.createElement('span');
+  stockEl.className = 'item-stock';
+  stockEl.hidden = true;
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'item-remove';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Remover produto';
+  removeBtn.setAttribute('aria-label', 'Remover produto');
+  removeBtn.addEventListener('click', () => {
+    row.remove();
+    recalcTotal();
+  });
+
+  topActions.append(stockEl, removeBtn);
+  topRow.append(pickersWrap, topActions);
+
+  // 2. Linha inferior: Stepper de quantidade, Preço Unitário, Subtotal e Cortesia
+  const bottomRow = document.createElement('div');
+  bottomRow.className = 'item-row-bottom';
+
+  const stepperWrap = document.createElement('div');
+  stepperWrap.className = 'item-stepper';
+
+  const btnMinus = document.createElement('button');
+  btnMinus.type = 'button';
+  btnMinus.className = 'btn-stepper btn-stepper-minus';
+  btnMinus.textContent = '-';
+  btnMinus.title = 'Diminuir quantidade';
+  btnMinus.setAttribute('aria-label', 'Diminuir quantidade');
+
   const qtdInput = document.createElement('input');
   qtdInput.type = 'number';
   qtdInput.className = 'item-qtd';
@@ -192,46 +233,41 @@ function createItemRow(item = {}) {
   qtdInput.title = 'Quantidade';
   qtdInput.value = item.quantidade != null ? item.quantidade : 1;
 
+  const btnPlus = document.createElement('button');
+  btnPlus.type = 'button';
+  btnPlus.className = 'btn-stepper btn-stepper-plus';
+  btnPlus.textContent = '+';
+  btnPlus.title = 'Aumentar quantidade';
+  btnPlus.setAttribute('aria-label', 'Aumentar quantidade');
+
+  btnMinus.addEventListener('click', () => {
+    let q = Math.max(1, (parseInt(qtdInput.value, 10) || 1) - 1);
+    qtdInput.value = q;
+    updateItemInfo();
+    recalcTotal();
+  });
+
+  btnPlus.addEventListener('click', () => {
+    let q = (parseInt(qtdInput.value, 10) || 1) + 1;
+    qtdInput.value = q;
+    updateItemInfo();
+    recalcTotal();
+  });
+
+  stepperWrap.append(btnMinus, qtdInput, btnPlus);
+
+  const priceBox = document.createElement('div');
+  priceBox.className = 'item-price-box';
+
   const priceEl = document.createElement('span');
   priceEl.className = 'item-price';
   priceEl.setAttribute('aria-label', 'Preço unitário');
 
-  const stockEl = document.createElement('span');
-  stockEl.className = 'item-stock';
-  stockEl.hidden = true;
+  const subtotalEl = document.createElement('strong');
+  subtotalEl.className = 'item-subtotal-val';
+  subtotalEl.setAttribute('aria-label', 'Subtotal do item');
 
-  /**
-   * Mostra o preço unitário do produto selecionado e o saldo disponível
-   * (avisa se a quantidade digitada excede o estoque). Como a produção
-   * é obrigatória, o estoque é exibido para qualquer produto.
-   */
-  function updateItemInfo() {
-    const chosen = product.getProducts().find((p) => p.id === saborSelect.value);
-    priceEl.textContent = chosen ? formatCurrency(chosen.valor) : '';
-
-    if (chosen) {
-      const disp = estoque.disponivel(chosen);
-      const produzido = estoque.totalProduzido(chosen.id);
-      const reservado = estoque.totalReservado(chosen.id);
-      stockEl.hidden = false;
-      if (produzido <= 0) {
-        stockEl.textContent = 'Sem produção registrada';
-      } else if (reservado > 0) {
-        stockEl.textContent = `Disponível: ${disp} (${reservado} reservado)`;
-      } else {
-        stockEl.textContent = `Estoque: ${disp}`;
-      }
-      stockEl.className = `item-stock stock-${estoque.stockStatus(disp)}`;
-      const qtd = Number(qtdInput.value) || 0;
-      if (qtd > disp) {
-        stockEl.classList.add('stock-warning');
-      } else {
-        stockEl.classList.remove('stock-warning');
-      }
-    } else {
-      stockEl.hidden = true;
-    }
-  }
+  priceBox.append(priceEl, subtotalEl);
 
   const cortesiaLabel = document.createElement('label');
   cortesiaLabel.className = 'item-cortesia-label';
@@ -243,23 +279,49 @@ function createItemRow(item = {}) {
   if (item.cortesia) row.classList.add('item-cortesia-checked');
   cortesiaCheckbox.addEventListener('change', () => {
     row.classList.toggle('item-cortesia-checked', cortesiaCheckbox.checked);
+    updateItemInfo();
     recalcTotal();
   });
   const cortesiaText = document.createElement('span');
   cortesiaText.textContent = 'Cortesia';
-  cortesiaLabel.appendChild(cortesiaCheckbox);
-  cortesiaLabel.appendChild(cortesiaText);
+  cortesiaLabel.append(cortesiaCheckbox, cortesiaText);
 
-  const removeBtn = document.createElement('button');
-  removeBtn.type = 'button';
-  removeBtn.className = 'item-remove';
-  removeBtn.textContent = '✕';
-  removeBtn.title = 'Remover item';
-  removeBtn.setAttribute('aria-label', 'Remover item');
-  removeBtn.addEventListener('click', () => {
-    row.remove();
-    recalcTotal();
-  });
+  bottomRow.append(stepperWrap, priceBox, cortesiaLabel);
+
+  /**
+   * Mostra o preço unitário do produto selecionado, subtotal e o saldo disponível
+   */
+  function updateItemInfo() {
+    const chosen = product.getProducts().find((p) => p.id === saborSelect.value);
+    const qtd = Math.max(1, parseInt(qtdInput.value, 10) || 1);
+    const unitVal = chosen ? Number(chosen.valor) || 0 : 0;
+    const isCortesia = cortesiaCheckbox.checked;
+
+    priceEl.textContent = chosen ? `${formatCurrency(unitVal)} un` : '';
+    subtotalEl.textContent = chosen ? (isCortesia ? 'Grátis (Cortesia)' : formatCurrency(unitVal * qtd)) : 'R$ 0,00';
+
+    if (chosen) {
+      const disp = estoque.disponivel(chosen);
+      const produzido = estoque.totalProduzido(chosen.id);
+      const reservado = estoque.totalReservado(chosen.id);
+      stockEl.hidden = false;
+      if (produzido <= 0) {
+        stockEl.textContent = estoque.isSobEncomenda(chosen) ? 'Sob Encomenda' : 'Sem produção';
+      } else if (reservado > 0) {
+        stockEl.textContent = `Disp: ${disp} (${reservado} res)`;
+      } else {
+        stockEl.textContent = `Estoque: ${disp}`;
+      }
+      stockEl.className = `item-stock stock-${estoque.stockStatus(disp)}`;
+      if (qtd > disp && !estoque.isSobEncomenda(chosen)) {
+        stockEl.classList.add('stock-warning');
+      } else {
+        stockEl.classList.remove('stock-warning');
+      }
+    } else {
+      stockEl.hidden = true;
+    }
+  }
 
   // Ao editar: reconhece o produto que originou o item
   const resolvedId = resolveItemProductId(item);
@@ -267,7 +329,7 @@ function createItemRow(item = {}) {
     saborSelect.value = resolvedId;
   }
 
-  // Exibe o preço após restaurar a seleção (senão some ao reabrir o pedido)
+  // Exibe o preço e subtotal após restaurar a seleção
   updateItemInfo();
 
   // Recalculo ao editar a linha
@@ -285,7 +347,7 @@ function createItemRow(item = {}) {
     recalcTotal();
   });
 
-  row.append(tipoSelect, saborSelect, qtdInput, priceEl, stockEl, cortesiaLabel, removeBtn);
+  row.append(topRow, bottomRow);
   return row;
 }
 
@@ -378,13 +440,13 @@ function updateLoyaltyHint(clienteNome) {
 
   if (fid.temRecompensaDisponivel) {
     hintEl.hidden = false;
-    hintEl.innerHTML = `<span>🎁 <strong>Fidelidade Concluída:</strong> Este cliente acumulou ${fid.totalPedidos} pedidos e tem um brinde especial liberado para resgate!</span>`;
+    hintEl.innerHTML = `<span><strong>Fidelidade Concluída:</strong> Este cliente acumulou ${fid.totalPedidos} pedidos e tem um brinde especial liberado para resgate!</span>`;
   } else if (fid.faltaApenasUm) {
     hintEl.hidden = false;
-    hintEl.innerHTML = `<span>✨ <strong>Quase lá:</strong> Este será o 10º pedido do cliente! Ao concluir, ele completará o Cartão Fidelidade.</span>`;
+    hintEl.innerHTML = `<span><strong>Quase lá:</strong> Este será o 10º pedido do cliente! Ao concluir, ele completará o Cartão Fidelidade.</span>`;
   } else if (fid.selosPreenchidos > 0) {
     hintEl.hidden = false;
-    hintEl.innerHTML = `<span>🎁 <strong>Cartão Fidelidade:</strong> ${fid.selosPreenchidos}/10 pedidos acumulados.</span>`;
+    hintEl.innerHTML = `<span><strong>Cartão Fidelidade:</strong> ${fid.selosPreenchidos}/10 pedidos acumulados.</span>`;
   } else {
     hintEl.hidden = true;
     hintEl.innerHTML = '';
@@ -421,6 +483,13 @@ export function openNew(prefill = {}) {
 
   updateLoyaltyHint(prefill.cliente || '');
 
+  // Atualiza badge de número do pedido e sincroniza pílulas
+  const numBadge = document.getElementById('field-numero-badge');
+  if (numBadge) {
+    numBadge.textContent = nextNumber ? `#${nextNumber}` : '';
+  }
+  syncAllPills();
+
   // Reinicia com uma linha de item vazia (no primeiro tipo que tiver
   // produtos com disponibilidade para venda)
   itemsContainer.innerHTML = '';
@@ -454,6 +523,13 @@ export function openEdit(orderToEdit) {
   document.getElementById('field-observacoes').value = orderToEdit.observacoes || '';
 
   updateLoyaltyHint(orderToEdit.cliente || '');
+
+  // Atualiza badge de número do pedido e sincroniza pílulas
+  const numBadge = document.getElementById('field-numero-badge');
+  if (numBadge) {
+    numBadge.textContent = orderToEdit.numero ? `#${orderToEdit.numero}` : '';
+  }
+  syncAllPills();
 
   // Preenche as linhas de item a partir do pedido
   const items = Array.isArray(orderToEdit.itens) ? orderToEdit.itens : [];
@@ -550,6 +626,12 @@ export function restorePending() {
   } else {
     d.rows.forEach((row) => addItemRow({ tipoProduto: row.tipo, saborId: row.saborId, quantidade: row.qtd }));
   }
+
+  const numBadge = document.getElementById('field-numero-badge');
+  if (numBadge) {
+    numBadge.textContent = d.numero ? `#${d.numero}` : '';
+  }
+  syncAllPills();
 
   titleEl.textContent = d.id ? 'Editar Pedido' : 'Novo Pedido';
   openModal();
@@ -727,6 +809,100 @@ addItemBtn.addEventListener('click', () => addItemRow({ tipoProduto: defaultItem
 document.getElementById('field-pagamento').addEventListener('change', () => {
   recalcTotal();
 });
+
+/* ---------- Segmented Pills e Venda Rápida Balcão ---------- */
+
+/**
+ * Sincroniza o grupo visual de pílulas com o valor selecionado.
+ */
+function syncPillGroup(container, value) {
+  if (!container) return;
+  container.querySelectorAll('.segmented-pill').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.val === value);
+  });
+}
+
+/**
+ * Sincroniza todos os grupos de pílulas com os selects subjacentes.
+ */
+function syncAllPills() {
+  const pagSelect = document.getElementById('field-pagamento');
+  const entSelect = document.getElementById('field-entrega');
+  const staSelect = document.getElementById('field-status');
+
+  if (pagSelect) syncPillGroup(document.getElementById('pills-pagamento'), pagSelect.value);
+  if (entSelect) syncPillGroup(document.getElementById('pills-entrega'), entSelect.value);
+  if (staSelect) syncPillGroup(document.getElementById('pills-status'), staSelect.value);
+}
+
+/**
+ * Configura um grupo de pílulas sincronizado com um <select>.
+ */
+function setupSegmentedPills(containerId, selectId, onSelectCallback = null) {
+  const container = document.getElementById(containerId);
+  const select = document.getElementById(selectId);
+  if (!container || !select) return;
+
+  container.addEventListener('click', (e) => {
+    const pill = e.target.closest('.segmented-pill');
+    if (!pill) return;
+    const val = pill.dataset.val;
+    if (val) {
+      select.value = val;
+      select.dispatchEvent(new Event('change'));
+      syncPillGroup(container, val);
+      if (typeof onSelectCallback === 'function') onSelectCallback(val);
+    }
+  });
+
+  select.addEventListener('change', () => {
+    syncPillGroup(container, select.value);
+  });
+}
+
+setupSegmentedPills('pills-pagamento', 'field-pagamento', () => recalcTotal());
+setupSegmentedPills('pills-entrega', 'field-entrega');
+setupSegmentedPills('pills-status', 'field-status');
+
+// Botão rápido "Balcão" no campo de cliente
+const btnFillBalcao = document.getElementById('btnFillBalcao');
+if (btnFillBalcao) {
+  btnFillBalcao.addEventListener('click', () => {
+    const clienteEl = document.getElementById('field-cliente');
+    if (clienteEl) {
+      clienteEl.value = 'Balcão';
+      clienteEl.dispatchEvent(new Event('input'));
+    }
+  });
+}
+
+// Botão "Venda Rápida Balcão" no topo do modal
+const btnQuickBalcao = document.getElementById('btnQuickBalcao');
+if (btnQuickBalcao) {
+  btnQuickBalcao.addEventListener('click', () => {
+    const clienteEl = document.getElementById('field-cliente');
+    const entregaEl = document.getElementById('field-entrega');
+    const statusEl = document.getElementById('field-status');
+
+    if (clienteEl) clienteEl.value = 'Balcão';
+    if (entregaEl) {
+      entregaEl.value = 'Retirada';
+      entregaEl.dispatchEvent(new Event('change'));
+    }
+    if (statusEl) {
+      statusEl.value = 'Concluído';
+      statusEl.dispatchEvent(new Event('change'));
+    }
+
+    syncAllPills();
+    updateLoyaltyHint('Balcão');
+    showToast('Modo Balcão: Cliente Balcão, Retirada e Concluído.', 'info');
+
+    // Foca no seletor de produto do primeiro item se existir
+    const firstSabor = itemsContainer.querySelector('.item-sabor');
+    if (firstSabor) firstSabor.focus();
+  });
+}
 
 // Atalho para cadastrar produto que não está no catálogo
 // (wrapper: captura o callback atual, não o valor no momento do bind)

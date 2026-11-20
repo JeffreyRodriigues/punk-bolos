@@ -1503,81 +1503,453 @@ body.modal-open {
   display: none !important;
 }
 
-.item-row {
+/* ============================================================
+   NOVO PEDIDO & EDIÇÃO DE VENDA (MODAL REDESIGN)
+   ============================================================ */
+
+.order-modal-card {
+  max-width: 760px;
+}
+
+.order-modal-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+}
+
+.order-header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.order-numero-badge {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+.order-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-quick-balcao {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-quick-balcao:hover {
+  background-color: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.order-modal-body {
+  padding: 16px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Seções Agrupadas em Cards */
+.order-form-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.order-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+}
+
+.order-section-hint {
+  font-size: 0.75rem;
+  font-weight: normal;
+  text-transform: none;
+  color: var(--color-text-muted);
+}
+
+/* Grid de Cliente e Atendimento */
+.order-grid-client {
+  display: grid;
+  grid-template-columns: 2fr 1.3fr 1fr;
+  gap: 12px;
+}
+
+.input-with-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.input-with-action input {
+  flex: 1;
+}
+
+.btn-subtle-fill {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-subtle-fill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+/* Cards Modernos de Itens */
+.items-container-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.item-card-modern {
   background-color: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  padding: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.item-row.item-cortesia-checked {
-  opacity: 0.6;
+.item-card-modern:hover {
+  border-color: var(--color-primary);
 }
 
-.item-row.item-cortesia-checked .item-price {
+.item-card-modern.item-cortesia-checked {
+  opacity: 0.7;
+}
+
+.item-card-modern.item-cortesia-checked .item-subtotal-val {
   text-decoration: line-through;
+  color: var(--color-warn);
+}
+
+.item-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.item-product-pickers {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 360px;
+  align-items: center;
+}
+
+.item-product-pickers .item-tipo {
+  flex: 0 0 130px;
+  font-weight: 600;
+}
+
+.item-product-pickers .item-sabor {
+  flex: 1 1 200px;
+  font-weight: 600;
+}
+
+.item-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-stock {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.item-stock.stock-ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.item-stock.stock-baixo {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.item-stock.stock-zerado {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.item-stock.stock-warning {
+  border: 1px dashed #dc2626;
+}
+
+.item-remove {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+
+.item-remove:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.item-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border);
+}
+
+/* Stepper Ergonômico de Quantidade */
+.item-stepper {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.btn-stepper {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  user-select: none;
+}
+
+.btn-stepper:hover {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.item-stepper .item-qtd {
+  width: 44px;
+  height: 34px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+/* Box de Preço e Subtotal */
+.item-price-box {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.item-price {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.item-subtotal-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-primary);
 }
 
 .item-cortesia-label {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-warn);
   cursor: pointer;
   user-select: none;
-  white-space: nowrap;
-  padding: 2px 4px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  position: relative;
-  z-index: 2;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease;
 }
 
 .item-cortesia-label:hover {
-  border-color: var(--color-warn);
   background: var(--color-warn-soft);
 }
 
-.item-cortesia-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  cursor: pointer;
-  appearance: auto;
-  -webkit-appearance: checkbox;
-  accent-color: var(--color-warn);
+/* Botão de Adicionar Item */
+.order-add-item-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.item-row input,
-.item-row select {
-  min-width: 0;
-}
-
-.item-row .item-tipo {
-  flex: 1 1 130px;
-}
-
-.item-row .item-sabor {
-  flex: 1 1 240px;
-}
-
-.item-row .item-qtd {
-  width: 78px;
-}
-
-.item-row .item-price {
-  white-space: nowrap;
+.btn-add-item-modern {
+  width: 100%;
+  padding: 10px 16px;
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-primary);
+  background-color: var(--color-primary-soft);
   color: var(--color-primary);
-  min-width: 64px;
-  text-align: right;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-add-item-modern:hover {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+/* Segmented Control / Pílulas de Seleção Rápida */
+.segmented-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.segmented-pill {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.segmented-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.segmented-pill.active {
+  background-color: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-weight: 700;
+}
+
+/* Barra Inferior Fixa (Sticky Footer) */
+.order-modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: 12px 20px;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.order-modal-total-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.order-modal-total-lbl {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.5px;
+}
+
+.order-modal-total-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1.1;
+}
+
+.order-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-save-order {
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 .items-warning {
@@ -1605,35 +1977,11 @@ body.modal-open {
   text-decoration: underline;
 }
 
-.prec-preview-row-small {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  margin-top: -2px;
-}
-
 .btn-link:hover {
   color: var(--color-primary-hover);
 }
 
-.item-remove {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 1.1rem;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-}
-
-.item-remove:hover {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-}
-
+.items-container-modern.invalid .item-card-modern,
 .items-container.invalid .item-row {
   border-color: var(--color-danger);
 }
@@ -1642,6 +1990,7 @@ body.modal-open {
   background: var(--color-warn-soft);
   color: var(--color-warn);
 }
+
 
 .items-total {
   display: flex;
