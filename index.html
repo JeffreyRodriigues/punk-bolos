@@ -140,6 +140,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -625,6 +626,60 @@ body.sidebar-collapsed .app-nav {
   border-radius: 999px;
 }
 
+.realtime-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.realtime-status-badge::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.realtime-status-badge.online {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.realtime-status-badge.online::before {
+  background-color: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.8);
+}
+
+.realtime-status-badge.offline {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.realtime-status-badge.offline::before {
+  background-color: #f59e0b;
+}
+
+html.dark .realtime-status-badge.online {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+html.dark .realtime-status-badge.offline {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+
 /* Importar / exportar planilha */
 .csv-actions {
   display: flex;
@@ -755,6 +810,32 @@ body.sidebar-collapsed .app-nav {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
+.btn-kitchen-audio {
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-card);
+}
+
+.btn-kitchen-audio:hover {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.btn-kitchen-audio.muted {
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  opacity: 0.75;
+}
+
+
 /* ---------- Filtros ---------- */
 .filters {
   display: flex;
@@ -843,6 +924,28 @@ body.sidebar-collapsed .app-nav {
 .order-card:hover {
   border-color: var(--color-primary);
 }
+
+@keyframes orderHighlightPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(230, 81, 0, 0.7);
+    border-color: #e65100;
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(230, 81, 0, 0);
+    border-color: #fb8c00;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(230, 81, 0, 0);
+    border-color: #e65100;
+  }
+}
+
+.order-card.order-card-new {
+  animation: orderHighlightPulse 2s ease-in-out infinite;
+  border-width: 2px;
+  border-color: var(--color-primary);
+}
+
 
 /* Cabeçalho do Card */
 .order-card-header {
@@ -5857,7 +5960,8 @@ html.dark .badge-purple {
     align-items: stretch;
   }
 
-  .btn-order-cozinha {
+  .btn-order-cozinha,
+  .btn-kitchen-audio {
     width: 100%;
     text-align: center;
     padding: 10px;
@@ -6185,6 +6289,7 @@ html.dark .badge-purple {
 
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
 
@@ -6665,6 +6770,7 @@ html.dark .badge-purple {
     <div class="page-title">
       <h1>Pedidos</h1>
       <span id="orderCount" class="count-badge">0</span>
+      <span id="realtimeStatusBadge" class="realtime-status-badge offline" title="Status da sincronização em tempo real">Tempo Real: Conectando...</span>
     </div>
 
     <!-- Barra de ferramentas: Visualização + Importar/Exportar -->
@@ -6692,6 +6798,9 @@ html.dark .badge-purple {
       </div>
       <button id="btnOrderCozinha" type="button" class="btn-order-cozinha" title="Alternar foco exclusivo nos pedidos de hoje e em produção">
         Foco Cozinha (Hoje / Ativos)
+      </button>
+      <button id="btnToggleKitchenAudio" type="button" class="btn-kitchen-audio" title="Alternar alerta sonoro ao receber novos pedidos">
+        Som: Ativado
       </button>
     </div>
 
@@ -8938,6 +9047,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=72"></script>
+  <script type="module" src="js/app.js?v=73"></script>
 </body>
 </html>

@@ -1132,6 +1132,57 @@ function diffOrders(previous, next) {
   byId.forEach((_, id) => supabase.deleteOrder(id).catch((e) => reportError('Falha ao excluir pedido', e.message)));
 }
 
+/**
+ * Aplica um pedido inserido remotamente (via Realtime) sem gerar diff reverso.
+ * @param {Object} row - Linha crua vinda do Supabase.
+ * @returns {Object} Pedido no formato da aplicação.
+ */
+export function applyRemoteOrderInsert(row) {
+  const newOrder = fromOrderRow(row);
+  const currentOrders = getAll();
+  const idx = currentOrders.findIndex((o) => o.id === newOrder.id || (newOrder.numero && o.numero === newOrder.numero));
+  if (idx >= 0) {
+    currentOrders[idx] = newOrder;
+  } else {
+    currentOrders.unshift(newOrder);
+  }
+  ordersCache = currentOrders;
+  ordersSynced = JSON.parse(JSON.stringify(currentOrders));
+  localStorage.setItem(PEDIDOS_KEY, JSON.stringify(currentOrders));
+  return newOrder;
+}
+
+/**
+ * Aplica um pedido atualizado remotamente sem gerar diff reverso.
+ * @param {Object} row - Linha crua vinda do Supabase.
+ * @returns {Object} Pedido atualizado.
+ */
+export function applyRemoteOrderUpdate(row) {
+  const updatedOrder = fromOrderRow(row);
+  const currentOrders = getAll();
+  const idx = currentOrders.findIndex((o) => o.id === updatedOrder.id || (updatedOrder.numero && o.numero === updatedOrder.numero));
+  if (idx >= 0) {
+    currentOrders[idx] = updatedOrder;
+  } else {
+    currentOrders.unshift(updatedOrder);
+  }
+  ordersCache = currentOrders;
+  ordersSynced = JSON.parse(JSON.stringify(currentOrders));
+  localStorage.setItem(PEDIDOS_KEY, JSON.stringify(currentOrders));
+  return updatedOrder;
+}
+
+/**
+ * Aplica uma exclusão remota sem gerar diff reverso.
+ * @param {string} id - Id do pedido excluído.
+ */
+export function applyRemoteOrderDelete(id) {
+  const currentOrders = getAll().filter((o) => o.id !== id);
+  ordersCache = currentOrders;
+  ordersSynced = JSON.parse(JSON.stringify(currentOrders));
+  localStorage.setItem(PEDIDOS_KEY, JSON.stringify(currentOrders));
+}
+
 /** Envia ao banco os produtos criados/alterados/removidos. */
 function diffProducts(previous, next) {
   const byId = new Map(previous.map((product) => [product.id, product]));

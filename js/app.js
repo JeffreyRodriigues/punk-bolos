@@ -37,6 +37,7 @@ import * as purchasesView from './modules/purchasesView.js';
 import * as financialView from './modules/financialView.js';
 import * as systemInfo from './modules/systemInfo.js';
 import * as shoppingList from './modules/shoppingList.js';
+import * as realtime from './modules/realtime.js';
 import { initExcelModal } from './modules/excelModal.js';
 import { showToast } from './modules/toast.js';
 
@@ -388,6 +389,38 @@ function init() {
   const btnInvRegistrarCompra = document.getElementById('btnInvRegistrarCompra');
   if (btnInvRegistrarCompra) {
     btnInvRegistrarCompra.addEventListener('click', () => navigate('compras'));
+  }
+
+  // Inicializa sincronização em tempo real (Supabase WebSockets) e alerta sonoro
+  realtime.init();
+  realtime.setRealtimeListeners({
+    onOrderReceived: (newOrder) => {
+      updatePendingOrdersBadge();
+      if (newOrder && newOrder.id) {
+        orderList.highlightOrder(newOrder.id);
+      }
+      invalidateViews(['orders', 'dashboard']);
+    },
+    onOrderUpdated: () => {
+      updatePendingOrdersBadge();
+      invalidateViews(['orders', 'dashboard']);
+    },
+  });
+
+  // Botão de controle de som da cozinha
+  const btnKitchenAudio = document.getElementById('btnToggleKitchenAudio');
+  if (btnKitchenAudio) {
+    const updateAudioBtnUI = () => {
+      const active = realtime.isSoundEnabled();
+      btnKitchenAudio.textContent = active ? 'Som: Ativado' : 'Som: Desativado';
+      btnKitchenAudio.classList.toggle('muted', !active);
+    };
+    updateAudioBtnUI();
+    btnKitchenAudio.addEventListener('click', () => {
+      const active = realtime.toggleSound();
+      updateAudioBtnUI();
+      showToast(active ? 'Alerta sonoro da cozinha ativado' : 'Alerta sonoro da cozinha desativado', 'info');
+    });
   }
 
   // 1. Render inicial INSTANTÂNEO (0ms): renderiza apenas a tela ativa inicial

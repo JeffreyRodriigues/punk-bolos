@@ -213,7 +213,8 @@
     align-items: stretch;
   }
 
-  .btn-order-cozinha {
+  .btn-order-cozinha,
+  .btn-kitchen-audio {
     width: 100%;
     text-align: center;
     padding: 10px;

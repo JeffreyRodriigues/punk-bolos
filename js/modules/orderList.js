@@ -60,6 +60,23 @@ try {
   isCozinhaMode = localStorage.getItem(COZINHA_STORAGE_KEY) === 'true';
 } catch (_) {}
 
+let highlightedOrderId = null;
+let highlightTimer = null;
+
+/**
+ * Define o id do pedido a destacar com efeito pulse na esteira.
+ * @param {string|number} id - Id ou número do pedido.
+ */
+export function highlightOrder(id) {
+  highlightedOrderId = String(id);
+  if (highlightTimer) clearTimeout(highlightTimer);
+  highlightTimer = setTimeout(() => {
+    highlightedOrderId = null;
+    const el = document.querySelector(`.order-card[data-order-id="${id}"]`);
+    if (el) el.classList.remove('order-card-new');
+  }, 7000);
+}
+
 /** Callback de ação (setado por app.js): editar / concluir / cancelar */
 let onAction = { edit: () => {}, complete: () => {}, cancel: () => {} };
 let onChange = () => {};
@@ -352,10 +369,16 @@ export function render() {
 function createCard(o) {
   const card = document.createElement('article');
   card.className = 'order-card';
+  card.dataset.orderId = o.id;
+
   const orderKey = o.numero || o.id;
   const isExpanded = expandedOrderIds.has(orderKey);
   if (isExpanded) {
     card.classList.add('order-card--expanded');
+  }
+
+  if (highlightedOrderId && (highlightedOrderId === String(o.id) || highlightedOrderId === String(o.numero))) {
+    card.classList.add('order-card-new');
   }
 
   /* Cabeçalho: número, data, badges e valor total */
