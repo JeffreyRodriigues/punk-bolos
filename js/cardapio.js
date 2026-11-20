@@ -21,6 +21,38 @@ let currentDeliveryType = 'Retirada';
 let currentCustomer = null;
 let currentCustomerOrders = [];
 
+// Chave para persistência da sacola no navegador contra abandono
+const CART_STORAGE_KEY = 'punk_cart_items';
+
+/**
+ * Salva a sacola no localStorage para evitar perda se a página recarregar.
+ * @param {Array<Object>} items - Itens atuais do carrinho.
+ */
+function persistCart(items) {
+  try {
+    if (!Array.isArray(items) || items.length === 0) {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } else {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    }
+  } catch (_) {}
+}
+
+/**
+ * Restaura os itens da sacola salvos no localStorage.
+ * @returns {Array<Object>} Itens recuperados ou lista vazia.
+ */
+function loadSavedCart() {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
 // Telefone da confeitaria
 const STORE_PHONE = '11978819005';
 
@@ -31,6 +63,9 @@ async function init() {
 
   // Carrega sessão existente do cliente no navegador
   currentCustomer = menuService.obterSessaoCliente();
+
+  // Restaura sacola salva anteriormente para evitar abandono de carrinho
+  cart = loadSavedCart();
 
   try {
     await storage.initPublicMenu();
@@ -1904,6 +1939,7 @@ function setupCakeWizardEvents() {
 
 /* ---------- Atualização da Interface do Carrinho ---------- */
 function updateCartUi() {
+  persistCart(cart);
   const totais = menuService.calcularTotaisCarrinho(cart);
 
   // Barra Flutuante
@@ -2235,11 +2271,12 @@ async function handleCheckout() {
 
   // Salva notificação pendente para reexibir quando o cliente retornar do WhatsApp
   try {
-    sessionStorage.setItem('punk_order_toast', 'Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp. 🎉');
+    sessionStorage.setItem('punk_order_toast', 'Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp.');
   } catch (_) {}
 
   // Limpa o carrinho e reseta a interface para a tela principal
   cart = [];
+  persistCart([]);
   updateCartUi();
   renderProducts();
   closeCartModal();
@@ -2261,10 +2298,20 @@ async function handleCheckout() {
   // Notifica o cliente com toast de sucesso
   showCardapioToast('Pedido registrado com sucesso! Aguarde nosso retorno no WhatsApp.', 'success', 6000);
 
-  // Redireciona para o WhatsApp
+  // Redireciona para o WhatsApp de forma nativa e blindada contra bloqueadores de popup
   const waLink = menuService.formatarLinkWhatsapp(STORE_PHONE, msg);
   if (waLink) {
-    window.open(waLink, '_blank');
+    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+    if (isMobile) {
+      setTimeout(() => {
+        window.location.href = waLink;
+      }, 100);
+    } else {
+      const win = window.open(waLink, '_blank');
+      if (!win || win.closed || typeof win.closed === 'undefined') {
+        window.location.href = waLink;
+      }
+    }
   }
 }
 
