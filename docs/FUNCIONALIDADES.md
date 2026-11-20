@@ -102,6 +102,7 @@ Interface pública voltada para os clientes finais:
     - **Etapa 5:** Escolha do melhor horário/período.
     - **Etapa 6:** Termos e regras importantes (transporte exclusivamente de carro com ar-condicionado, 100% pagamento integral PIX adiantado para entrar na produção, alinhamento de acréscimos especiais no WhatsApp).
     - **Etapa 7:** Observações e escrita na tábua + Resumo detalhado com valor total atualizado em tempo real.
-- **Sacola de Compras Flutuante:** Adição de itens, cálculo de totais e botão de checkout.
+- **Sacola de Compras Flutuante & Persistente:** Adição de itens, cálculo de totais em tempo real e salvamento automático no `localStorage` do navegador para evitar perda de carrinho e do bolo personalizado caso o cliente recarregue a página ou alterne de aplicativo no celular.
 - **Área do Cliente:** Login simples via WhatsApp, cartão fidelidade e botão "Repetir Pedido".
-- **Fechamento no WhatsApp & Supabase:** Envia o pedido estruturado diretamente para o banco de dados e abre a conversa no WhatsApp formatada com todos os detalhes e adicionais do bolo.
+- **Fechamento no WhatsApp & Supabase:** Envia o pedido estruturado diretamente para o banco de dados e abre a conversa no WhatsApp formatada com todos os detalhes e adicionais do bolo, utilizando redirecionamento nativo blindado contra bloqueadores de popups no Safari (iOS) e Chrome (Android).
+- **Metatags Open Graph & Redes Sociais:** Metadados ricos (`og:image`, `og:title`, `og:description`) e favicon para geração de prévias visuais convidativas com miniatura e resumo ao compartilhar o link do cardápio no WhatsApp, Instagram e redes sociais.
