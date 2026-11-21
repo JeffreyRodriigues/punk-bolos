@@ -52,6 +52,7 @@ let productionsSynced = [];
 let insumosSynced = [];
 let precificacoesSynced = [];
 let customersSynced = [];
+let purchasesSynced = [];
 
 /** true quando conectado ao Supabase (escritas vão para a nuvem). */
 let online = false;
@@ -659,6 +660,36 @@ function fromCustomerRow(row) {
   };
 }
 
+/** Compra (app) → linha do banco. */
+export function toPurchaseRow(purchase) {
+  return {
+    id: purchase.id,
+    codigo: purchase.codigo || '',
+    data: purchase.data || '',
+    fornecedor: purchase.fornecedor || '',
+    forma_pagamento: purchase.formaPagamento || 'PIX',
+    observacoes: purchase.observacoes || '',
+    itens: Array.isArray(purchase.itens) ? purchase.itens : [],
+    valor_total: Number(purchase.valorTotal) || 0,
+    created_at: purchase.createdAt || new Date().toISOString(),
+  };
+}
+
+/** Linha do banco → compra (app). */
+export function fromPurchaseRow(row) {
+  return {
+    id: row.id,
+    codigo: row.codigo || '',
+    data: row.data || '',
+    fornecedor: row.fornecedor || '',
+    formaPagamento: row.forma_pagamento || 'PIX',
+    observacoes: row.observacoes || '',
+    itens: Array.isArray(row.itens) ? row.itens : [],
+    valorTotal: Number(row.valor_total) || 0,
+    createdAt: row.created_at || '',
+  };
+}
+
 /* ---------- Leitura síncrona (cache) ---------- */
 
 /**
@@ -782,13 +813,14 @@ export async function init() {
   }
 
   try {
-    const [remoteOrders, remoteProducts, remoteProductions, remoteInsumos, remotePrecificacoes, remoteCustomers] = await Promise.all([
+    const [remoteOrders, remoteProducts, remoteProductions, remoteInsumos, remotePrecificacoes, remoteCustomers, remotePurchases] = await Promise.all([
       supabase.listOrders().catch(() => []),
       supabase.listProducts().catch(() => []),
       supabase.listProductions().catch(() => []),
       supabase.listInsumos().catch(() => []),
       supabase.listPrecificacoes().catch(() => []),
       supabase.listCustomers().catch(() => []),
+      supabase.listPurchases().catch(() => []),
     ]);
 
     // Migração inicial única: apenas se o banco Supabase estiver 100% vazio, houver usuário logado e este dispositivo ainda não migrou
@@ -800,7 +832,8 @@ export async function init() {
       remoteProductions.length === 0 &&
       remoteInsumos.length === 0 &&
       remotePrecificacoes.length === 0 &&
-      remoteCustomers.length === 0;
+      remoteCustomers.length === 0 &&
+      remotePurchases.length === 0;
 
     const hasMigrated = localStorage.getItem('punkbolos.migrated') === 'true';
 
@@ -811,6 +844,7 @@ export async function init() {
       const localInsumos = readLocalInsumos();
       const localPrecificacoes = readLocalPrecificacoes();
       const localCustomers = readLocalCustomers();
+      const localPurchases = readLocalPurchases();
 
       for (const order of localOrders) {
         try {
@@ -854,16 +888,24 @@ export async function init() {
           reportError('Falha ao migrar cliente', e && e.message ? e.message : 'sem conexão');
         }
       }
+      for (const purchase of localPurchases) {
+        try {
+          await supabase.insertPurchase(toPurchaseRow(purchase));
+        } catch (e) {
+          reportError('Falha ao migrar compra', e && e.message ? e.message : 'sem conexão');
+        }
+      }
       localStorage.setItem('punkbolos.migrated', 'true');
 
       // Refetch após migração inicial
-      const [o2, p2, pr2, i2, prc2, c2] = await Promise.all([
+      const [o2, p2, pr2, i2, prc2, c2, pur2] = await Promise.all([
         supabase.listOrders(),
         supabase.listProducts(),
         supabase.listProductions(),
         supabase.listInsumos(),
         supabase.listPrecificacoes(),
         supabase.listCustomers().catch(() => []),
+        supabase.listPurchases().catch(() => []),
       ]);
       ordersCache = o2.map(fromOrderRow);
       productsCache = p2.map(fromProductRow);
@@ -871,6 +913,7 @@ export async function init() {
       insumosCache = i2.map(fromInsumoRow);
       precificacoesCache = prc2.map(fromPrecificacaoRow);
       customersCache = c2.map(fromCustomerRow);
+      purchasesCache = pur2.map(fromPurchaseRow);
     } else {
       localStorage.setItem('punkbolos.migrated', 'true');
       // Fonte de verdade = Nuvem (Supabase)
@@ -880,6 +923,24 @@ export async function init() {
       insumosCache = remoteInsumos.map(fromInsumoRow);
       precificacoesCache = remotePrecificacoes.map(fromPrecificacaoRow);
       customersCache = remoteCustomers.map(fromCustomerRow);
+
+      // Migração incremental de compras caso a tabela seja nova e haja dados locais
+      if (remotePurchases.length === 0) {
+        const localPurchases = readLocalPurchases();
+        if (localPurchases.length > 0 && session) {
+          for (const purchase of localPurchases) {
+            try {
+              await supabase.insertPurchase(toPurchaseRow(purchase));
+            } catch (_) {}
+          }
+          const purRefetch = await supabase.listPurchases().catch(() => []);
+          purchasesCache = purRefetch.length > 0 ? purRefetch.map(fromPurchaseRow) : localPurchases;
+        } else {
+          purchasesCache = [];
+        }
+      } else {
+        purchasesCache = remotePurchases.map(fromPurchaseRow);
+      }
     }
 
     if (productsCache && !productsCache.some((p) => p.tipoProduto === 'Bolo Naked')) {
@@ -914,6 +975,7 @@ export async function init() {
     localStorage.setItem(INSUMOS_KEY, JSON.stringify(insumosCache));
     localStorage.setItem(PRECIFICACOES_KEY, JSON.stringify(precificacoesCache));
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customersCache));
+    localStorage.setItem(COMPRAS_KEY, JSON.stringify(purchasesCache));
 
     ordersSynced = JSON.parse(JSON.stringify(ordersCache));
     productsSynced = JSON.parse(JSON.stringify(productsCache));
@@ -921,6 +983,7 @@ export async function init() {
     insumosSynced = JSON.parse(JSON.stringify(insumosCache));
     precificacoesSynced = JSON.parse(JSON.stringify(precificacoesCache));
     customersSynced = JSON.parse(JSON.stringify(customersCache));
+    purchasesSynced = JSON.parse(JSON.stringify(purchasesCache));
     online = true;
   } catch (error) {
     if (error && error.message === 'Sessão expirada') {
@@ -1269,13 +1332,36 @@ export function getAllPurchases() {
   return purchasesCache;
 }
 
+/** Envia ao banco as compras criadas/alteradas/removidas. */
+function diffPurchases(previous, next) {
+  const byId = new Map((previous || []).map((p) => [p.id, p]));
+
+  (next || []).forEach((purchase) => {
+    const old = byId.get(purchase.id);
+    if (!old) {
+      supabase.insertPurchase(toPurchaseRow(purchase)).catch((e) => reportError('Falha ao criar compra', e.message));
+    } else if (JSON.stringify(old) !== JSON.stringify(purchase)) {
+      supabase.updatePurchase(purchase.id, toPurchaseRow(purchase)).catch((e) => reportError('Falha ao atualizar compra', e.message));
+    }
+    byId.delete(purchase.id);
+  });
+
+  byId.forEach((_, id) => supabase.deletePurchase(id).catch((e) => reportError('Falha ao excluir compra', e.message)));
+}
+
 /**
- * Salva a lista de compras no LocalStorage.
+ * Salva a lista de compras no LocalStorage e sincroniza com o Supabase.
  * @param {Array<Object>} purchases - Nova lista de compras.
  */
 export function savePurchases(purchases) {
   purchasesCache = Array.isArray(purchases) ? purchases : [];
   localStorage.setItem(COMPRAS_KEY, JSON.stringify(purchasesCache));
+
+  if (!online) {
+    return;
+  }
+  diffPurchases(purchasesSynced, purchasesCache);
+  purchasesSynced = JSON.parse(JSON.stringify(purchasesCache));
 }
 
 /**
@@ -1439,6 +1525,7 @@ export function clearAll() {
   insumosSynced = [];
   precificacoesSynced = [];
   customersSynced = [];
+  purchasesSynced = [];
   online = false;
   localStorage.removeItem(PEDIDOS_KEY);
   localStorage.removeItem(PRODUTOS_KEY);
@@ -1471,6 +1558,7 @@ export function reset() {
   insumosSynced = [];
   precificacoesSynced = [];
   customersSynced = [];
+  purchasesSynced = [];
   online = false;
 }
 

@@ -610,4 +610,37 @@ export async function createPublicOrder(orderData = {}) {
   }
 }
 
+/* ---------- Compras em Lote (purchases) ---------- */
+
+/** Lista todas as compras cadastradas. */
+export async function listPurchases() {
+  return request('/rest/v1/purchases?select=*', { auth: true });
+}
+
+/** Insere uma compra no banco. */
+export async function insertPurchase(row) {
+  return request('/rest/v1/purchases', {
+    method: 'POST',
+    body: row,
+    auth: true,
+  });
+}
+
+/** Atualiza uma compra existente. */
+export async function updatePurchase(id, row) {
+  return request(`/rest/v1/purchases?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: row,
+    auth: true,
+  });
+}
+
+/** Remove uma compra pelo id. */
+export async function deletePurchase(id) {
+  return request(`/rest/v1/purchases?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}
+
 

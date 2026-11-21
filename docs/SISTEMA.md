@@ -5,7 +5,7 @@ Documento-resumo do sistema de gestão da confeitaria **Punk Bolos**: pedidos, c
 > **Stack:** HTML5 + CSS3 + JavaScript (ES6+, módulos) — **sem frameworks ou dependências de runtime**.
 > **Persistência:** LocalStorage (modo offline) → Supabase (nuvem, sincronizada em tempo real).
 > **Deploy:** Render (servidor Node estático mínimo, `server.js`).
-> **Cobertura de Testes:** 266 testes unitários automatizados (`npm test`).
+> **Cobertura de Testes:** 267 testes unitários automatizados (`npm test`).
 
 ---
 
@@ -81,7 +81,7 @@ Punk Bolos/
 │       ├── supabase.js          # Cliente REST do Supabase
 │       └── toast.js             # Notificações visuais
 │   └── utils/                   # Utilitários (money, theme, dateRange, describe)
-├── test/                        # 266 Testes unitários (node:test)
+├── test/                        # 267 Testes unitários (node:test)
 ├── supabase/                    # Scripts SQL (schema, cardapio, clientes, rls)
 ├── tools/build-css.js           # Compila CSS inline nas páginas HTML
 └── server.js                    # Servidor estático Node.js para dev e produção

@@ -87,6 +87,7 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Importador Rápido do Excel:** Modal para colar 4 colunas (`Ingrediente`, `Custo Embalagem`, `Gramas Embalagem`, `Gramas Utilizadas`) com reconhecimento inteligente de insumos e **Bases cadastradas (`PBA`)**, cálculo de custo em tempo real e criação facilitada.
 
 ### 1.8 Compras (Entrada de Notas / Feira em Lote)
+- **Persistência Segura na Nuvem (Supabase):** Sincronização automática das compras em lote com tabela dedicada no banco de dados (`public.purchases`), garantindo backup contínuo, escrita diferencial, histórico seguro e acesso unificado entre computadores e celulares.
 - **Registro em Lote de Entradas:** Formulário dinâmico para registrar múltiplos insumos de uma mesma nota ou compra na feira/atacadista com data, fornecedor (com sugestões via datalist: Assaí, Atacadão, Sam's Club, etc.), forma de pagamento e observações.
 - **Gatilho de Lista de Compras:** Botão no cabeçalho permitindo conferir a lista de ingredientes em falta e insumos críticos antes de registrar novas entradas.
 - **Cálculo Automático de Custo Unitário e Total:** Exibição em tempo real do custo por unidade (R$ / g, R$ / kg, R$ / un) e do valor total acumulado da compra.

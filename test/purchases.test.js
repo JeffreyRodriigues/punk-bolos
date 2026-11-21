@@ -158,4 +158,36 @@ describe('purchases.js — Módulo de Compras em Lote', () => {
     assert.equal(res3.length, 1);
     assert.equal(res3[0].codigo, 'CMP0002');
   });
+
+  test('toPurchaseRow e fromPurchaseRow: mapeiam corretamente formato app e banco', async () => {
+    const { toPurchaseRow, fromPurchaseRow } = await import('../js/modules/storage.js');
+    const compra = createPurchase({
+      id: 'cmp_test_1',
+      codigo: 'CMP0005',
+      data: '2026-11-20',
+      fornecedor: 'Assaí Atacadista',
+      formaPagamento: 'Cartão de Crédito',
+      observacoes: 'Nota fiscal ref. farinhas e chocolates',
+      itens: [
+        { insumoId: 'PIN0001', insumoNome: 'Farinha de Trigo', quantidade: 5000, custoTotal: 40 },
+      ],
+      valorTotal: 40,
+    });
+
+    const row = toPurchaseRow(compra);
+    assert.equal(row.id, 'cmp_test_1');
+    assert.equal(row.codigo, 'CMP0005');
+    assert.equal(row.data, '2026-11-20');
+    assert.equal(row.fornecedor, 'Assaí Atacadista');
+    assert.equal(row.forma_pagamento, 'Cartão de Crédito');
+    assert.equal(row.valor_total, 40);
+    assert.equal(row.itens.length, 1);
+
+    const back = fromPurchaseRow(row);
+    assert.equal(back.id, 'cmp_test_1');
+    assert.equal(back.codigo, 'CMP0005');
+    assert.equal(back.formaPagamento, 'Cartão de Crédito');
+    assert.equal(back.valorTotal, 40);
+    assert.equal(back.itens[0].insumoId, 'PIN0001');
+  });
 });
