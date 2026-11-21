@@ -145,6 +145,7 @@
 
 
 
+
 <!-- CSS_INLINE:START -->
 
 <style>
@@ -3178,6 +3179,8 @@ body.modal-open {
 
 .estoque-table td:last-child {
   text-align: right;
+  white-space: nowrap;
+  width: 1%;
 }
 
 .estoque-table .estoque-reservado {
@@ -3189,26 +3192,27 @@ body.modal-open {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
+  flex-wrap: nowrap;
 }
 
 .btn-estoque-quick {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 28px;
-  padding: 0 6px;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 5px;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: var(--color-text);
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  line-height: 1;
 }
 
 .btn-estoque-quick:hover {
@@ -3223,9 +3227,10 @@ body.modal-open {
 }
 
 .estoque-table .estoque-produzir {
-  padding: 5px 10px;
-  font-size: 0.8rem;
+  padding: 4px 8px;
+  font-size: 0.78rem;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 /* Modal de Fornada (Produção em Lote) */
@@ -3258,8 +3263,40 @@ body.modal-open {
 
 .fornada-categories-bar {
   display: flex;
+  align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.fornada-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  line-height: 1.2;
+}
+
+.fornada-cat-pill:hover {
+  background-color: var(--color-surface-2, var(--color-border));
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.fornada-cat-pill.is-active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(230, 0, 102, 0.25);
 }
 
 .fornada-search-box {
@@ -6530,7 +6567,8 @@ html.dark .badge-purple {
   .estoque-actions-inline {
     width: 100%;
     justify-content: space-between;
-    gap: 6px;
+    gap: 4px;
+    flex-wrap: nowrap;
   }
 
   .btn-estoque-quick {
@@ -6998,6 +7036,7 @@ html.dark .badge-purple {
 
 </style>
 <!-- CSS_INLINE:END -->
+
 
 
 
@@ -9199,11 +9238,11 @@ html.dark .badge-purple {
 
           <div class="fornada-controls-row">
             <div class="fornada-categories-bar" id="fornadaCategoriesBar" role="tablist" aria-label="Filtrar categoria">
-              <button type="button" class="btn-filter-pill is-active" data-fornada-cat="">Todos</button>
-              <button type="button" class="btn-filter-pill" data-fornada-cat="Fatia">Fatias</button>
-              <button type="button" class="btn-filter-pill" data-fornada-cat="Bolo">Bolos</button>
-              <button type="button" class="btn-filter-pill" data-fornada-cat="Punkitos">Punkitos</button>
-              <button type="button" class="btn-filter-pill" data-fornada-cat="Docinho">Docinhos</button>
+              <button type="button" class="fornada-cat-pill is-active" data-fornada-cat="">Todos</button>
+              <button type="button" class="fornada-cat-pill" data-fornada-cat="Fatia">Fatias</button>
+              <button type="button" class="fornada-cat-pill" data-fornada-cat="Bolo">Bolos</button>
+              <button type="button" class="fornada-cat-pill" data-fornada-cat="Punkitos">Punkitos</button>
+              <button type="button" class="fornada-cat-pill" data-fornada-cat="Docinho">Docinhos</button>
             </div>
             <div class="fornada-search-box">
               <input type="search" id="fornadaSearchInput" class="input-search" placeholder="Buscar no catálogo..." autocomplete="off">
@@ -9882,6 +9921,6 @@ html.dark .badge-purple {
   <script src="js/vendor/chart.umd.min.js?v=12" defer></script>
 
   <!-- Módulos ES6. app.js é o ponto de entrada que integra todos os módulos. -->
-  <script type="module" src="js/app.js?v=78"></script>
+  <script type="module" src="js/app.js?v=79"></script>
 </body>
 </html>

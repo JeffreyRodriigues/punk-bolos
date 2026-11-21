@@ -186,7 +186,8 @@
   .estoque-actions-inline {
     width: 100%;
     justify-content: space-between;
-    gap: 6px;
+    gap: 4px;
+    flex-wrap: nowrap;
   }
 
   .btn-estoque-quick {
