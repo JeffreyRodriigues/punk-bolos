@@ -32,8 +32,10 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 
 ### 1.3 Produção (Estoque de Bolos)
 - **Modelo de Estoque Derivado:** `Disponível = Produzido - Reservado - Vendido`.
+- **Modo Fornada Rápida (Produção em Lote):** Botão principal `Registrar Fornada (Lote)` que abre modal em grade com todos os produtos do catálogo, filtros de categoria, busca instantânea, steppers ergonômicos `[ - ] [ input ] [ + ]` e atalhos de incremento rápido (`+5`, `+10`, `+12`), permitindo registrar e salvar uma fornada inteira de múltiplos produtos e dezenas de fatias/bolos em 1 único clique via `buildBatchProductions()`.
+- **Atalhos Instantâneos na Tabela:** Botões compactos de adição imediata `[ +1 ]`, `[ +5 ]`, `[ +10 ]` na linha de cada produto, permitindo registrar a produção do dia com 1 clique direto na tabela, sem abrir modal, com atualização automática do saldo, persistência e feedback via toast.
+- **Produção Avulsa Tradicional:** Mantém o botão `＋ Produção Avulsa` e a ação `＋ Produzir` com modal unitário para lançamentos pontuais com datas retroativas ou observações específicas.
 - **Busca Instantânea & Filtros por Categoria:** Barra de pesquisa em tempo real por nome/sabor de produto e pílulas interativas com contadores dinâmicos (`Todos`, `Fatias`, `Punkitos`, `Docinhos` e `Bolos`) para localização ágil dos itens na bancada de trabalho.
-- **Ação Rápida "＋ Produzir":** Botão direto na linha da tabela de saldo que abre o modal pré-selecionado para agilizar o apontamento da cozinha.
 - **Destaque Visual de Alerta:** Destaque automático em linhas com reservas pendentes sem estoque suficiente para entrega.
 - **Controle de Disponibilidade:** Bloqueia automaticamente a venda de produtos sem produção suficiente.
 - **Histórico de Produções:** Registro auditável de lotes produzidos com data e observações.

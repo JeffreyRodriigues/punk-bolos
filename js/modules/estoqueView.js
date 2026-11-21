@@ -36,6 +36,38 @@ let historyPage = 1;
 const HISTORY_PAGE_SIZE = 10;
 let productionToDelete = null;
 
+/** Estado da Fornada em Lote */
+const fornadaQuantities = new Map();
+let fornadaCategory = '';
+let fornadaSearch = '';
+
+/**
+ * Registra produção instantânea (+1, +5, +10) para a data de hoje.
+ * @param {string} produtoId - ID do produto.
+ * @param {number} amount - Quantidade a adicionar.
+ */
+export function quickProduce(productId, amount) {
+  const p = product.getProducts().find((prod) => prod.id === produtoId);
+  if (!p) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const producoes = storage.getAllProductions();
+  producoes.push({
+    id: generateId(),
+    produtoId,
+    quantidade: amount,
+    data: today,
+    observacao: 'Produção rápida',
+  });
+  storage.saveProductions(producoes);
+
+  showToast(`+${amount} ${estoque.nomeProduto(p)} registrado!`);
+  historyPage = 1;
+  onChange();
+  updateSaldo();
+  renderHistory();
+}
+
 /**
  * Gera um id único para uma produção.
  * @returns {string} Id no formato "pr<timestamp>-<aleatório>".
@@ -108,6 +140,327 @@ export function closeProducaoModal() {
   }
   document.body.classList.remove('modal-open');
   showAviso('');
+}
+
+/**
+ * Exibe (ou oculta) o aviso do formulário de fornada.
+ * @param {string} message - Mensagem (vazia oculta).
+ * @param {boolean} [ok] - true usa estilo de sucesso.
+ */
+function showFornadaAviso(message, ok = false) {
+  const aviso = document.getElementById('fornadaFormAviso');
+  if (!aviso) return;
+  aviso.textContent = message;
+  aviso.hidden = !message;
+  aviso.classList.toggle('estoque-aviso-ok', ok);
+}
+
+/**
+ * Atualiza o sumário do rodapé da fornada (total de produtos e unidades).
+ */
+function updateFornadaSummary() {
+  const totalItemsEl = document.getElementById('fornadaTotalItems');
+  const totalUnitsEl = document.getElementById('fornadaTotalUnits');
+
+  let totalProducts = 0;
+  let totalUnits = 0;
+
+  fornadaQuantities.forEach((qty) => {
+    if (qty > 0) {
+      totalProducts++;
+      totalUnits += qty;
+    }
+  });
+
+  if (totalItemsEl) {
+    totalItemsEl.textContent = `${totalProducts} produto${totalProducts === 1 ? '' : 's'}`;
+  }
+  if (totalUnitsEl) {
+    totalUnitsEl.textContent = `(${totalUnits} un)`;
+  }
+}
+
+/**
+ * Atualiza a quantidade de um item na fornada e reflete na interface.
+ * @param {string} productId
+ * @param {number} qty
+ * @param {HTMLInputElement} [inputEl]
+ * @param {HTMLElement} [cardEl]
+ * @param {boolean} [updateInput=true]
+ */
+function setFornadaItemQty(productId, qty, inputEl, cardEl, updateInput = true) {
+  const finalQty = Math.max(0, Math.floor(Number(qty) || 0));
+  if (finalQty > 0) {
+    fornadaQuantities.set(productId, finalQty);
+  } else {
+    fornadaQuantities.delete(productId);
+  }
+
+  if (updateInput && inputEl) {
+    inputEl.value = finalQty;
+  }
+  if (cardEl) {
+    cardEl.classList.toggle('is-selected', finalQty > 0);
+  }
+  updateFornadaSummary();
+}
+
+/**
+ * Retorna os produtos a listar no modal de fornada conforme filtros.
+ * @returns {Array<object>}
+ */
+function getFornadaProducts() {
+  let list = product.getProducts();
+
+  if (fornadaCategory) {
+    if (fornadaCategory === 'Bolo') {
+      list = list.filter((p) => p.tipoProduto === 'Bolo Inteiro' || p.tipoProduto === 'Bolo Naked');
+    } else {
+      list = list.filter((p) => p.tipoProduto === fornadaCategory);
+    }
+  }
+
+  if (fornadaSearch.trim()) {
+    const term = sortKey(fornadaSearch.trim().toLowerCase());
+    list = list.filter((p) => {
+      const name = sortKey(estoque.nomeProduto(p).toLowerCase());
+      const tipo = sortKey((p.tipoProduto || '').toLowerCase());
+      return name.includes(term) || tipo.includes(term);
+    });
+  }
+
+  return [...list].sort((a, b) => sortKey(estoque.nomeProduto(a)).localeCompare(sortKey(estoque.nomeProduto(b))));
+}
+
+/**
+ * Renderiza os cards de produtos no grid da fornada.
+ */
+function renderFornadaItems() {
+  const grid = document.getElementById('fornadaItemsGrid');
+  if (!grid) return;
+
+  const products = getFornadaProducts();
+  grid.innerHTML = '';
+
+  if (products.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'fornada-empty-msg';
+    empty.textContent = fornadaSearch.trim() || fornadaCategory
+      ? 'Nenhum produto encontrado com os filtros atuais.'
+      : 'Nenhum produto cadastrado no catálogo.';
+    grid.appendChild(empty);
+    return;
+  }
+
+  products.forEach((p) => {
+    const currentQty = fornadaQuantities.get(p.id) || 0;
+    const disp = estoque.disponivel(p);
+
+    const card = document.createElement('div');
+    card.className = `fornada-card ${currentQty > 0 ? 'is-selected' : ''}`;
+    card.dataset.productId = p.id;
+
+    // Header do card: nome, tipo e saldo atual
+    const header = document.createElement('div');
+    header.className = 'fornada-card-header';
+
+    const info = document.createElement('div');
+    info.className = 'fornada-card-info';
+    const title = document.createElement('strong');
+    title.className = 'fornada-card-title';
+    title.textContent = p.titulo || 'Produto';
+    const sub = document.createElement('span');
+    sub.className = 'fornada-card-sub';
+    const tipoTxt = p.tamanho ? `${p.tipoProduto} (${p.tamanho})` : (p.tipoProduto || '');
+    sub.textContent = tipoTxt;
+    info.append(title, sub);
+
+    const stockBadge = document.createElement('span');
+    stockBadge.className = `stock-badge stock-${estoque.stockStatus(disp)}`;
+    stockBadge.title = `Saldo atual: ${disp} disponível`;
+    stockBadge.textContent = disp <= 0 ? 'Zerado' : `${disp} disp`;
+
+    header.append(info, stockBadge);
+
+    // Controles: Stepper e Quick Pills
+    const controls = document.createElement('div');
+    controls.className = 'fornada-card-controls';
+
+    // Stepper: - input +
+    const stepper = document.createElement('div');
+    stepper.className = 'item-stepper fornada-stepper';
+
+    const btnMinus = document.createElement('button');
+    btnMinus.type = 'button';
+    btnMinus.className = 'btn-stepper';
+    btnMinus.textContent = '−';
+    btnMinus.title = 'Diminuir 1';
+    btnMinus.addEventListener('click', () => {
+      const q = Math.max(0, (fornadaQuantities.get(p.id) || 0) - 1);
+      setFornadaItemQty(p.id, q, inputEl, card);
+    });
+
+    const inputEl = document.createElement('input');
+    inputEl.type = 'number';
+    inputEl.className = 'item-qtd fornada-qty-input';
+    inputEl.min = '0';
+    inputEl.step = '1';
+    inputEl.value = currentQty;
+    inputEl.inputMode = 'numeric';
+    inputEl.addEventListener('input', () => {
+      const val = Math.max(0, Math.floor(Number(inputEl.value) || 0));
+      setFornadaItemQty(p.id, val, inputEl, card, false);
+    });
+
+    const btnPlus = document.createElement('button');
+    btnPlus.type = 'button';
+    btnPlus.className = 'btn-stepper';
+    btnPlus.textContent = '+';
+    btnPlus.title = 'Aumentar 1';
+    btnPlus.addEventListener('click', () => {
+      const q = (fornadaQuantities.get(p.id) || 0) + 1;
+      setFornadaItemQty(p.id, q, inputEl, card);
+    });
+
+    stepper.append(btnMinus, inputEl, btnPlus);
+
+    // Quick pills: +5, +10, +12
+    const quickAdds = document.createElement('div');
+    quickAdds.className = 'fornada-quick-pills';
+
+    [5, 10, 12].forEach((amt) => {
+      const pillBtn = document.createElement('button');
+      pillBtn.type = 'button';
+      pillBtn.className = 'btn-fornada-quick';
+      pillBtn.textContent = `+${amt}`;
+      pillBtn.title = `Adicionar +${amt}`;
+      pillBtn.addEventListener('click', () => {
+        const q = (fornadaQuantities.get(p.id) || 0) + amt;
+        setFornadaItemQty(p.id, q, inputEl, card);
+      });
+      quickAdds.appendChild(pillBtn);
+    });
+
+    controls.append(stepper, quickAdds);
+    card.append(header, controls);
+    grid.appendChild(card);
+  });
+}
+
+/**
+ * Zera todas as seleções da fornada atual.
+ */
+function handleZerarFornada() {
+  fornadaQuantities.clear();
+  const inputs = document.querySelectorAll('.fornada-qty-input');
+  inputs.forEach((inp) => {
+    inp.value = 0;
+  });
+  const cards = document.querySelectorAll('.fornada-card');
+  cards.forEach((card) => {
+    card.classList.remove('is-selected');
+  });
+  updateFornadaSummary();
+  showFornadaAviso('');
+}
+
+/**
+ * Abre o modal de registrar fornada (lote).
+ */
+export function openFornadaModal() {
+  const modal = document.getElementById('fornadaModal');
+  if (!modal) return;
+
+  const dataEl = document.getElementById('fornadaData');
+  const obsEl = document.getElementById('fornadaObsGeral');
+  const searchEl = document.getElementById('fornadaSearchInput');
+
+  if (dataEl) {
+    dataEl.value = new Date().toISOString().slice(0, 10);
+  }
+  if (obsEl) obsEl.value = '';
+  if (searchEl) searchEl.value = '';
+
+  fornadaQuantities.clear();
+  fornadaCategory = '';
+  fornadaSearch = '';
+
+  const catPills = document.querySelectorAll('#fornadaCategoriesBar [data-fornada-cat]');
+  catPills.forEach((pill) => {
+    pill.classList.toggle('is-active', pill.dataset.fornadaCat === '');
+  });
+
+  showFornadaAviso('');
+  renderFornadaItems();
+  updateFornadaSummary();
+
+  modal.classList.add('open');
+  document.body.classList.add('modal-open');
+
+  setTimeout(() => {
+    if (searchEl) searchEl.focus();
+  }, 50);
+}
+
+/**
+ * Fecha o modal de registrar fornada.
+ */
+export function closeFornadaModal() {
+  const modal = document.getElementById('fornadaModal');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+  document.body.classList.remove('modal-open');
+  showFornadaAviso('');
+}
+
+/**
+ * Lida com o salvamento da fornada em lote.
+ * @param {Event} event
+ */
+function handleSaveFornada(event) {
+  event.preventDefault();
+
+  const dataEl = document.getElementById('fornadaData');
+  const obsEl = document.getElementById('fornadaObsGeral');
+
+  const data = dataEl ? dataEl.value : '';
+  const obsGeral = obsEl ? String(obsEl.value).trim() : '';
+
+  if (!data) {
+    showFornadaAviso('Informe a data da produção.');
+    return;
+  }
+
+  const items = [];
+  fornadaQuantities.forEach((quantidade, produtoId) => {
+    if (quantidade > 0) {
+      items.push({ produtoId, quantidade });
+    }
+  });
+
+  if (items.length === 0) {
+    showFornadaAviso('Informe a quantidade de pelo menos um produto para salvar a fornada.');
+    return;
+  }
+
+  const batch = estoque.buildBatchProductions(items, { data, observacaoGeral: obsGeral });
+  if (batch.length === 0) {
+    showFornadaAviso('Nenhum item válido para produzir.');
+    return;
+  }
+
+  const totalUnidades = batch.reduce((sum, item) => sum + item.quantidade, 0);
+  const producoes = storage.getAllProductions();
+  producoes.push(...batch);
+  storage.saveProductions(producoes);
+
+  closeFornadaModal();
+  showToast(`Fornada registrada! (${batch.length} produtos, ${totalUnidades} un)`);
+  historyPage = 1;
+  onChange();
+  updateSaldo();
+  renderHistory();
 }
 
 /**
@@ -371,14 +724,35 @@ function renderTable() {
     dispTd.appendChild(badge);
 
     const actionTd = document.createElement('td');
+    actionTd.className = 'estoque-actions-cell';
+    actionTd.dataset.label = 'Ações';
     actionTd.style.textAlign = 'right';
+
+    const actionsGroup = document.createElement('div');
+    actionsGroup.className = 'estoque-actions-inline';
+
+    [1, 5, 10].forEach((amount) => {
+      const quickBtn = document.createElement('button');
+      quickBtn.type = 'button';
+      quickBtn.className = 'btn-estoque-quick';
+      quickBtn.textContent = `+${amount}`;
+      quickBtn.title = `Adicionar +${amount} imediatamente`;
+      quickBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        quickProduce(p.id, amount);
+      });
+      actionsGroup.appendChild(quickBtn);
+    });
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn btn-secondary btn-sm estoque-produzir';
     btn.textContent = '＋ Produzir';
     btn.title = `Registrar produção de ${estoque.nomeProduto(p)}`;
     btn.addEventListener('click', () => openProducaoModal(p.id));
-    actionTd.appendChild(btn);
+    actionsGroup.appendChild(btn);
+
+    actionTd.appendChild(actionsGroup);
 
     tr.append(name, produzidoTd, reservadoTd, vendidoTd, dispTd, actionTd);
     tbody.appendChild(tr);
@@ -672,9 +1046,51 @@ if (nextBtn) {
   });
 }
 
+// Modal de Fornada — Eventos
+const btnOpenFornada = document.getElementById('btnOpenFornadaModal');
+if (btnOpenFornada) {
+  btnOpenFornada.addEventListener('click', () => openFornadaModal());
+}
+
+document.querySelectorAll('[data-close-fornada-modal]').forEach((btn) => {
+  btn.addEventListener('click', closeFornadaModal);
+});
+
+const btnZerar = document.getElementById('btnZerarFornada');
+if (btnZerar) {
+  btnZerar.addEventListener('click', handleZerarFornada);
+}
+
+const fornadaForm = document.getElementById('fornadaForm');
+if (fornadaForm) {
+  fornadaForm.addEventListener('submit', handleSaveFornada);
+}
+
+const fornadaSearchInput = document.getElementById('fornadaSearchInput');
+if (fornadaSearchInput) {
+  fornadaSearchInput.addEventListener('input', (e) => {
+    fornadaSearch = e.target.value;
+    renderFornadaItems();
+  });
+}
+
+const fornadaCatPills = document.querySelectorAll('#fornadaCategoriesBar [data-fornada-cat]');
+fornadaCatPills.forEach((pill) => {
+  pill.addEventListener('click', () => {
+    fornadaCatPills.forEach((p) => p.classList.remove('is-active'));
+    pill.classList.add('is-active');
+    fornadaCategory = pill.dataset.fornadaCat || '';
+    renderFornadaItems();
+  });
+});
+
 // Fechamento de modal com a tecla Esc
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    const fornadaModal = document.getElementById('fornadaModal');
+    if (fornadaModal && fornadaModal.classList.contains('open')) {
+      closeFornadaModal();
+    }
     const prodModal = document.getElementById('producaoModal');
     if (prodModal && prodModal.classList.contains('open')) {
       closeProducaoModal();

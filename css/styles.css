@@ -2314,6 +2314,18 @@ body.modal-open {
   margin-left: auto;
 }
 
+.page-actions-group {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.page-actions-group .page-action {
+  margin-left: 0;
+}
+
 .view-subtitle {
   margin: 0 0 18px;
   font-size: 0.92rem;
@@ -2935,9 +2947,241 @@ body.modal-open {
   color: var(--color-warn);
 }
 
+.estoque-actions-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-estoque-quick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 6px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-estoque-quick:hover {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.btn-estoque-quick:active {
+  transform: scale(0.95);
+}
+
 .estoque-table .estoque-produzir {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* Modal de Fornada (Produção em Lote) */
+.fornada-modal-card {
+  max-width: 820px;
+}
+
+.fornada-modal-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fornada-top-fields {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 12px;
+}
+
+.fornada-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fornada-categories-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fornada-search-box {
+  flex: 1 1 200px;
+  max-width: 280px;
+}
+
+.fornada-search-box input {
+  width: 100%;
   padding: 6px 12px;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
+}
+
+.fornada-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.fornada-empty-msg {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 36px 16px;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.fornada-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.fornada-card:hover {
+  border-color: var(--color-primary-soft);
+}
+
+.fornada-card.is-selected {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.fornada-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fornada-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fornada-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+.fornada-card-sub {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.fornada-card-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fornada-stepper {
+  background-color: var(--color-surface);
+}
+
+.fornada-card.is-selected .fornada-stepper {
+  border-color: var(--color-primary);
+}
+
+.fornada-quick-pills {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-fornada-quick {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  line-height: 1.2;
+}
+
+.btn-fornada-quick:hover {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-fornada-quick:active {
+  transform: scale(0.95);
+}
+
+.fornada-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border);
+  position: sticky;
+  bottom: 0;
+  background-color: var(--color-surface);
+  z-index: 2;
+  gap: 12px;
+}
+
+.fornada-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+.fornada-summary-label {
+  color: var(--color-text-muted);
+}
+
+.fornada-summary-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.fornada-summary-units {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.fornada-footer-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .estoque-table tr.estoque-row-alerta {

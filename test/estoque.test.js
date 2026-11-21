@@ -389,3 +389,55 @@ test('produtosDisponiveis: excludeOrderId ignora a própria reserva em edição'
   const ok = esp.produtosDisponiveis([P_FATIA], { excludeOrderId: 'o-pendente' });
   assert.deepEqual(ok.map((p) => p.id), ['f1']);
 });
+
+// --- buildBatchProductions / generateProductionId ---
+test('generateProductionId: gera id com prefixo pr', async () => {
+  const esp = await import('../js/modules/estoque.js');
+  const id1 = esp.generateProductionId();
+  const id2 = esp.generateProductionId();
+  assert.match(id1, /^pr\d+-[a-z0-9]+$/);
+  assert.notEqual(id1, id2);
+});
+
+test('buildBatchProductions: filtra quantidades zeradas, arredonda inteiros e preenche defaults', async () => {
+  const esp = await import('../js/modules/estoque.js');
+  const items = [
+    { produtoId: 'f1', quantidade: 10 },
+    { produtoId: 'b1', quantidade: 0 },
+    { produtoId: 'i1', quantidade: -2 },
+    { produtoId: '', quantidade: 5 },
+    { produtoId: 'b1', quantidade: 3.7 },
+  ];
+
+  const batch = esp.buildBatchProductions(items, { data: '2026-11-20', observacaoGeral: 'Fornada matinal' });
+  assert.equal(batch.length, 2);
+
+  assert.equal(batch[0].produtoId, 'f1');
+  assert.equal(batch[0].quantidade, 10);
+  assert.equal(batch[0].data, '2026-11-20');
+  assert.equal(batch[0].observacao, 'Fornada matinal');
+  assert.match(batch[0].id, /^pr/);
+
+  assert.equal(batch[1].produtoId, 'b1');
+  assert.equal(batch[1].quantidade, 3);
+  assert.equal(batch[1].data, '2026-11-20');
+  assert.equal(batch[1].observacao, 'Fornada matinal');
+});
+
+test('buildBatchProductions: combina observação geral com observação do item e respeita dados do item', async () => {
+  const esp = await import('../js/modules/estoque.js');
+  const items = [
+    { produtoId: 'f1', quantidade: 5, observacao: 'Cenoura c/ chocolate', data: '2026-11-19', id: 'custom-id-1' },
+    { produtoId: 'i1', quantidade: 20, observacao: 'Brigadeiros festa' },
+  ];
+
+  const batch = esp.buildBatchProductions(items, { data: '2026-11-20', observacaoGeral: 'Lote 1' });
+  assert.equal(batch.length, 2);
+
+  assert.equal(batch[0].id, 'custom-id-1');
+  assert.equal(batch[0].data, '2026-11-19');
+  assert.equal(batch[0].observacao, 'Lote 1 — Cenoura c/ chocolate');
+
+  assert.equal(batch[1].data, '2026-11-20');
+  assert.equal(batch[1].observacao, 'Lote 1 — Brigadeiros festa');
+});

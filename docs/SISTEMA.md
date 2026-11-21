@@ -18,7 +18,7 @@ Documento-resumo do sistema de gestão da confeitaria **Punk Bolos**: pedidos, c
 | **Login** | Acesso com e-mail e senha (Supabase Auth). Cadastro dos administradores feito no painel do Supabase. |
 | **Dashboard** | Resumo do período: receita, pedidos, quantidades por produto, ticket médio, rankings, faturamento diário. |
 | **Produtos** | Catálogo: cadastro, edição, exclusão e valores dos produtos vendidos. |
-| **Produção** | Registro de produção por produto + saldo de estoque derivado (produzido/reservado/vendido/disponível) + histórico. |
+| **Produção** | Registro de fornadas em lote + atalhos rápidos na tabela + produção avulsa + saldo de estoque derivado (produzido/reservado/vendido/disponível) + histórico. |
 | **Pedidos** | Lista de pedidos com busca, filtros e ações (editar, duplicar, concluir, cancelar, excluir). |
 | **Clientes** | CRM com busca, filtros rápidos (VIP, Recorrentes, Inativos, Aniversariantes), histórico de compras, fidelidade e busca de CEP via ViaCEP. |
 | **Inventário** | Gestão de insumos e bases com **IDs sequenciais** (`PIN0001`, `PBA0001`), controle de **estoque físico**, alerta de reposição e histórico de compras. |

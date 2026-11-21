@@ -297,3 +297,41 @@ export function stockStatus(disponivel) {
   if (disponivel <= 5) return 'low';
   return 'ok';
 }
+
+/**
+ * Gera um id único para uma produção.
+ * @returns {string} Id no formato "pr<timestamp>-<aleatório>".
+ */
+export function generateProductionId() {
+  return `pr${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/**
+ * Constrói uma lista de registros de produção a partir de uma fornada (lote).
+ * Ignora itens com quantidade <= 0, arredonda inteiros e preenche id, data e observação.
+ * @param {Array<{ produtoId: string, quantidade: number, observacao?: string, id?: string, data?: string }>} items
+ * @param {{ data?: string, observacaoGeral?: string }} [options]
+ * @returns {Array<{ id: string, produtoId: string, quantidade: number, data: string, observacao: string }>}
+ */
+export function buildBatchProductions(items = [], options = {}) {
+  const data = options.data || new Date().toISOString().slice(0, 10);
+  const obsGeral = (options.observacaoGeral || '').trim();
+
+  return (items || [])
+    .map((item) => {
+      if (!item || !item.produtoId) return null;
+      const qtd = Math.floor(Number(item.quantidade) || 0);
+      if (qtd <= 0) return null;
+      const obsItem = (item.observacao || '').trim();
+      const observacaoFinal = obsItem && obsGeral ? `${obsGeral} — ${obsItem}` : (obsItem || obsGeral);
+      return {
+        id: item.id || generateProductionId(),
+        produtoId: String(item.produtoId),
+        quantidade: qtd,
+        data: item.data || data,
+        observacao: observacaoFinal,
+      };
+    })
+    .filter(Boolean);
+}
+
