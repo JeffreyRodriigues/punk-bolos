@@ -12,6 +12,7 @@
 
 import { CONFIG } from '../config.js';
 import * as storage from './storage.js';
+import * as supabase from './supabase.js';
 import { showToast } from './toast.js';
 
 let socket = null;
@@ -22,7 +23,7 @@ let isConnected = false;
 let audioCtx = null;
 
 // Preferência de som salva no navegador (padrão: ativado)
-let soundEnabled = localStorage.getItem('punk_kitchen_sound_muted') !== 'true';
+let soundEnabled = typeof localStorage !== 'undefined' ? localStorage.getItem('punk_kitchen_sound_muted') !== 'true' : true;
 
 // Callbacks registrados por app.js / orderList.js
 let onOrderReceivedCallback = null;
@@ -60,6 +61,7 @@ export function toggleSound() {
  */
 function unlockAudioContext() {
   try {
+    if (typeof window === 'undefined') return;
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
     if (!audioCtx) {
@@ -133,7 +135,7 @@ export function setRealtimeListeners({ onOrderReceived, onOrderUpdated, onConnec
  */
 function updateConnectionBadge(online) {
   isConnected = online;
-  const badge = document.getElementById('realtimeStatusBadge');
+  const badge = typeof document !== 'undefined' ? document.getElementById('realtimeStatusBadge') : null;
   if (badge) {
     badge.className = `realtime-status-badge ${online ? 'online' : 'offline'}`;
     badge.textContent = online ? 'Tempo Real: Ativo' : 'Tempo Real: Reconectando...';
@@ -155,7 +157,9 @@ function updateConnectionBadge(online) {
 function getWebSocketUrl() {
   if (!CONFIG.supabaseUrl || !CONFIG.supabaseAnonKey) return null;
   const wsBase = CONFIG.supabaseUrl.replace(/^http/, 'ws').replace(/\/+$/, '');
-  return `${wsBase}/realtime/v1/websocket?apikey=${encodeURIComponent(CONFIG.supabaseAnonKey)}&vsn=1.0.0`;
+  const session = supabase.loadSession();
+  const token = session && session.access_token ? session.access_token : CONFIG.supabaseAnonKey;
+  return `${wsBase}/realtime/v1/websocket?apikey=${encodeURIComponent(CONFIG.supabaseAnonKey)}&token=${encodeURIComponent(token)}&vsn=1.0.0`;
 }
 
 /**
@@ -181,22 +185,28 @@ export function connect() {
     reconnectAttempts = 0;
     updateConnectionBadge(true);
 
-    // Junta-se ao canal de escuta da tabela 'pedidos' no schema 'public'
+    const session = supabase.loadSession();
+    const token = session && session.access_token ? session.access_token : CONFIG.supabaseAnonKey;
+
+    // Junta-se ao canal de escuta da tabela 'orders' no schema 'public'
     const joinMsg = {
-      topic: 'realtime:public:pedidos',
+      topic: 'realtime:public:orders',
       event: 'phx_join',
       payload: {
         config: {
+          broadcast: { self: false },
+          presence: { key: '' },
           postgres_changes: [
             {
               event: '*',
               schema: 'public',
-              table: 'pedidos',
+              table: 'orders',
             },
           ],
         },
+        access_token: token,
       },
-      ref: 'join_pedidos',
+      ref: 'join_orders',
     };
     socket.send(JSON.stringify(joinMsg));
 
@@ -252,10 +262,10 @@ function scheduleReconnect() {
 }
 
 /**
- * Processa uma alteração da tabela 'pedidos' recebida em tempo real.
+ * Processa uma alteração da tabela 'orders' recebida em tempo real.
  * @param {Object} payload - Dados do evento postgres_changes.
  */
-function handlePostgresChange(payload) {
+export function handlePostgresChange(payload) {
   const data = payload.data || payload;
   const changeType = String(data.type || data.eventType || '').toUpperCase();
   const record = data.record || data.new;
@@ -302,6 +312,8 @@ function handlePostgresChange(payload) {
  * Inicializa os listeners globais de interação e janela.
  */
 export function init() {
+  if (typeof window === 'undefined') return;
+
   // Desbloqueia o AudioContext na primeira interação do usuário na página
   const unlockOnce = () => {
     unlockAudioContext();
@@ -315,6 +327,15 @@ export function init() {
   window.addEventListener('online', () => {
     reconnectAttempts = 0;
     connect();
+  });
+
+  // Reconecta ao alternar visibilidade para a página
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        connect();
+      }
+    }
   });
 
   // Conecta ao carregar

@@ -39,7 +39,7 @@ Sistema web integrado para gestão de pedidos, catálogo de produtos, controle d
 - **Histórico de Produções:** Registro auditável de lotes produzidos com data e observações.
 
 ### 1.4 Pedidos
-- **Sincronização em Tempo Real (Supabase WebSockets):** Conexão nativa via Phoenix Channels (`realtime:public:pedidos`) que escuta novos pedidos (`INSERT`), atualizações (`UPDATE`) e exclusões (`DELETE`) instantaneamente sem necessidade de recarregar a página ou disparar polling contínuo.
+- **Sincronização em Tempo Real (Supabase WebSockets):** Conexão nativa via Phoenix Channels (`realtime:public:orders`) autenticada com token de sessão (RLS), que escuta novos pedidos (`INSERT`), atualizações (`UPDATE`) e exclusões (`DELETE`) instantaneamente sem necessidade de recarregar a página ou disparar polling contínuo.
 - **Alerta Sonoro de Cozinha (Web Audio API):** Sinal sonoro de comanda com 2 tons harmônicos (Ré e Lá / D5 e A5) sintetizado pelo próprio navegador via osciladores senoidais puros (zero latência, sem download de arquivos de áudio e 100% funcional offline). Inclui botão de controle ("Som: Ativado / Desativado") memorizado no `localStorage` e desbloqueio suave do contexto de áudio.
 - **Destaque Visual Animado na Esteira:** Novos pedidos que chegam em tempo real recebem destaque imediato com efeito pulsante na borda e sombra (`orderHighlightPulse`) na esteira da cozinha para rápida identificação visual pela equipe.
 - **Badge de Status de Conexão em Tempo Real:** Indicador de status no cabeçalho da página ("Tempo Real: Ativo" ou "Tempo Real: Reconectando...") com gerenciamento de reconexão automática por backoff exponencial e detecção de retorno da conexão de rede (`online`).

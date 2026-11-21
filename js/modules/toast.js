@@ -15,6 +15,7 @@ const DURATION_MS = 2500;
  * @param {string} [type] - "success" | "error" (padrão "success").
  */
 export function showToast(message, type = 'success') {
+  if (typeof document === 'undefined') return;
   let container = document.getElementById(CONTAINER_ID);
   if (!container) {
     container = document.createElement('div');

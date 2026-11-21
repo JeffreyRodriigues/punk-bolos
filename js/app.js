@@ -399,11 +399,11 @@ function init() {
       if (newOrder && newOrder.id) {
         orderList.highlightOrder(newOrder.id);
       }
-      invalidateViews(['orders', 'dashboard']);
+      invalidateViews(['orders', 'dashboard', 'estoque']);
     },
     onOrderUpdated: () => {
       updatePendingOrdersBadge();
-      invalidateViews(['orders', 'dashboard']);
+      invalidateViews(['orders', 'dashboard', 'estoque']);
     },
   });
 
